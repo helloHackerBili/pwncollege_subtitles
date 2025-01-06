@@ -1,0 +1,675 @@
+1
+00:00:01,166 --> 00:00:02,533
+你好黑客
+hello hackers 
+
+2
+00:00:02,533 --> 00:00:03,866
+欢迎来到pwn学院
+welcome to pwn College
+
+3
+00:00:03,866 --> 00:00:06,599
+我是Yan，今天要讨论的是
+I'm Yan and today we're going to be talking about
+
+4
+00:00:07,933 --> 00:00:10,633
+程序误用的保护机制
+program misuse mitigations 
+
+5
+00:00:10,833 --> 00:00:16,066
+我们已经简单探讨了程序误用
+so we've dug into how programs are misused at a very high level
+
+6
+00:00:16,300 --> 00:00:19,900
+我们会在习题中深入研究
+in this module and we're going to dig into that with the practice problems
+
+7
+00:00:19,966 --> 00:00:22,833
+甚至在习题中
+and even in the practice problems 
+
+8
+00:00:22,833 --> 00:00:25,766
+你会发现在某些情况
+you will find certain cases 
+
+9
+00:00:25,766 --> 00:00:29,699
+感觉开发者在与你对抗
+where it feels like the developers are fighting against you 
+
+10
+00:00:29,700 --> 00:00:32,333
+防止你误用程序
+to keep you from misusing the software
+
+11
+00:00:32,333 --> 00:00:34,799
+这当然是有意为之
+and that's of course intentional
+
+12
+00:00:34,900 --> 00:00:36,566
+一般来说，随着开发人员
+in general as developers identify 
+
+13
+00:00:36,700 --> 00:00:40,666
+发现越来越多的软件安全问题
+more and more and more security issues with software
+
+14
+00:00:40,666 --> 00:00:45,266
+这些安全问题形成了一些相同主题
+and when those security issues start coalescing into common themes
+
+15
+00:00:45,400 --> 00:00:50,400
+保护机制就会被开发出来，以减少
+mitigations are developed to try to reduce the harm
+
+16
+00:00:50,733 --> 00:00:54,533
+特定安全缺陷类型的伤害
+from a given security flaw
+
+17
+00:00:54,933 --> 00:01:01,466
+我们已经在黑客团队的攻击中看到了这一点
+we already saw this in action in the Hacking Team hack 
+
+18
+00:01:01,600 --> 00:01:04,466
+我们在最初的课程介绍中讨论的
+that we discussed in the very very introduction to the course
+
+19
+00:01:04,566 --> 00:01:08,733
+你们会在接下来的课程中不断看到保护机制
+and you'll see this constantly throughout the rest of the class
+
+20
+00:01:08,733 --> 00:01:11,199
+我们会讨论一类安全漏洞
+we'll talk about a class of security flaw 
+
+21
+00:01:11,300 --> 00:01:13,466
+再讨论大量保护措施
+and we'll talk about numerous mitigations
+
+22
+00:01:13,866 --> 00:01:15,733
+它们被创造出来是为了
+that have been created to try to
+
+23
+00:01:16,333 --> 00:01:19,766
+一般是减少伤害，而不是消除伤害
+generally reduce harm but not eliminate harm
+
+24
+00:01:20,866 --> 00:01:22,499
+不是因为我们不想消除伤害
+not because we don't want to eliminate harm
+
+25
+00:01:22,500 --> 00:01:25,533
+而是因为这非常困难
+but because it's actually extremely difficult to do so
+
+26
+00:01:25,600 --> 00:01:28,566
+所以只能尽力减小某类安全缺陷的影响
+but try to reduce the impact of certain security flaws
+
+27
+00:01:28,566 --> 00:01:28,899
+好吧
+all right
+
+28
+00:01:28,900 --> 00:01:31,466
+我们先讨论一个具体的保护机制
+let's talk specifically about a mitigation that
+
+29
+00:01:31,800 --> 00:01:34,533
+你会在这个模块中遇到它
+you will run into in the course of this module
+
+30
+00:01:34,800 --> 00:01:36,866
+这个保护机制是（防止）
+and that mitigation is
+
+31
+00:01:37,200 --> 00:01:48,600
+由于对参数的疏忽大意引起的命令注入
+command injection through basically uncareful handling of some programs of their arguments 
+
+32
+00:01:48,600 --> 00:01:52,800
+很多时候，作为攻击者的你，能够
+right so often times you are able to as an attacker
+
+33
+00:01:52,866 --> 00:01:55,033
+将命令注入到软件
+inject the command into software 
+
+34
+00:01:55,366 --> 00:01:57,999
+就如同你在本模块某些习题中做的那样
+as you do in some of the levels of this module
+
+35
+00:01:58,333 --> 00:02:01,133
+使它执行你输入的命令
+and have it execute commands on your behalf
+
+36
+00:02:01,800 --> 00:02:07,100
+这种情况经常发生，这很令人沮丧
+this happens depressingly frequently 
+
+37
+00:02:07,233 --> 00:02:09,766
+8年前
+as of 8 years ago 
+
+38
+00:02:09,800 --> 00:02:14,333
+这是十大最常见的安全漏洞之一
+this was one of the top 10 most common security vulnerabilities 
+
+39
+00:02:14,466 --> 00:02:15,766
+位列OWASP榜单前十
+the owasp top 10
+
+40
+00:02:15,900 --> 00:02:19,866
+现在它在OWASP榜单前25，命令注入
+now it is still in the owasp top 25 command injection
+
+41
+00:02:19,866 --> 00:02:23,533
+所以这仍然是一个常见的漏洞
+so it's still a common vulnerability
+
+42
+00:02:25,533 --> 00:02:31,066
+在利用此漏洞进行攻击的过程中
+in the course of carrying out an attack utilizing this vulnerability 
+
+43
+00:02:31,133 --> 00:02:35,533
+攻击者通常会使用/bin/sh执行命令
+attackers will often cause commands to be executed with /bin/sh 
+
+44
+00:02:36,700 --> 00:02:38,533
+当你使用/bin/sh执行某些命令时
+when you execute something with /bin/sh 
+
+45
+00:02:39,966 --> 00:02:40,766
+假设
+let's say
+
+46
+00:02:41,366 --> 00:02:42,699
+一般情况，没保护机制时
+normally premitigation 
+
+47
+00:02:42,766 --> 00:02:44,366
+你在执行命令时
+you'd be executing them 
+
+48
+00:02:44,400 --> 00:02:49,966
+能直接使用你所劫持进程的权限
+with whatever privileges the program that you're hijacking had
+
+49
+00:02:51,000 --> 00:02:54,166
+这就聊到这个表情包了
+and that's where this meme comes in 
+
+50
+00:02:54,533 --> 00:02:56,833
+显然这两种情况都不好
+obviously it's bad in both cases
+
+51
+00:02:57,500 --> 00:02:59,766
+程序以root身份运行
+in whether the program was running as root 
+
+52
+00:02:59,766 --> 00:03:01,266
+或不是以root身份运行
+or it wasn't running as root
+
+53
+00:03:01,500 --> 00:03:04,933
+但如果程序以root身份运行，那会特别特别不好
+but it's very very very bad if the program is running as root
+
+54
+00:03:04,933 --> 00:03:07,899
+程序以root身份运行的，且你能劫持它
+the program runs as root and you can hijack it to
+
+55
+00:03:08,566 --> 00:03:13,666
+能利用它对输入的错误处理方式，来注入命令
+or do a command injection in some mishandling of input by this program 
+
+56
+00:03:13,966 --> 00:03:18,399
+这能让你以root身份执行命令
+that causes you to be able to run commands as root
+
+57
+00:03:18,466 --> 00:03:21,933
+这显然是对系统安全性的巨大摧残
+that's obviously brutalizing to security of the system
+
+58
+00:03:22,000 --> 00:03:23,966
+因此保护机制应运而生
+and so mitigation was created 
+
+59
+00:03:24,133 --> 00:03:34,199
+基本现代的命令解释器或者说shell，都有实现
+that basically for modern implementations of command interpreters or shells
+
+60
+00:03:34,500 --> 00:03:38,500
+如果运行的shell有setuid位
+if the shell is running as setuid
+
+61
+00:03:38,866 --> 00:03:40,766
+如果它的euid
+so if it's effective user ID
+
+62
+00:03:40,966 --> 00:03:42,733
+这个我们上节课讨论过
+as we discussed in the previous lecture
+
+63
+00:03:43,700 --> 00:03:46,966
+是root，但实际uid不是root
+is root but its real user ID is not root
+
+64
+00:03:47,766 --> 00:03:49,466
+算是一种暂时性的root身份
+kind of temporarily root
+
+65
+00:03:49,500 --> 00:03:54,333
+它会降回实际uid的权限
+it will actually drop privileges back down to the real user ID
+
+66
+00:03:55,200 --> 00:03:56,366
+这是出于安全考虑
+for safety reasons 
+
+67
+00:03:56,433 --> 00:04:01,399
+因为这几乎总是
+because almost always let's say or very frequently
+
+68
+00:04:01,466 --> 00:04:06,266
+代表有被命令注入
+this was a sign of a command injection being exploited 
+
+69
+00:04:06,333 --> 00:04:10,866
+以实现权限提升
+to achieve privilege escalation on a machine
+
+70
+00:04:11,066 --> 00:04:11,866
+当然
+of course
+
+71
+00:04:12,533 --> 00:04:14,499
+有时候你是故意这么做的
+sometimes you do this intentionally
+
+72
+00:04:14,500 --> 00:04:19,766
+你有个带setuid位的程序要用system
+you have a setuid program that use a system
+
+73
+00:04:20,266 --> 00:04:23,433
+libc中的system函数
+the system libc function 
+
+74
+00:04:23,433 --> 00:04:25,366
+执行一些shell命令
+to execute some shell command
+
+75
+00:04:25,766 --> 00:04:27,733
+你不希望降低权限
+you don't want the shell dropping privileges
+
+76
+00:04:29,866 --> 00:04:32,533
+你得重写一下
+you would have to rewrite that 
+
+77
+00:04:32,566 --> 00:04:35,233
+写成/bin/sh -p
+to execute /bin/sh -p
+
+78
+00:04:35,566 --> 00:04:36,499
+而不是/bin/sh
+instead of /bin/sh 
+
+79
+00:04:36,600 --> 00:04:39,800
+-p是一个可以传递给shell的参数
+-p is a flag that you can pass to the shell
+
+80
+00:04:40,000 --> 00:04:41,666
+这样它就不会降低权限
+so that it won't drop privileges
+
+81
+00:04:41,800 --> 00:04:43,933
+当然，要传递这个参数
+but of course passing that flag requires
+
+82
+00:04:44,366 --> 00:04:48,233
+需要有比寻常命令注入能获得的，更大的控制力
+some more control than your average command injection actually gets you
+
+83
+00:04:48,266 --> 00:04:49,899
+因为在寻常的命令注入中
+because in your average command injection
+
+84
+00:04:50,133 --> 00:04:53,066
+你运行这个命令时
+by the time that you are running in that command
+
+85
+00:04:53,466 --> 00:04:56,366
+由于这个保护机制，你已经不是root了
+you are no longer root because of this mitigation
+
+86
+00:04:56,533 --> 00:04:57,333
+所以
+right so
+
+87
+00:04:58,166 --> 00:05:01,333
+如果你在这个模块中
+if you are in the course of this module 
+
+88
+00:05:01,700 --> 00:05:04,933
+要执行/bin/sh或/bin/bash
+trying to execute /bin/sh or /bin/bash
+
+89
+00:05:05,100 --> 00:05:07,066
+记得传入-p参数
+make sure to pass it the -p flag 
+
+90
+00:05:07,966 --> 00:05:08,466
+不管怎样
+anyways 
+
+91
+00:05:11,633 --> 00:05:15,499
+这个是程序误用保护机制的一个例子
+the shell is one example of kind of program misuse mitigation 
+
+92
+00:05:15,600 --> 00:05:18,966
+我会再介绍一个更通用的例子
+I'm going to give you a more general example
+
+93
+00:05:19,666 --> 00:05:22,366
+然后介绍一下后续相关技术
+before casting a wide eye toward the future
+
+94
+00:05:23,133 --> 00:05:25,599
+更通用的例子是Wireshark
+the slightly more general example is Wireshark
+
+95
+00:05:25,600 --> 00:05:28,733
+Wireshark是一个非常流行的网络嗅探工具
+Wireshark is a network sniffer very popular one
+
+96
+00:05:28,733 --> 00:05:29,766
+这是一款很棒的软件
+it's a great piece of software 
+
+97
+00:05:29,833 --> 00:05:30,599
+曾经
+historically
+
+98
+00:05:30,900 --> 00:05:33,933
+它一直是一些安全问题的主题
+it's been a subject of some security problems
+
+99
+00:05:34,400 --> 00:05:34,866
+为什么
+why 
+
+100
+00:05:34,933 --> 00:05:37,066
+因为Wireshark需要大量访问权限
+because Wireshark needs a lot of access
+
+101
+00:05:37,066 --> 00:05:39,699
+它需要能够嗅探网络流量
+it needs to be able to sniff network traffic
+
+102
+00:05:40,166 --> 00:05:43,299
+这不是随便一个进程就能做到的
+that is not something that any old process can do
+
+103
+00:05:43,300 --> 00:05:46,200
+所以通常人们以root权限运行Wireshark
+so typically people run Wireshark as root 
+
+104
+00:05:47,100 --> 00:05:52,600
+2 Wireshark不仅会捕获流量，还会解析流量
+two Wireshark tries to parse traffic as well as just capture it
+
+105
+00:05:52,700 --> 00:05:56,366
+它能很好地分析流量
+and it provides a lot of very good analysis of this traffic
+
+106
+00:05:57,566 --> 00:06:00,499
+能解析非常非常多的不同协议
+of many many many different protocols like
+
+107
+00:06:00,700 --> 00:06:02,166
+巨多的协议
+very many protocols
+
+108
+00:06:02,533 --> 00:06:07,733
+所有这些协议解析器都可能存在安全问题
+all these protocol parsers can have security problems in themselves right
+
+109
+00:06:07,800 --> 00:06:13,700
+为了防止因安全问题导致
+and as a mitigation to prevent security problems leading to 
+
+110
+00:06:13,966 --> 00:06:20,733
+攻击者在受害机器上以root身份运行代码
+attackers running code as root on the victim machine 
+
+111
+00:06:21,100 --> 00:06:24,900
+为了缓解这种情况，Wireshark开发人员将其分成了两个程序
+as a mitigation here the Wireshark developers put into two programs
+
+112
+00:06:25,100 --> 00:06:27,766
+一个记录流量，一个分析流量
+one that records traffic and one that analyzes it
+
+113
+00:06:27,966 --> 00:06:29,099
+实际上不止两个
+actually more than two but
+
+114
+00:06:29,200 --> 00:06:30,466
+我们把它化简一下
+you know we just simplify it
+
+115
+00:06:31,666 --> 00:06:34,099
+这是另一种专门的保护机制
+so that's another kind of ad hoc mitigation
+
+116
+00:06:34,800 --> 00:06:42,300
+如同/bin/sh的那个，增加保护机制以对抗特定类型的问题
+like the /bin/sh one that was deployed to fight certain classes of problems
+
+117
+00:06:42,900 --> 00:06:46,400
+我会提一下一个通用的保护机制
+and I'll mention a general mitigation
+
+118
+00:06:47,066 --> 00:06:50,999
+我们会在后面的模块中深入学习它
+and we'll actually study it much more in depth a couple modules from now
+
+119
+00:06:51,333 --> 00:06:55,666
+更通用的解决方案是使用沙盒
+but a more general mitigation to program is use the sandboxing
+
+120
+00:06:55,666 --> 00:06:57,433
+你拿到这个程序
+so you take the program 
+
+121
+00:06:57,433 --> 00:06:59,499
+你把它隔离开
+and you actually wall it off
+
+122
+00:06:59,600 --> 00:07:00,766
+使其远离敏感数据
+from anything sensitive 
+
+123
+00:07:00,866 --> 00:07:05,033
+远离它正常执行用不到的
+or from anything it doesn't need to have access to in its normal execution
+
+124
+00:07:05,500 --> 00:07:06,966
+尽力确保
+and you try to make sure that
+
+125
+00:07:07,300 --> 00:07:09,400
+即使程序被误用了
+even if the program is misused somehow
+
+126
+00:07:09,533 --> 00:07:12,266
+也能将伤害降到最低
+harm is minimized 
+
+127
+00:07:12,333 --> 00:07:16,499
+我们将在后面的沙盒模块中探索这个概念
+we'll explore this concept a lot several modules later in the sandboxing module
+
+128
+00:07:17,400 --> 00:07:22,500
+好了，这就是安全保护机制
+all right so that was security mitigations 
+
+129
+00:07:22,500 --> 00:07:27,966
+希望这能为未来打下基础
+hope that kind of set the stage for the future of the course
+
+130
+00:07:27,966 --> 00:07:31,733
+我们几乎会在每个模块中讨论保护机制
+we'll talk about like I said mitigations in almost every module
+
+131
+00:07:31,733 --> 00:07:34,133
+因为几乎所有的安全问题
+because almost all of these security problems
+
+132
+00:07:34,200 --> 00:07:35,900
+已经被考虑
+have been thought of for
+
+133
+00:07:36,533 --> 00:07:39,166
+且可能与之对抗了几十年
+and fought for sometimes for decades
+
+134
+00:07:39,333 --> 00:07:40,133
+好吧
+all right
+
+135
+00:07:40,700 --> 00:07:41,500
+祝你好运
+good luck
+

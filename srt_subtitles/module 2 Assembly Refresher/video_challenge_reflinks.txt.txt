@@ -1,0 +1,26 @@
+01 Computer Architecture
+    https://www.youtube.com/watch?v=o_kSgUPJk4c&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=1
+
+02 Assembly
+    https://www.youtube.com/watch?v=TdTOH1GfrWg&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=2
+
+03 Data
+    https://www.youtube.com/watch?v=21MvbpgssU8&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=3
+    
+04 Registers
+    https://www.youtube.com/watch?v=IWbIZerH930&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=4
+    
+05 Memory
+    https://www.youtube.com/watch?v=HahXfnOsSUU&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=5
+    
+06 Control Flow
+    https://www.youtube.com/watch?v=0a8NlF7z7Ro&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=6
+    
+07 System Calls
+    https://www.youtube.com/watch?v=vspq0u2tvhU&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=7
+    
+08 Building Programs
+    https://www.youtube.com/watch?v=IITocH-WGH4&list=PL-ymxv0nOtqox6nF4HXtXHnTQFGkRQU_2&index=8
+
+practice here
+    https://pwn.college/computing-101/assembly-crash-course/

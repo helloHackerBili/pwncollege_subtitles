@@ -1,0 +1,1414 @@
+1
+00:00:00,966 --> 00:00:02,066
+你好黑客
+hello hackers
+
+2
+00:00:02,066 --> 00:00:05,266
+欢迎来到沙箱模块的继续部分
+welcome to the continuation of the sandboxing module
+
+3
+00:00:05,200 --> 00:00:12,100
+我是Yan，今天谈谈如何逃离seccomp
+I'm Yan and I'm here to talk to you about seccomp specifically how to escape seccomp
+
+4
+00:00:12,300 --> 00:00:17,400
+我们见过很多例子
+we saw a lot of examples of
+
+5
+00:00:17,733 --> 00:00:19,733
+两个关于如何设置seccomp的例子
+well two examples of how do you set seccomp
+
+6
+00:00:19,900 --> 00:00:22,500
+一个对于进程本身，一个对于其子进程
+one for the process itself one for its children
+
+7
+00:00:23,500 --> 00:00:25,300
+在最后一个视频中
+in the last video today
+
+8
+00:00:25,333 --> 00:00:28,100
+这段视频我们要讲的是如何逃脱
+this video rather we're gonna talk about how to escape
+
+9
+00:00:28,333 --> 00:00:31,300
+对于seccomp来说，这并不容易
+from seccomp typically this is not easy
+
+10
+00:00:31,300 --> 00:00:34,133
+Seccomp非常好，它是一个现代的解决方案
+seccomp is very good seccomp is a modern solution
+
+11
+00:00:34,133 --> 00:00:37,200
+我前面提到docker依赖于它
+I mentioned previously that docker relies on it
+
+12
+00:00:37,800 --> 00:00:39,366
+Chrome依赖于它
+chrome relies on it
+
+13
+00:00:39,733 --> 00:00:42,066
+Firefox 等很多产品
+Firefox a lot of products
+
+14
+00:00:42,766 --> 00:00:46,500
+很多正经实用的程序依赖于seccomp提供的安全性
+a lot of serious real deal programs rely on seccomp for security
+
+15
+00:00:46,500 --> 00:00:47,733
+所以它是非常优秀的
+so it is very good
+
+16
+00:00:48,600 --> 00:00:50,300
+但有一个基本的事实
+but there is this kind of fundamental truth
+
+17
+00:00:50,300 --> 00:00:55,100
+所有这些都依赖于seccomp的程序
+ that all of these things that rely on seccomp for security
+
+18
+00:00:55,133 --> 00:00:57,133
+他们需要提供服务
+they need to do stuff
+
+19
+00:00:57,933 --> 00:01:00,300
+他们需要和用户交互
+they need to uh interact with the user
+
+20
+00:01:00,300 --> 00:01:01,900
+需要与互联网交互
+they need to interact with the internet
+
+21
+00:01:02,000 --> 00:01:04,800
+需要高性能
+they need to uh do things performancely
+
+22
+00:01:04,800 --> 00:01:05,700
+这通常意味着
+which often means
+
+23
+00:01:05,700 --> 00:01:07,966
+直接调用内核来实现功能
+calling directly into the kernel to do stuff
+
+24
+00:01:07,900 --> 00:01:11,300
+使用系统调用而不是通过它们的父进程
+using system calls um rather than going through their parent process
+
+25
+00:01:11,300 --> 00:01:13,200
+当然它们也需要与父进程通信
+they also need to communicate with their parent process
+
+26
+00:01:13,200 --> 00:01:17,500
+这意味着，嗯，以某种方式通过内核进行交互
+typically this means um interacting through the kernel in some way
+
+27
+00:01:17,933 --> 00:01:18,733
+嗯
+um
+
+28
+00:01:19,200 --> 00:01:24,700
+所以实际上很难做一个不允许任何系统调用的沙盒
+so it's actually very hard to make a sandbox that doesn't allow any system calls
+
+29
+00:01:24,900 --> 00:01:28,700
+通常你可以在沙盒中做一些事情
+typically you have something that you can do in a sandbox
+
+30
+00:01:28,700 --> 00:01:33,700
+这就为攻击者提供了回旋余地
+and this opens up some wiggle room for an attacker
+
+31
+00:01:33,900 --> 00:01:40,300
+今天要讲三种seccomp沙盒失效的原因
+um we're gonna talk about three ways that uh seccomp base sandboxes might fail today
+
+32
+00:01:40,300 --> 00:01:45,400
+一是过度宽松的政策，二是混乱
+one of them uh is overly permissive policies then confusion
+
+33
+00:01:45,500 --> 00:01:50,600
+三是内核漏洞，将在以后的课程细讲
+and the 3rd one is kernel vulnerabilities you actually cover that in a future module uh more thoroughly
+
+34
+00:01:51,066 --> 00:01:51,866
+嗯
+um
+
+35
+00:01:52,700 --> 00:01:55,300
+我们来谈谈宽松政策
+let's talk about permissive policies right
+
+36
+00:01:55,300 --> 00:01:56,900
+系统调用很复杂
+system calls are complex
+
+37
+00:01:56,900 --> 00:01:58,466
+它们的数量非常多
+and there's an enormous amount of them
+
+38
+00:01:58,900 --> 00:02:03,400
+如果你看过我一直在讲的Ryan A. Chapman系统调用表
+if you've looked at the Ryan A. Chapman system call table that I keep talking about
+
+39
+00:02:03,700 --> 00:02:09,600
+现代Linux系统上有超过300个系统调用
+there are hundreds over 300 Linux system calls on a modern Linux system
+
+40
+00:02:09,600 --> 00:02:11,566
+还有越来越多的在不断被添加进去
+and and more are added constantly
+
+41
+00:02:11,566 --> 00:02:14,166
+如果你调出一份现代的清单
+if you pull up a modern list
+
+42
+00:02:14,266 --> 00:02:16,600
+我不知道Ryan A Chapman更的有多新
+I don't know how up to date Ryan A Chapman is
+
+43
+00:02:16,666 --> 00:02:17,966
+但如果你调出一份现在的列表
+but if you pull up a modern list
+
+44
+00:02:17,966 --> 00:02:19,866
+并且在您的计算机上尝试这些系统调用
+and try some of these system calls on your computer
+
+45
+00:02:19,866 --> 00:02:21,566
+比如列表上后面的几个
+like the later ones in the list
+
+46
+00:02:21,600 --> 00:02:23,966
+你的电脑应该不支持，因为
+you won't have them on your computer because
+
+47
+00:02:25,266 --> 00:02:26,200
+它们太新了
+they are too new
+
+48
+00:02:26,200 --> 00:02:33,300
+不断的有新linux版本，新功能出现
+they're constantly  being added one or two Linux version to enable new functionality
+
+49
+00:02:34,300 --> 00:02:35,100
+而且
+and
+
+50
+00:02:35,600 --> 00:02:41,500
+这意味着沙盒很难一直跟进系统新功能
+this means that it's actually very hard to keep up with sandboxing them all properly
+
+51
+00:02:41,500 --> 00:02:46,800
+您有一个依赖于某些特定系统调用的沙盒
+oftentimes you have a sandbox that might rely on some specific system call
+
+52
+00:02:47,100 --> 00:02:49,133
+但在一种特殊的模式下
+but in one particular mode of it
+
+53
+00:02:49,100 --> 00:02:52,800
+所以你试着写一个seccomp沙盒
+so you try to write a seccomp sandbox 
+
+54
+00:02:53,600 --> 00:02:57,100
+它允许特定的系统调用
+that allows specific configurations of system calls
+
+55
+00:02:57,100 --> 00:02:59,466
+但有些系统调用可能没考虑到
+and some things might slip through
+
+56
+00:03:00,366 --> 00:03:04,866
+也可能只是担心拦截后会破坏你的程序
+you might also just be worry of breaking your programs
+
+57
+00:03:04,800 --> 00:03:10,100
+像docker就需要启用很多的系统调用
+something like docker actually requires quite a lot of system calls to be enabled
+
+58
+00:03:10,100 --> 00:03:13,200
+因为所有在docker容器内运行的程序
+because everything that runs inside the docker container
+
+59
+00:03:13,900 --> 00:03:17,800
+都会继承父进程的seccomp配置
+inherits the seccomp configuration of the parent 
+
+60
+00:03:17,800 --> 00:03:19,966
+所以你不能把所有东西都禁止
+so you can't just seccomp away everything
+
+61
+00:03:20,866 --> 00:03:23,133
+必须做取舍，留下一部分系统调用
+you have to be reasonable and leave a lot of stuff open
+
+62
+00:03:23,100 --> 00:03:27,300
+有些docker漏洞是由于不正确的seccomp配置导致的
+and there have been docker vulnerabilities arising from incorrect seccomp
+
+63
+00:03:27,666 --> 00:03:30,100
+过度宽松的seccomp配置
+overly permissive seccomp configurations
+
+64
+00:03:30,100 --> 00:03:36,900
+一个非常著名的seccomp失效案例，不能说是一个漏洞
+one very well known example of seccomp failure case not necessarily real vulnerabilities 
+
+65
+00:03:36,900 --> 00:03:40,800
+尽管确实存在由此产生的漏洞
+although there have been real vulnerabilities that are stems from this 
+
+66
+00:03:42,500 --> 00:03:46,500
+是在沙盒进程中允许ptrace
+is what happens when you allow ptrace in a sandbox process
+
+67
+00:03:46,500 --> 00:03:49,800
+ptrace是Linux的调试功能
+ptrace is Linux's debugging functionality
+
+68
+00:03:49,800 --> 00:03:51,566
+您可以使用ptrace系统调用
+you can use the ptrace system called
+
+69
+00:03:51,666 --> 00:03:53,966
+作为调试器附加到某个进程上
+to attach to a process as a debugger
+
+70
+00:03:54,066 --> 00:03:55,400
+监视它的执行
+to monitor its execution
+
+71
+00:03:55,533 --> 00:03:58,266
+改变内存，改变寄存器
+to change memories change registers
+
+72
+00:03:58,266 --> 00:04:00,300
+可以获得完全控制权
+you can take complete control obviously
+
+73
+00:04:00,300 --> 00:04:01,166
+你可以改变寄存器
+you can change registers
+
+74
+00:04:01,166 --> 00:04:02,466
+您可以更改指令指针
+you can change the instruction pointer
+
+75
+00:04:02,400 --> 00:04:06,400
+你可以通过改变内存来注入shellcode
+you can inject shellcode by changing the memory
+
+76
+00:04:06,466 --> 00:04:08,500
+你可以执行任何你想执行的
+and you can execute whatever you want right
+
+77
+00:04:09,900 --> 00:04:14,500
+如果你让沙盒进程使用ptrace
+so if you let a sandbox process use ptrace
+
+78
+00:04:15,266 --> 00:04:18,100
+如果您的seccomp防火墙启动ptrace
+if your seccomp firewall arouse ptrace
+
+79
+00:04:20,100 --> 00:04:23,200
+并且该进程有连接的权限
+and that process has the permission to connect
+
+80
+00:04:23,266 --> 00:04:25,500
+它可以作为调试器附加到另一个进程
+as it attaches debuggage to another process
+
+81
+00:04:25,500 --> 00:04:28,100
+就能通过另一个进程逃离沙盒
+it can escape the sandbox through this other process
+
+82
+00:04:28,100 --> 00:04:34,100
+这是一个在CTF比赛中相当常见的沙盒逃逸方式
+it's a it's a fairly common sandbox escape in the CTF world for example
+
+83
+00:04:34,500 --> 00:04:35,400
+嗯
+um
+
+84
+00:04:36,600 --> 00:04:44,700
+有些系统调用有一些的不常见的疯狂效果，比如
+uh there're also less known crazy effect of system calls for example
+
+85
+00:04:44,900 --> 00:04:50,000
+sendmsg系统调用不仅可以发送从文件中读取的数据，还可以发送
+the sendmsg system call can send not just data that you read out of files but
+
+86
+00:04:50,100 --> 00:04:55,000
+打开文件描述符本身
+the open file descriptor itself 
+
+87
+00:04:55,366 --> 00:04:56,366
+嗯
+um
+
+88
+00:04:57,966 --> 00:04:58,800
+当你在代码中执行open
+when you do an open in your shell code
+
+89
+00:04:58,800 --> 00:05:01,000
+它返回文件描述符，数字3之类的做为标志
+and it returns file descriptor three or whatnot for the flag 
+
+90
+00:05:01,000 --> 00:05:05,100
+通常情况下，如果您将数字3发送到另一个进程
+typically if you send that number three to another process
+
+91
+00:05:05,166 --> 00:05:06,300
+它只是一个数字3
+it's just a number three
+
+92
+00:05:06,300 --> 00:05:09,900
+但是使用sendmsg可以发送包装好的元数据
+but using sendmsg you can send that wrapped metadata 
+
+93
+00:05:10,000 --> 00:05:11,400
+表明这是一个文件
+that says hey this is a file
+
+94
+00:05:11,500 --> 00:05:22,200
+然后内核看到这个元数据，并将这个内核跟踪的打开文件传输
+and then the kernel sees that metadata and transfers the concept of that open file which is tracked by the kernel
+
+95
+00:05:22,200 --> 00:05:24,400
+到您要发送消息的进程中
+into the process that you're sending the message to
+
+96
+00:05:24,400 --> 00:05:30,600
+这是一个疯狂的功能但是它是存在的
+ which it's a crazy uh piece of functionality but uh it's uh exists and uh
+
+97
+00:05:30,600 --> 00:05:34,100
+所有这些例子实际上都是我在ctf中用过的
+all these examples actually things I've used actively in C t F
+
+98
+00:05:36,000 --> 00:05:39,166
+所以它是作为一种漏洞存在
+and so it exists as a as a vulnerability
+
+99
+00:05:39,400 --> 00:05:40,200
+嗯
+um
+
+100
+00:05:40,900 --> 00:05:45,800
+使用PRCTL系统调用可以做很多疯狂的事情
+there are crazy things that you can do with the prctl system call
+
+101
+00:05:45,800 --> 00:05:50,400
+就像这个抓包。你可以对进程做一些奇怪的事情
+ it's like this grab bag. a weird stuff you can do to a process
+
+102
+00:05:50,400 --> 00:05:53,566
+然后还有process_vm_write之类的东西
+and then there's things like process_vm_write 
+
+103
+00:05:53,600 --> 00:05:57,700
+该系统调用可以将内存直接写入另一个进程
+this system call can write memory directly into another process that
+
+104
+00:05:57,700 --> 00:06:00,700
+你对这个进程只需要某种程度的权限
+that you have um some level of access to
+
+105
+00:06:00,700 --> 00:06:05,000
+显然，你可以使用这个在特定的配置中逃离沙箱
+obviously you can use this potentially in the right settings to also escape sandboxes
+
+106
+00:06:08,300 --> 00:06:13,100
+跟踪所有系统调用的所有功能并保证安全是很难的
+it's hard to keep track of all of the functionality of of all of these system calls  securely
+
+107
+00:06:14,133 --> 00:06:17,866
+错误确实会发生
+ and and and mistakes do happen
+
+108
+00:06:18,300 --> 00:06:21,366
+我先把相机藏起来
+uh let me hide my camera real quick
+
+109
+00:06:21,700 --> 00:06:27,500
+这样你们就能看清整句话了
+so that you can see that whole sentence all right
+
+110
+00:06:27,866 --> 00:06:28,666
+很酷的
+cool
+
+111
+00:06:28,933 --> 00:06:29,966
+继续
+moving on
+
+112
+00:06:31,133 --> 00:06:34,900
+第二类叫做混淆
+whole category number two system called confusion
+
+113
+00:06:35,466 --> 00:06:38,666
+这源于一个有趣的设计决策
+this stems from an interesting design decision
+
+114
+00:06:39,500 --> 00:06:45,700
+我们讨论了很多AMD是如何使AMD 64向后兼容x86的
+we've talked a lot about how AMD made AMD 64 backwards compatible with x86
+
+115
+00:06:45,700 --> 00:06:50,600
+可以对系统做出副作用很少的改变，运行x86代码
+you can actually run x86 code basically on change with very few side effects
+
+116
+00:06:52,700 --> 00:06:55,900
+默认情况下包括所有的指令
+and this includes by default all the instructions
+
+117
+00:06:56,100 --> 00:07:01,800
+大多数指令仍然处理32位代码32位数据
+most of the instructions still deal with 32 bit code 32 bit data
+
+118
+00:07:01,866 --> 00:07:06,500
+有一个前缀能让指令使用64位数据
+it's a prefix that makes them use 64 bit data and so on
+
+119
+00:07:08,900 --> 00:07:15,700
+Linux实际上支持32位和64位代码在同一个进程中交互运行
+Linux actually supports 32 bit and 64 bit code running interchangeably in the same process
+
+120
+00:07:15,700 --> 00:07:19,300
+所以你的程序就像在一行和下一行之间
+so your program like one between one line and the next or
+
+121
+00:07:19,300 --> 00:07:21,700
+实际上你可能得用汇编来实现
+realistically you have to probably write this in assembly
+
+122
+00:07:21,966 --> 00:07:24,000
+在一个指令和下一个指令之间说，好的，好了
+between one instruction in the next say okay that's it
+
+123
+00:07:24,000 --> 00:07:25,133
+我不用64位模式了
+I'm done with 64 bit
+
+124
+00:07:25,133 --> 00:07:27,000
+我要转到32位模式了
+I'm I'm moving to 32 bit mode
+
+125
+00:07:27,000 --> 00:07:29,400
+实际上，这样做是有原因的
+there actually reasons to do this um
+
+126
+00:07:35,400 --> 00:07:38,466
+这是为了启用某些现在已经过时的沙盒功能
+this enables certain other sandboxing functionality now obsolete
+
+127
+00:07:39,100 --> 00:07:45,700
+您可以了解一下，native client是沙箱的名字
+ you can look into native client was the name of the sandbox
+
+128
+00:07:45,900 --> 00:07:49,700
+它在内存对齐等方面做了一些技巧
+that did some tricks with with memory alignment and so forth
+
+129
+00:07:49,766 --> 00:07:51,933
+但关键是这是有可能的
+but the point is it's possible and
+
+130
+00:07:51,933 --> 00:07:55,766
+第二点，出于某种原因，我不明白
+and the 2nd point for some reason I don't understand
+
+131
+00:07:56,300 --> 00:07:58,533
+让我再把相机关掉，这样你就能看到了
+let me turn off my camera again so you can see
+
+132
+00:07:58,600 --> 00:08:00,133
+让我把自己移到上面
+let me just move myself to the top
+
+133
+00:08:00,566 --> 00:08:05,133
+出于某种我不明白的原因
+for some reason that I don't understand um
+
+134
+00:08:07,400 --> 00:08:15,300
+Linux对于x86和amd64有不同的系统调用定义
+Linux has different system called definitions for x86 versus amd64
+
+135
+00:08:15,300 --> 00:08:19,100
+在amd64上使用系统调用指令有两种不同的方式来触发它们
+there are two different ways to trigger them on amd64 use the syscall instruction
+
+136
+00:08:19,300 --> 00:08:27,100
+在x86上使用参数为128的中断指令，即0x80
+on x86 to use the interrupt instruction with an argument of 128 in hextest one that is 0x80
+
+137
+00:08:27,400 --> 00:08:35,000
+根据你触发系统调用时内核所处的模式，它会使用不同的映射
+and depending on how you trigger system calls into the kernel it uses different mappings
+
+138
+00:08:35,000 --> 00:08:40,600
+例如，在AMD 64模式调用exit系统调用的参数是60
+for example in AMD 64 exit a system calls 60 
+
+139
+00:08:41,266 --> 00:08:45,166
+在x86_32和x86模式，它的参数是1
+on x86_32 bit x86 it is system call 1
+
+140
+00:08:45,200 --> 00:08:46,666
+让我给你看看这个
+let me show you this
+
+141
+00:08:47,666 --> 00:08:50,200
+我写了一些shellcode
+I have some shellcode written
+
+142
+00:08:51,900 --> 00:08:54,133
+这个调用exit，就是这样
+this calls exit that's it
+
+143
+00:08:54,200 --> 00:08:59,600
+所以我要把它汇编一下
+so I'm gonna assemble it
+
+144
+00:09:03,600 --> 00:09:05,133
+组成一个elf可执行文件
+assembled it into an elf here
+
+145
+00:09:05,166 --> 00:09:07,166
+哦，现在我们可以执行了
+oh now we can execute this
+
+146
+00:09:07,366 --> 00:09:08,866
+当然它只是退出
+of course it just exits
+
+147
+00:09:08,933 --> 00:09:09,733
+我们可以用strace看一下
+we can strace it
+
+148
+00:09:09,733 --> 00:09:12,700
+顺便说一下，strace也使用ptrace来完成它的工作
+by the way strace also uses ptrace to do its job
+
+149
+00:09:12,900 --> 00:09:14,100
+就是这里
+and here it is
+
+150
+00:09:14,900 --> 00:09:17,333
+我们再使用完全相同的方法执行exit
+we do exit use the exact same thing
+
+151
+00:09:17,333 --> 00:09:19,766
+像我说的32位模式也没问题
+like I said 32 bit mode no problem
+
+152
+00:09:20,500 --> 00:09:25,000
+改成EAX 1，然后我们执行INT OX80
+we say EAX 1 and then we do INT OX80
+
+153
+00:09:26,600 --> 00:09:27,533
+汇编
+assemble it
+
+154
+00:09:29,166 --> 00:09:30,766
+strace它，exit在这被调用了
+strace it and there is our exit
+
+155
+00:09:30,766 --> 00:09:32,300
+实际上strace说哦哦哦
+and actually strace says oh
+
+156
+00:09:32,566 --> 00:09:34,166
+我们运行的是32位模式
+we're running in 32 bit mode
+
+157
+00:09:35,000 --> 00:09:35,700
+好吧
+all right
+
+158
+00:09:35,700 --> 00:09:37,100
+就是这么简单
+and it's that simple
+
+159
+00:09:38,400 --> 00:09:44,100
+如果你在x86中使用系统调用60会发生什么?让我们看看
+what happens if you try system call 60 in x86 let's see
+
+160
+00:09:45,100 --> 00:09:47,900
+它是umask
+it is umask
+
+161
+00:09:49,366 --> 00:09:50,900
+看，执行的根本就不是exit
+see it's not exit at all
+
+162
+00:09:51,766 --> 00:09:53,800
+我为什么要说这些
+why am I saying all this it's
+
+163
+00:09:54,500 --> 00:09:58,400
+因为当你写seccomp策略时
+because when you write seccomp policies
+
+164
+00:09:58,400 --> 00:10:03,500
+我的意思是，让我们看一下上一集中的seccomp程序
+I mean let's actually pull up our seccomp from the previous video
+
+165
+00:10:03,500 --> 00:10:22,100
+我们编写这个策略是为了将read系统调用添加到将被kill的系统调用列表中
+we wrote this policy to add the read system call to a list of system calls that will be kill 
+
+166
+00:10:22,300 --> 00:10:24,933
+或者更确切地说，创建一个规则，如果它匹配被调用的读取系统，它就会杀死进程
+or rather to create a rule that if it matches the read system called it will kill the process
+
+167
+00:10:26,200 --> 00:10:31,500
+这将为AMD 64创建规则
+this will create that rule  for AMD 64
+
+168
+00:10:31,500 --> 00:10:34,133
+实际上这些都是AMD 64的默认配置
+in fact all these default configurations for AMD 64
+
+169
+00:10:34,266 --> 00:10:34,933
+好的事情是
+the nice thing is
+
+170
+00:10:34,900 --> 00:10:44,800
+默认配置会杀死任何试图在32位模式下使用INT OX80指令的系统调用
+the default configuration will actually kill any system calls that are attempted in 32 bit mode with the INT OX80 instruction
+
+171
+00:10:45,300 --> 00:10:49,300
+但有些非默认配置不是这样的
+but there are non default configurations that are not like that
+
+172
+00:10:49,700 --> 00:10:53,700
+考虑在dockor容器中，您需要能够运行32位代码
+consider inside your dockor container you need to be able to run 32 bit code
+
+173
+00:10:53,733 --> 00:10:55,866
+或者至少在默认情况下这是允许的
+or at least by default this is allowable
+
+174
+00:10:57,900 --> 00:11:01,200
+这是一个常见的功能
+and that's a common source of own abilities
+
+175
+00:11:01,300 --> 00:11:04,133
+如果我添加代码
+if I add the code
+
+176
+00:11:04,133 --> 00:11:06,866
+我一下子就忘了代码是什么了
+and I forgot what this code is off the top of my head
+
+177
+00:11:08,400 --> 00:11:16,200
+但如果我在这个过滤器中添加了允许32位系统调用的代码
+but if I added code to this filter to allow 32 bit system calls 
+
+178
+00:11:16,900 --> 00:11:21,100
+我没有特别添加一个规则来杀死32位版本的read
+and I didn't specifically add a rule to kill the 32 bit version of read
+
+179
+00:11:22,400 --> 00:11:25,000
+这仍然是允许的
+ it would still be allowable
+
+180
+00:11:25,000 --> 00:11:25,800
+而且
+and
+
+181
+00:11:26,333 --> 00:11:29,066
+这些错误确实会发生，漏洞也确实会出现
+these mistakes do happen and vulnerabilities do arise
+
+182
+00:11:29,533 --> 00:11:30,333
+好吧
+alright
+
+183
+00:11:31,000 --> 00:11:34,200
+让我们继续
+let's move onwards to
+
+184
+00:11:35,200 --> 00:11:36,166
+内核漏洞
+kernel vulnerability
+
+185
+00:11:36,166 --> 00:11:38,466
+所以这是越狱者的最后手段
+so this is kind of the last resort of the jailbreaker
+
+186
+00:11:39,400 --> 00:11:44,500
+沙盒逃脱艺术家
+ the sandbox escape artist
+
+187
+00:11:45,066 --> 00:11:46,966
+如果沙盒配置良好
+if the sandbox is well configured
+
+188
+00:11:47,366 --> 00:11:50,466
+将很难逃脱。Seccomp很好
+it's very hard to escape.  seccomp is good
+
+189
+00:11:50,700 --> 00:11:55,600
+它有现代的好的功能，深受很多公司的信赖
+it is the modern good functionality it is trusted by quite a lot of companies
+
+190
+00:11:56,000 --> 00:12:02,500
+如果它的安全参数使用得当，是无法逃脱的
+ when used properly it is inescapable with its security parameters
+
+191
+00:12:04,400 --> 00:12:06,966
+事情就像我说的seccomp沙箱
+the thing is like I said every seccomp sandbox
+
+192
+00:12:09,400 --> 00:12:12,100
+在大多数情况下必须允许一些系统调用
+ for the most part has to allow some system calls
+
+193
+00:12:12,100 --> 00:12:13,866
+因为进程需要完成它们的工作
+because processes need to do their job
+
+194
+00:12:14,900 --> 00:12:21,000
+这些系统调用由内核处理
+and those system calls are handled by the kernel 
+
+195
+00:12:21,333 --> 00:12:23,200
+内核接收到一些参数
+so the kernel receives some arguments
+
+196
+00:12:23,200 --> 00:12:24,500
+然后它开始工作
+and it starts doing work
+
+197
+00:12:24,500 --> 00:12:25,700
+内核并不完美
+well the kernel is not perfect
+
+198
+00:12:25,700 --> 00:12:27,600
+内核实际上充满了bug
+the kernel is actually full of bugs
+
+199
+00:12:27,600 --> 00:12:28,933
+所有的软件都充满bug
+all softwares are full of bugs
+
+200
+00:12:28,933 --> 00:12:30,666
+内核不是一个例外，对吧
+and the kernel is not an exception right
+
+201
+00:12:30,666 --> 00:12:32,700
+其中一些bug是可探索的漏洞
+and some of these bugs are explorable vulnerabilities
+
+202
+00:12:32,700 --> 00:12:38,100
+其中一些可以在沙盒里通过系统调用触发
+and some of them can be triggered through system calls that you can make from inside a sandbox process
+
+203
+00:12:38,766 --> 00:12:43,133
+这很强大，有很多沙盒逃脱方法
+this is powerful there are a lot of sandbox escapes
+
+204
+00:12:43,133 --> 00:12:45,366
+沙箱不是一切的终点
+sandboxing isn't the end all be all
+
+205
+00:12:45,366 --> 00:12:47,933
+它使漏洞利用过程复杂化
+it complicates the exploitation process
+
+206
+00:12:47,900 --> 00:12:52,300
+但仅在2019年，就有超过30个chrome沙盒逃脱
+but in 2019 alone there are like over 30 chrome sandbox escapes
+
+207
+00:12:52,300 --> 00:12:56,400
+你可以点击github链接
+you can hit up that github link
+
+208
+00:12:56,733 --> 00:12:59,266
+里面有一个很棒的清单
+um there's a really awesome list of all of them
+
+209
+00:12:59,500 --> 00:13:02,766
+记录的不仅仅是2019年，还有很多
+um not just 2019 but but uh quite a lot
+
+210
+00:13:03,000 --> 00:13:05,100
+它们都有或者很多都写了笔记
+and uh they all have or many of them have writeup that you can read
+
+211
+00:13:05,100 --> 00:13:11,100
+描述了这些漏洞以及它们是如何被利用的
+ that describe these  vulnerabilities and how they were exploited
+
+212
+00:13:11,266 --> 00:13:13,300
+当然关于内核漏洞本身
+and for kernel vulnerabilities themselves of course
+
+213
+00:13:13,300 --> 00:13:16,200
+敬请期待，我们稍后会讲到
+stay tuned we will be covering this later in the class
+
+214
+00:13:16,200 --> 00:13:19,800
+这是一个有趣的漏洞领域
+um it is an interesting area of vulnerability
+
+215
+00:13:19,800 --> 00:13:25,600
+假设你还不是一个高级黑客
+so let's say that you are not yet that advanced a hacker
+
+216
+00:13:25,600 --> 00:13:30,900
+您还没有到发现并利用内核漏洞的地步
+you're not to the point where you're finding kernel vulnerabilities and exploiting kernel vulnerabilities
+
+217
+00:13:31,300 --> 00:13:32,766
+嗯什么
+um what
+
+218
+00:13:33,333 --> 00:13:34,733
+你运气不好吗
+are you out of luck
+
+219
+00:13:34,766 --> 00:13:35,100
+我的意思是
+I mean
+
+220
+00:13:35,100 --> 00:13:36,333
+也许不是
+maybe not 
+
+221
+00:13:36,300 --> 00:13:40,900
+沙箱通常被设计用来限制代码执行
+oftentimes the sandboxes they're designed to limit code execution
+
+222
+00:13:41,266 --> 00:13:43,933
+这并不总是你的目标
+uh that's not always your goal
+
+223
+00:13:44,333 --> 00:13:48,600
+事实上，您的目标通常是窃取一些数据
+in fact oftentimes your goal is to exfiltrate some data
+
+224
+00:13:48,700 --> 00:13:50,533
+尤其是所有这些题目
+especially in all of these challenge problems
+
+225
+00:13:50,533 --> 00:13:53,100
+你想要窃取/flag
+you want to exfiltrate slash flag
+
+226
+00:13:53,700 --> 00:13:56,766
+这是PWN学院的习题
+right for the practice problems for pwn college
+
+227
+00:13:58,400 --> 00:13:59,366
+如果这是你的目标
+if that's your goal
+
+228
+00:13:59,366 --> 00:14:01,500
+您可能不关心运行任意代码
+you might not care about running arbitrary code
+
+229
+00:14:01,500 --> 00:14:03,366
+你可能不需要执行bin cat
+you might not need to execute bin cat
+
+230
+00:14:03,366 --> 00:14:04,300
+你只需要
+you just need to
+
+231
+00:14:04,500 --> 00:14:06,933
+找出一些关于flag的信息
+get some information about the flag out
+
+232
+00:14:07,300 --> 00:14:08,333
+通常
+and oftentimes
+
+233
+00:14:08,333 --> 00:14:10,400
+即使你不能直接得到这些信息
+even if you can't get that information directly
+
+234
+00:14:10,400 --> 00:14:12,800
+如果正确的系统调用被禁止
+if the right system call is banned
+
+235
+00:14:13,566 --> 00:14:16,333
+以及所有你能想到的用来写数据的系统调用
+and all other system calls you can think of to write data 
+
+236
+00:14:16,466 --> 00:14:20,366
+你仍然可以得到一些信息
+you can still get some information out
+
+237
+00:14:21,200 --> 00:14:24,533
+比如，你可以调用sleep
+right for example you might be able to call sleep
+
+238
+00:14:24,933 --> 00:14:26,333
+基于对sleep的调用
+and based on calling sleep
+
+239
+00:14:26,300 --> 00:14:30,100
+您可以根据进程运行的时间来传递数据
+you can communicate data based on how long your process was running
+
+240
+00:14:31,000 --> 00:14:35,500
+我没能确保我的相机不碍事
+I did a bad job making sure my camera doesn't get in the way
+
+241
+00:14:36,100 --> 00:14:36,900
+放这里
+here
+
+242
+00:14:38,800 --> 00:14:44,800
+您可能只能控制是否崩溃
+you might be able to only control whether you crash or not
+
+243
+00:14:44,800 --> 00:14:52,500
+或者你是否崩溃或挂起或者其他一些1位的是或否信号
+or whether you crash or hang or or some other one bit signal yes or no
+
+244
+00:14:52,766 --> 00:14:53,900
+但是你猜怎么着
+but hey guess what
+
+245
+00:14:53,966 --> 00:14:55,866
+所有的数据都是由比特组成的
+all data is made out of bits
+
+246
+00:14:55,800 --> 00:15:00,200
+如果你能在一次执行中传递一个比特
+if you can communicate one bit in one execution
+
+247
+00:15:00,700 --> 00:15:03,900
+在下一次执行中，使用下一种方式来获得第2位
+in the next execution you ride and next way to communicate the 2nd bit
+
+248
+00:15:04,100 --> 00:15:08,300
+然后是第三位，你们可以一位一位的获取数据
+and then the 3rd bit and you can communicate bit by bit
+
+249
+00:15:08,700 --> 00:15:11,766
+嗯，还有其他的方法
+um and there's other ways that there you know
+
+250
+00:15:11,900 --> 00:15:15,600
+如果没有崩溃，每个程序都会带着返回代码退出
+every program exits with the return code if it doesn't crash right
+
+251
+00:15:15,666 --> 00:15:18,466
+这是你发送的数据
+that is data that you are sending
+
+252
+00:15:18,700 --> 00:15:23,900
+你不需要直接通过文件描述符发送数据
+uh you don't have to directly send data  over file descriptor
+
+253
+00:15:23,900 --> 00:15:26,966
+（不需要）通过标准输出来获取数据
+over standard out  to get that data
+
+254
+00:15:27,800 --> 00:15:33,500
+一个现实中攻击者使用的迂回方法的例子
+a real world example of kind of a round about way that attackers can use
+
+255
+00:15:34,300 --> 00:15:38,000
+在这种情况下，从网络中获取数据时
+to get data out of networks in this case
+
+256
+00:15:38,100 --> 00:15:44,100
+通过域名服务查询避免过滤出站流量
+to avoid filters on outbound traffic is through domain name service queries
+
+257
+00:15:44,100 --> 00:15:50,800
+假设我运行一个名为pwn.college的域名
+right imagine I run a domain named pwn.college  
+
+258
+00:15:51,300 --> 00:15:52,566
+并且我经营一个域名服务器
+and I run a name server
+
+259
+00:15:52,900 --> 00:15:56,500
+这允许您解析pwn.college中的子域，比如
+that allows you to resolve sub domains in pwn.college such as
+
+260
+00:15:56,600 --> 00:15:59,066
+csc466.pwn.college
+csc466.pwn.college
+
+261
+00:16:00,100 --> 00:16:03,700
+当我利用你，在你的机器上放点东西
+and when I exploit you and put something on your machine
+
+262
+00:16:04,300 --> 00:16:08,700
+我无法从那里访问网络
+I can't get any network queries out from there
+
+263
+00:16:09,133 --> 00:16:12,000
+但我可以查询域名
+ but I can make domain name queries
+
+264
+00:16:12,000 --> 00:16:15,200
+这往往是一种实际情况
+this is often an actual situation in fact
+
+265
+00:16:16,500 --> 00:16:20,700
+它的一个版本经常被用来突破WIFI付费限制
+a version of this is often used to punch through WIFI pay walls
+
+266
+00:16:21,266 --> 00:16:23,100
+我可以查询
+I can query something like
+
+267
+00:16:24,100 --> 00:16:37,400
+www.我想泄露出的密码123456.pwn.college
+www.the password that I leaked is 123456.pwn.college right
+
+268
+00:16:37,733 --> 00:16:40,000
+它的解析结果或者说
+and that resolve a resolution or that
+
+269
+00:16:40,300 --> 00:16:42,133
+这个查询将转到pwn.college
+query will go to pwn.college
+
+270
+00:16:42,533 --> 00:16:44,733
+我会在服务器上看到一个查询
+and I will see on my server a query for
+
+271
+00:16:44,900 --> 00:16:48,600
+我泄露的密码123456.pwn.college
+the password that I leaked is 123456 .pwn.college
+
+272
+00:16:49,333 --> 00:16:51,300
+现在我知道了泄露的密码
+and now I know it 
+
+273
+00:16:52,933 --> 00:16:55,000
+这不是您应该使用的数据探索方法
+this isn't the data exploration method you should use
+
+274
+00:16:55,000 --> 00:16:57,800
+我们实际上封锁了所有的出站网络连接
+we actually blocked off all outbound network connections
+
+275
+00:16:57,866 --> 00:17:00,000
+别，这不是暗示什么的
+don't this isn't the hint or anything
+
+276
+00:17:00,733 --> 00:17:02,066
+我只是说侧通道的概念
+ I'm just saying the concept of side channels 
+
+277
+00:17:02,933 --> 00:17:05,266
+这是它的通称
+it is the general term for this
+
+278
+00:17:05,400 --> 00:17:10,000
+它是网络安全的一个巨大研究领域
+it is a big one. A huge research area in cyber security
+
+279
+00:17:10,100 --> 00:17:12,500
+一般来说只要你能获取1bit数据
+typically as long as you can get out one bit of
+
+280
+00:17:13,566 --> 00:17:16,200
+你就有了一个非常强大的原语
+then you have a very powerful primitive
+
+281
+00:17:16,500 --> 00:17:17,300
+好吧
+alright
+
+282
+00:17:17,300 --> 00:17:20,200
+这就是seccomp的全部内容
+that is it for abusing seccomp
+
+283
+00:17:21,700 --> 00:17:24,066
+感谢收看PWN大学
+thank you for watching pwn college

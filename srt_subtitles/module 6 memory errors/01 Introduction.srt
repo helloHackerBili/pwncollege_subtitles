@@ -1,0 +1,754 @@
+1
+00:00:02,766 --> 00:00:03,933
+你好黑客
+hello hackers
+
+2
+00:00:04,300 --> 00:00:06,900
+欢迎来到PWN学院的另一个模块
+welcome to another module of pwn college
+
+3
+00:00:06,900 --> 00:00:10,133
+今天我们将讨论内存错误
+today we're going to be talking about memory errors
+
+4
+00:00:10,500 --> 00:00:15,000
+这个视频是对
+uh specifically this video is an introduction into uh
+
+5
+00:00:15,000 --> 00:00:19,700
+这是本课程首次真正开始破坏程序
+the 1st time in the course where we'll truly be subverting a program
+
+6
+00:00:19,800 --> 00:00:20,700
+在过去
+in the past
+
+7
+00:00:21,000 --> 00:00:25,900
+在之前的模块中，我们尝试了逆向软件，试图更好地理解它
+on previous modules we've reversed engineered software um to try to understand it better
+
+8
+00:00:25,966 --> 00:00:28,966
+我们尝试了沙盒逃逸
+we've um escaped from jails
+
+9
+00:00:28,900 --> 00:00:34,000
+我们在使用层面滥用了程序
+we've abused programs in terms of their kind of high level design
+
+10
+00:00:34,466 --> 00:00:37,499
+通过违反程序设计目的的使用方式
+by you know using a program there wasn't intended
+
+11
+00:00:37,600 --> 00:00:40,133
+泄漏文件系统上的敏感数据
+to leak out sensitive data on the file system
+
+12
+00:00:40,133 --> 00:00:41,866
+读取文件系统中的敏感数据
+to read out sensitive data on the file system
+
+13
+00:00:41,866 --> 00:00:42,699
+诸如此类的东西
+stuff like this
+
+14
+00:00:42,800 --> 00:00:47,300
+但在这里，我们真的要黑进软件的核心
+but here we're truly going to be messing with the guts of software
+
+15
+00:00:47,366 --> 00:00:49,799
+让它做一些本不该做的事
+to make it do something it wasn't intended to do
+
+16
+00:00:50,200 --> 00:00:55,000
+我们将讨论内存破坏和其他类型的内存错误
+we're gonna cover memory corruption and other types of memory errors
+
+17
+00:00:55,000 --> 00:00:59,500
+当然，在整个课程中，我们会更深入地研究高级场景
+and then of course throughout the course we'll dig deeper into advanced scenarios
+
+18
+00:00:59,966 --> 00:01:01,299
+我们先后退一步
+let's take a step back
+
+19
+00:01:02,166 --> 00:01:04,066
+看看内存错误的起始
+and look at the beginning
+
+20
+00:01:04,066 --> 00:01:05,566
+当然，这还不是真正的开始
+of course this isn't quite the beginning
+
+21
+00:01:05,566 --> 00:01:08,699
+但也是很久以前了
+but sometime a long time ago um
+
+22
+00:01:08,700 --> 00:01:12,600
+计算机是通过直接输入机器码编写程序的
+computers were programmed through the direct input of machine code
+
+23
+00:01:12,733 --> 00:01:15,066
+不管是直接写在穿孔卡上
+whether that was directly on a punch card
+
+24
+00:01:15,000 --> 00:01:20,200
+通过（根据穿孔卡）在内存中设置位，穿孔卡将被读入内存
+by setting bits in memory there the punch card would be read in to memory
+
+25
+00:01:20,300 --> 00:01:25,900
+还是写汇编代码，就像你在shellcoding时写的那样来
+or if it was writing um assembly code like you did in shellcoding to um
+
+26
+00:01:26,300 --> 00:01:31,700
+让程序完全按照你想的做
+make the program do what you um specifically exactly what you wanted to do
+
+27
+00:01:31,866 --> 00:01:35,099
+当然，这是一个乏味的容易出错的过程
+but of course this is a tedious error prone process right
+
+28
+00:01:35,100 --> 00:01:39,700
+现在大部分软件都不是用汇编编写的
+um software is not written in assembly for the most part nowadays
+
+29
+00:01:40,000 --> 00:01:45,100
+这种不用汇编的趋势始于50年代
+um and this uh trend away from assembly started in the 50s um
+
+30
+00:01:45,100 --> 00:01:48,600
+当时格蕾丝·霍普上将还不是?？ 
+when admiral Grace hopper she wasn't an ？？ back then
+
+31
+00:01:48,900 --> 00:01:52,533
+提出了第一个编译器
+um proposed one of the 1st compilers that
+
+32
+00:01:53,100 --> 00:01:57,333
+最终变成了COBOL
+ended up moving on to become COBOL 
+
+33
+00:01:57,900 --> 00:02:00,800
+在我年轻时非常有名的程序语言
+a very famous program language when I was younger
+
+34
+00:02:00,900 --> 00:02:06,100
+在上世纪末的时候非常重要
+was very relevant around the turn of the century uh
+
+35
+00:02:06,500 --> 00:02:09,100
+因为很多金融软件都是它写的
+because a lot of financial software was written by it
+
+36
+00:02:09,133 --> 00:02:11,766
+所以在2000年前后，它非常重要
+and so it was super important around Y2K(year 2000)
+
+37
+00:02:13,533 --> 00:02:15,799
+它在某些领域很受欢迎
+it became popular in certain segments
+
+38
+00:02:15,800 --> 00:02:17,933
+比如金融部门
+such as the financial uh sector
+
+39
+00:02:17,933 --> 00:02:19,299
+但是它有问题
+but it had problems
+
+40
+00:02:19,300 --> 00:02:23,500
+早期的编译器，它们会生成非常低效的代码
+um early compilers they were very um they create a very inefficient code
+
+41
+00:02:23,500 --> 00:02:28,300
+程序写完，编译的结果跑的不快
+you'd write your program and and the output wouldn't run very quickly
+
+42
+00:02:28,366 --> 00:02:30,266
+另一个问题进一步加剧了这一问题
+and this was further compounded by another problem
+
+43
+00:02:30,266 --> 00:02:31,266
+早期的计算机速度很慢
+that early computers were slow
+
+44
+00:02:31,200 --> 00:02:34,800
+现在这不是问题了
+ that's not a problem now
+
+45
+00:02:34,866 --> 00:02:37,099
+所以你会看到很多非常低效的代码
+and you see plenty of very inefficient code
+
+46
+00:02:38,600 --> 00:02:41,333
+例如python解释器
+the python interpreter for example is
+
+47
+00:02:41,500 --> 00:02:45,600
+慢得可怕，但仍然非常受欢迎
+horrifically slow but is still extremely popular
+
+48
+00:02:45,700 --> 00:02:47,966
+但在当时，这是一个严重的问题
+but back then this was a serious issue
+
+49
+00:02:48,000 --> 00:02:51,900
+因为计算机的速度不足以弥补代码的缓慢
+because computers were not fast enough to compensate for slow code
+
+50
+00:02:52,766 --> 00:02:54,999
+20年后
+and so 20 years later
+
+51
+00:02:56,666 --> 00:03:02,999
+Dennis Ritchie也是Unix的联合创始人
+Dennis Ritchie also a co founder of Unix 
+
+52
+00:03:03,700 --> 00:03:07,700
+unix算是这门课上你们都在用的Linux的祖先
+the kind of um ancestor operating system of Linux which you're all using in this course of course
+
+53
+00:03:07,766 --> 00:03:12,966
+他为了编写Unix实用程序创造了C语言
+ uh created C to write utilities for Unix
+
+54
+00:03:13,066 --> 00:03:15,866
+之后他和同事一起发明了Unix
+after that invented Unix with his colleagues
+
+55
+00:03:17,600 --> 00:03:23,700
+C语言给程序员提供强大的能力
+C was specifically designed to provide power  and control to the programmer 
+
+56
+00:03:24,100 --> 00:03:28,300
+同时保持可移植性和
+while maintaining portability and
+
+57
+00:03:30,500 --> 00:03:39,500
+用代码传达复杂的思想和实现复杂算法的能力
+ability to convey complex ideas and implement complex algorithms in source code
+
+58
+00:03:40,600 --> 00:03:44,500
+而且不再需要微调寄存器分配等等
+without having to fine tune register allocation and so forth
+
+59
+00:03:46,900 --> 00:03:48,933
+C语言非常接近于汇编
+C maps very closely to assembly
+
+60
+00:03:48,900 --> 00:03:56,900
+C语言基本上是一种帮你完成函数间寄存器分配等的汇编
+C is basically in some sense assembly with the register allocation done for you across functions and so forth
+
+61
+00:03:58,266 --> 00:04:00,499
+如果你在逆向的时候注意到
+and if you notice while you were reverse engineering
+
+62
+00:04:00,500 --> 00:04:05,500
+如果在逆向工具中单击反编译功能按钮
+if you click the decompile function in your decompile button in your reverse engineering tool
+
+63
+00:04:05,700 --> 00:04:12,600
+或者是用高级的小型表示，基本上就是binary ninja中的反编译
+ or you went to the high level minivision of representation which is basically the decompilation in binary ninja
+
+64
+00:04:13,533 --> 00:04:14,766
+你会看到C
+you would see C
+
+65
+00:04:14,866 --> 00:04:18,266
+因为将汇编映射到C语言是最简单的
+because it's easiest to map assembly to C
+
+66
+00:04:18,766 --> 00:04:19,866
+反之亦然
+and vice versa
+
+67
+00:04:19,900 --> 00:04:27,700
+C的诞生是为了创造高效快速的二进制代码
+so C was created to enable the creation of efficient fast binary code
+
+68
+00:04:28,700 --> 00:04:34,700
+同时增加了代码可读性
+but still allow people to  interact with something that looks like source code instead of insanity
+
+69
+00:04:35,733 --> 00:04:37,366
+C在这方面非常强大
+C is very powerful in the sense
+
+70
+00:04:37,300 --> 00:04:40,800
+但是能力越大，责任越大
+but with great power of course comes great responsibility
+
+71
+00:04:42,800 --> 00:04:47,000
+C具有重要的安全隐患
+C has significant security implications
+
+72
+00:04:47,400 --> 00:04:53,700
+c给程序员的能力，能让程序员把系统搞得非常糟糕
+the power that gives developers allows developers to mess things up really really badly
+
+73
+00:04:53,700 --> 00:04:56,600
+问题是大多数开发人员都不是安全专家
+and the problem is most developers are not security experts
+
+74
+00:04:56,866 --> 00:04:59,699
+他们会犯自己都不知道的错误
+and they will make mistakes they don't even know about
+
+75
+00:05:00,000 --> 00:05:02,300
+安全专家当然也会犯错
+security experts of course still make mistakes
+
+76
+00:05:02,300 --> 00:05:03,766
+但他们知道他们的存在
+but they even know about them so
+
+77
+00:05:03,700 --> 00:05:07,600
+写C代码是很危险的，但是有很多C代码
+so C code is very dangerous to write but there's a ton of it
+
+78
+00:05:07,700 --> 00:05:10,800
+70年代，当它被开发出来的时候
+and the 70s when it was developed there was the
+
+79
+00:05:11,700 --> 00:05:16,100
+如果你想写出快速高效的代码，这是最好的工具
+really the best tool for the job if you wanted to write fast efficient code
+
+80
+00:05:16,733 --> 00:05:18,866
+操作系统往往是用C语言编写的
+operating systems tend to be written in C
+
+81
+00:05:19,000 --> 00:05:22,600
+在C语言被开发出来之后，Unix被用C语言重新编写
+Unix was rewritten in C after C was developed
+
+82
+00:05:23,100 --> 00:05:25,200
+Linux是用C语言编写的
+Linux was written in C
+
+83
+00:05:26,066 --> 00:05:27,466
+伯克利系统发行版，催生了其他操作系统
+the berkeley system distribution which spawned other operating systems
+
+84
+00:05:27,400 --> 00:05:34,500
+包括现代的macintosh系列操作系统
+ including the modern macintosh family of operating systems
+
+85
+00:05:34,966 --> 00:05:36,366
+是用C写的
+was is written in C
+
+86
+00:05:37,200 --> 00:05:42,500
+所以C突然无处不在
+so C kind of suddenly was everywhere 
+
+87
+00:05:44,100 --> 00:05:45,333
+在80年代，人们更关注功能
+in the 80s people focus more on features
+
+88
+00:05:45,300 --> 00:05:51,300
+人们创造了C++语言，基于面向对象概念的c
+they created C plus plus the object oriented programming concepts to C
+
+89
+00:05:52,800 --> 00:05:55,066
+用C + + and
+with C plus plus and and
+
+90
+00:05:55,400 --> 00:05:58,500
+但他们没有解决潜在危险的任何问题
+but they didn't fix anything about the underlying danger
+
+91
+00:05:58,600 --> 00:06:00,300
+在90年代
+in the 90s
+
+92
+00:06:01,000 --> 00:06:05,900
+现代基于VM的语言
+the idea of modern  VM based languages
+
+93
+00:06:05,933 --> 00:06:08,999
+基于Java等语言的虚拟机
+virtual machine based languages like java and so forth
+
+94
+00:06:09,133 --> 00:06:10,866
+出现了，但为时已晚
+came about but it was too late
+
+95
+00:06:11,100 --> 00:06:14,300
+当时主流编译语言占领了所有的领域
+um mainstream compile languages were everywhere at that point
+
+96
+00:06:14,366 --> 00:06:15,566
+Linux诞生了
+Linux was born
+
+97
+00:06:15,766 --> 00:06:17,566
+伯克利系统发行版诞生了
+uh the Berkeley system distribution was born
+
+98
+00:06:17,566 --> 00:06:18,899
+Windows诞生了
+windows was born
+
+99
+00:06:18,900 --> 00:06:22,333
+windows是用C + +
+windows is written in uh C plus plus um
+
+100
+00:06:23,533 --> 00:06:27,733
+所有速度快的编译型内存不安全语言
+all fast compiled memory unsafe languages
+
+101
+00:06:27,700 --> 00:06:31,800
+在2000到2010年，编译型内存不安全语言一直存在
+throughout the 2000s compiled memory unsafe language persisted
+
+102
+00:06:31,900 --> 00:06:33,733
+甚至在整个2010年代
+and even throughout the 2010s
+
+103
+00:06:33,800 --> 00:06:36,300
+人们终于开始思考
+people finally started thinking about
+
+104
+00:06:36,366 --> 00:06:38,799
+好吧，我们如何替换所有的C代码
+okay how are we gonna replace all this C code which
+
+105
+00:06:38,800 --> 00:06:41,700
+用哪种速度快且安全的语言
+with something that is still fast um but it's safe
+
+106
+00:06:42,133 --> 00:06:45,566
+但这只是这项努力的开始
+um but it's really just the beginning of of this effort
+
+107
+00:06:45,566 --> 00:06:47,866
+当然，问题是
+um the problem is of course
+
+108
+00:06:48,133 --> 00:06:51,266
+很多软件都是用C语言编写的
+an insane amount of software is written C
+
+109
+00:06:51,266 --> 00:06:54,099
+C仍然是，取决于你的指标
+C is still depending on your metrics
+
+110
+00:06:54,100 --> 00:06:56,000
+最流行的编程语言
+the most popular programming language
+
+111
+00:06:56,000 --> 00:07:00,100
+如果你去幻灯片上的链接看
+if you go to that  index that's linked on the slides
+
+112
+00:07:00,300 --> 00:07:01,566
+C仍然是第一
+C is still number one
+
+113
+00:07:02,333 --> 00:07:03,866
+在2020年
+it's 2020
+
+114
+00:07:04,733 --> 00:07:07,199
+C语言发明50年之后
+50 years almost after the invention of C
+
+115
+00:07:07,200 --> 00:07:08,733
+它仍然是第一
+it is still number one
+
+116
+00:07:08,700 --> 00:07:13,500
+在从十多年来一直排名第一的java手中夺回了第一
+after regaining its spot from java which which was number one for over a decade
+
+117
+00:07:15,333 --> 00:07:17,066
+C + +是第4
+C plus plus is number four
+
+118
+00:07:17,000 --> 00:07:21,400
+但它是发展最快的语言比python还要快
+but it's the fastest growing language out there faster than python
+
+119
+00:07:24,200 --> 00:07:30,500
+在许多使用场景，它仍然是一种存在内存安全问题的编译语言
+and it is still a compiled language with memory safety issues in many use cases
+
+120
+00:07:31,300 --> 00:07:37,300
+就在2017年，C语言仍然是增长最快的语言
+as recent as 2017 C was still the most the fastest growing language
+
+121
+00:07:37,500 --> 00:07:38,900
+为什么会发生这一切
+why is all this happening
+
+122
+00:07:38,900 --> 00:07:41,566
+这一切的发生是因为
+well this is all happening because
+
+123
+00:07:46,666 --> 00:07:49,699
+抱歉，我愣了一下。这一切都是因为
+sorry I blank for a second this is all happening because
+
+124
+00:07:50,166 --> 00:07:52,266
+随着电脑变得越来越强大
+as computers get more powerful
+
+125
+00:07:52,400 --> 00:07:55,200
+并且似乎能够运行更高级别的语言
+and seemingly are able to run higher level languages
+
+126
+00:07:55,200 --> 00:07:56,700
+你可能会说
+right so you might say
+
+127
+00:07:56,700 --> 00:08:00,200
+为什么我们不能直接用python写操作系统，然后把安全问题搞定呢
+why can't we just write our operating systems in python and be done with it
+
+128
+00:08:04,400 --> 00:08:05,900
+事情并没有那么简单
+things aren't quite that simple
+
+129
+00:08:06,866 --> 00:08:10,099
+有很多嵌入式设备
+we have an explosion of embedded devices
+
+130
+00:08:10,100 --> 00:08:16,200
+你的监控摄像头，门铃，冰箱都是电脑
+your security cameras your doorbells your refrigerators are computers
+
+131
+00:08:16,333 --> 00:08:19,166
+这些计算机很小，速度也不快
+and these computers are small and not very fast
+
+132
+00:08:19,166 --> 00:08:22,699
+他们需要运行得尽可能快的代码
+and they need code that runs as fast as possible
+
+133
+00:08:22,700 --> 00:08:27,600
+所以C语言在所有这些嵌入式设备上大量传播
+so there's this huge proliferation of C onto all of these embedded devices
+
+134
+00:08:29,500 --> 00:08:34,100
+在可预见的未来，它会一直存在
+and it's basically fundamentally just here to stay for the foreseeable future
+
+135
+00:08:34,200 --> 00:08:38,200
+所以我们必须用C语言来处理问题
+so we have to deal with problems in C
+
+136
+00:08:38,666 --> 00:08:40,199
+那么这些问题是什么呢
+so what are these problems
+
+137
+00:08:40,933 --> 00:08:43,199
+这些问题是多重的
+these problems are multi fold
+
+138
+00:08:44,300 --> 00:08:49,500
+但它们基本上源自于C不会束缚你
+but they basically stem from the fact that C doesn't hold your hand
+
+139
+00:08:50,666 --> 00:08:52,266
+C允许你犯错误
+and C allows you to make mistakes
+
+140
+00:08:52,200 --> 00:08:56,500
+我们将在下个视频中深入讨论这些问题
+and we'll go into the problems themselves into the at a high level in the next video
+
+141
+00:08:57,400 --> 00:09:02,500
+但我要指出的是，C语言的问题在很久以前就被大家熟知了
+but I'll point out that problems with C have been known a very very long time ago
+
+142
+00:09:02,700 --> 00:09:07,500
+实际上这些接近底层的计算机语言的问题
+actually problems with these sort of low level  computer languages
+
+143
+00:09:07,600 --> 00:09:11,200
+在60年代末就为人所知
+have been known since the late 60s
+
+144
+00:09:11,500 --> 00:09:20,200
+Robert Graham在一篇论文中介绍了计算中内存保护的基本概念
+Robert Graham in a paper about the concept essentially  of memory Protection in computing
+
+145
+00:09:20,500 --> 00:09:23,500
+在1968年他提出
+in 1968 said hey
+
+146
+00:09:24,200 --> 00:09:28,400
+如果一个程序允许某人重写内存会发生什么
+what would happen if a program allows someone to override memory
+
+147
+00:09:28,400 --> 00:09:29,666
+他们不应该这么做
+they're not supposed to do that
+
+148
+00:09:29,666 --> 00:09:31,166
+这可能导致很糟糕的后果
+this might be very bad
+
+149
+00:09:31,333 --> 00:09:34,733
+而C语言恰恰允许这一点，甚至更多
+right and C allows exactly that and more
+
+150
+00:09:35,900 --> 00:09:40,500
+在下一集视频中，我们将深入探讨C语言允许的操作
+in the next video we'll go into at a high level what it is that C allows
+
+151
+00:09:41,600 --> 00:09:42,400
+不要走开
+stay with us

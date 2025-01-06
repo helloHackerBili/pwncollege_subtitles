@@ -1,0 +1,709 @@
+1
+00:00:00,666 --> 00:00:01,966
+你们好黑客
+hello hackers
+
+2
+00:00:02,366 --> 00:00:03,766
+欢迎回到
+welcome back to
+
+3
+00:00:03,966 --> 00:00:07,699
+逆向工程模块的新一集
+another episode and the reverse engineering module
+
+4
+00:00:07,966 --> 00:00:10,333
+今天我们将讨论数据访问
+today we're going to be talking about data access
+
+5
+00:00:10,300 --> 00:00:17,300
+具体来说，不同内存区内不同数据的不同访问方式
+specifically how different access of different data in different regions looks like
+
+6
+00:00:17,366 --> 00:00:21,066
+让我解释一下
+um let me show you what I mean as a reminder
+
+7
+00:00:21,066 --> 00:00:23,366
+数据可以分布在很多不同的内存区域
+data can be in a lot of different regions
+
+8
+00:00:23,800 --> 00:00:26,600
+它可以在.data中用于预初始化全局数据
+it can be in .data for pre initialized global data
+
+9
+00:00:26,600 --> 00:00:30,066
+在.rodata中用于只读全局数据
+and .rodata for global data that is read only
+
+10
+00:00:30,200 --> 00:00:35,100
+和在.BSS中用于未初始化全局数据
+and .BSS for global data that does not have an initial state
+
+11
+00:00:35,200 --> 00:00:37,200
+所以它实际上不需要在ELF文件中
+so it doesn't need to actually be in the ELF file
+
+12
+00:00:37,200 --> 00:00:40,000
+它被映射到一个MC（内存块）
+it gets mapped into an MC chunk of memory
+
+13
+00:00:40,133 --> 00:00:41,566
+它可以在栈中
+it can be in the stack
+
+14
+00:00:41,566 --> 00:00:43,466
+栈我们在之前的视频中讨论过
+and we've discussed that in previous video
+
+15
+00:00:44,766 --> 00:00:47,333
+用于静态分配局部变量
+used for statically allocated local variable
+
+16
+00:00:47,300 --> 00:00:51,200
+数据可以在使用malloc动态分配的堆中
+it can be in the heap for dynamically allocated data using malloc
+
+17
+00:00:51,300 --> 00:00:54,400
+然后用free等函数来释放
+and then freed using free and so forth
+
+18
+00:00:55,966 --> 00:00:57,766
+这个我们将在
+this one we'll explore in
+
+19
+00:00:58,266 --> 00:00:59,266
+之后的课程中探讨
+later in the course
+
+20
+00:00:59,466 --> 00:01:01,733
+我们在此不讨论堆
+we won't talk about the heap
+
+21
+00:01:02,000 --> 00:01:04,466
+并且不需要与堆进行太多交互
+much or you won't have to interact with the heap much
+
+22
+00:01:05,133 --> 00:01:07,299
+因为它有自己的安全问题，我们以后会
+because it has its own security issues that we'll
+
+23
+00:01:07,300 --> 00:01:08,600
+深入研究
+go in depth into
+
+24
+00:01:08,700 --> 00:01:13,700
+让我们先看看这些不同区域的数据是如何被访问的
+but let's look at how data in these different regions is accessed
+
+25
+00:01:14,300 --> 00:01:15,733
+从栈开始
+starting from the stack
+
+26
+00:01:15,700 --> 00:01:20,000
+栈上的数据通常是通过push和pop来访问的
+so data on the stack is typically accessed using push and pop
+
+27
+00:01:20,600 --> 00:01:24,066
+或者使用栈指针+偏移量
+or using stack pointer relative addresses
+
+28
+00:01:24,133 --> 00:01:27,566
+或者使用基指针+偏移量
+or using base pointer relative addresses of course
+
+29
+00:01:28,100 --> 00:01:33,100
+从左边的栈指针（访问栈帧内数据）
+um from the stack pointer which is on on the left of the stack
+
+30
+00:01:33,766 --> 00:01:35,066
+地址是（口误）
+the addresses are
+
+31
+00:01:35,400 --> 00:01:36,800
+偏移量是正数
+the offsets are positive
+
+32
+00:01:37,166 --> 00:01:40,966
+因为栈帧位于栈指针和
+because the stack frame goes between the stack pointer
+
+33
+00:01:41,100 --> 00:01:43,333
+栈帧指针 或者叫 基指针之间（rsp和rbp之间）
+and the frame slash base pointer
+
+34
+00:01:43,666 --> 00:01:46,566
+从栈指针开始，偏移量为正数
+from the stack pointer the offsets are positive
+
+35
+00:01:46,700 --> 00:01:49,066
+是在内存中向前
+because we're going forward in memory 
+
+36
+00:01:49,700 --> 00:01:54,200
+通过基指针访问，偏移量为负数
+from the base pointer the offsets are negative
+
+37
+00:01:54,500 --> 00:01:58,400
+因为我们是朝着栈指针走（在内存中向后）
+because we are going backwards towards the stack pointer
+
+38
+00:01:58,566 --> 00:02:00,933
+这里有一些例子
+all right here are some examples
+
+39
+00:02:01,733 --> 00:02:04,866
+用同样的方式引用
+that you the same way to reference
+
+40
+00:02:05,000 --> 00:02:07,900
+如果栈指针指向这个
+if the stack pointer is pointing to this
+
+41
+00:02:08,766 --> 00:02:12,899
+抱歉，我的鼠标没有指向这个区域
+sorry my mouse wasn't showing to this area right here
+
+42
+00:02:14,533 --> 00:02:15,366
+你可以
+you can
+
+43
+00:02:16,900 --> 00:02:19,333
+通过解引用RSP来访问它
+access this by dereferencing RSP
+
+44
+00:02:19,333 --> 00:02:22,733
+或者解引用RBP减去0x28
+or dereferencing RBP minus ox 28
+
+45
+00:02:23,466 --> 00:02:28,566
+这是RSP + 0x8， RBP - 0x20等等
+and this is RSP plus ox8 and RBP minus ox 20 and so on
+
+46
+00:02:28,733 --> 00:02:29,533
+好
+right
+
+47
+00:02:31,266 --> 00:02:33,099
+哦 这很
+cool that's
+
+48
+00:02:33,733 --> 00:02:34,533
+漂亮
+pretty
+
+49
+00:02:35,133 --> 00:02:35,699
+有趣
+interesting
+
+50
+00:02:35,700 --> 00:02:37,866
+有多种方法，还有一种方法
+multiple ways there's actually one more way of course
+
+51
+00:02:38,000 --> 00:02:42,733
+你可以把RSP或RBP的值赋值给其他
+you can get the value of RSP or RBP into some other
+
+52
+00:02:46,266 --> 00:02:48,299
+叫什么来着，其他变量，然后
+what's it called some other variable and then
+
+53
+00:02:48,300 --> 00:02:51,100
+解引用那个变量
+dereference that variable 
+
+54
+00:02:51,100 --> 00:02:51,700
+这就有点棘手了（对于逆向）
+this makes it a little tricky
+
+55
+00:02:51,733 --> 00:02:55,166
+因为仅凭这个很难分辨
+because it's hard to tell from just this memory store
+
+56
+00:02:55,300 --> 00:02:57,266
+数据是否被存储在栈上
+that things are being stored onto the stack
+
+57
+00:02:57,266 --> 00:02:59,533
+你还需要仔细理解
+you need to then also carefully understand
+
+58
+00:03:00,400 --> 00:03:02,666
+RDX是在哪里被设置的
+where RDX got set
+
+59
+00:03:02,700 --> 00:03:05,000
+这完全可以在另一个函数中
+which could have been in another function altogether
+
+60
+00:03:05,000 --> 00:03:07,200
+这就很复杂了
+so it gets pretty complicated
+
+61
+00:03:07,366 --> 00:03:11,133
+这些通常就是访问栈上数据的方式
+but typically this is how data on the stack is accessed
+
+62
+00:03:11,300 --> 00:03:12,566
+如何访问ELF 节中的数据呢
+what about data in ELF sections
+
+63
+00:03:12,566 --> 00:03:13,699
+有趣的是
+well the interesting things
+
+64
+00:03:13,700 --> 00:03:15,966
+所有这些ELF节，BSS， rodata
+all these ELF sections BSS rodata
+
+65
+00:03:16,000 --> 00:03:16,966
+和. data
+and .data
+
+66
+00:03:17,133 --> 00:03:20,999
+它们存储在ELF文件中或直接映射在
+they are stored in the ELF file or mapped directly
+
+67
+00:03:21,600 --> 00:03:22,566
+ELF文件后
+after the ELF file
+
+68
+00:03:22,900 --> 00:03:23,700
+所以他们
+so they are
+
+69
+00:03:24,000 --> 00:03:26,933
+始终距离程序代码一段已知偏移量
+always a known offset away from the program code
+
+70
+00:03:26,933 --> 00:03:30,266
+它们通过rip相对寻址来访问
+and they are accessed using rip relative addressing
+
+71
+00:03:30,733 --> 00:03:32,666
+比如从内存中加载数据到寄存器
+to load you would you know
+
+72
+00:03:32,866 --> 00:03:34,133
+做像这些指令之类的操作
+do something along these lines
+
+73
+00:03:34,100 --> 00:03:38,500
+将rip+通常不大的数字（可能在想代码段和数据段相邻）指向的内存数据加载到RAX
+move into RAX from rip plus some usually not large number
+
+74
+00:03:38,600 --> 00:03:39,400
+因为
+because
+
+75
+00:03:40,166 --> 00:03:41,533
+如果我们倒回去
+if we rewind
+
+76
+00:03:41,666 --> 00:03:43,733
+你仔细看这些地址
+and you look very closely at these addresses
+
+77
+00:03:43,733 --> 00:03:46,066
+基本上这里发生的是
+basically what happens here is
+
+78
+00:03:46,466 --> 00:03:47,466
+这个程序
+the program
+
+79
+00:03:48,400 --> 00:03:50,300
+映射到内存两次
+is mapped into memory twice
+
+80
+00:03:50,400 --> 00:03:52,200
+一次是代码段，一次是
+once for the code and once
+
+81
+00:03:52,466 --> 00:03:54,166
+完全分开的
+completely separately
+
+82
+00:03:54,166 --> 00:03:57,533
+在代码段后面一点的所有的数据段
+a little bit later for all of the data segments
+
+83
+00:03:57,900 --> 00:03:59,766
+所以在这段代码中是
+and so the code and data segments are
+
+84
+00:03:59,933 --> 00:04:02,699
+跨内存段访问数据（从代码段中访问数据段）
+accessed from 2 different areas
+
+85
+00:04:05,466 --> 00:04:06,933
+尽管是同一份文件
+even though it's from the same file
+
+86
+00:04:07,933 --> 00:04:11,766
+所以它是rip加上一些大的偏移（这里说大，强调跨内存段了）
+so it's it's rip plus some large offset
+
+87
+00:04:12,266 --> 00:04:14,266
+Store操作显然是一样的
+store is obviously the same
+
+88
+00:04:14,266 --> 00:04:14,899
+当然了也
+and then of course
+
+89
+00:04:14,900 --> 00:04:17,900
+可以使用load effective address（lea）来获得它的内存地址
+you can get a reference to it by using load effective address
+
+90
+00:04:17,966 --> 00:04:19,766
+当然这会变的棘手（对逆向来说）
+and then of course this is tricky
+
+91
+00:04:19,800 --> 00:04:22,200
+之后你可以解引用rax
+then later on you can dereference Rax
+
+92
+00:04:22,866 --> 00:04:25,466
+然后你要思考RAX是从哪里来的
+and then you have to think where is RAX coming from
+
+93
+00:04:25,500 --> 00:04:30,100
+通过找哪个函数调用了这个函数
+by going understanding what calls that function
+
+94
+00:04:30,166 --> 00:04:32,166
+在你逆向的程序中
+that you're reverse engineering and so on
+
+95
+00:04:32,533 --> 00:04:33,899
+好的，堆
+alright the heap
+
+96
+00:04:33,900 --> 00:04:37,900
+在这一讲中，我们不会过多地讨论堆
+again we're not gonna look at the heap very much in this module
+
+97
+00:04:37,900 --> 00:04:40,000
+但是我们稍后会详细地讨论这个堆
+but we will look at the heap a lot later
+
+98
+00:04:40,000 --> 00:04:42,100
+在这里我们将学习如何访问
+and here we'll learn how to look at
+
+99
+00:04:42,100 --> 00:04:45,200
+从堆中返回的数据
+data that is being returned by the heap from the heap
+
+100
+00:04:45,900 --> 00:04:46,500
+通常
+typically
+
+101
+00:04:46,500 --> 00:04:50,066
+你有一个通过malloc获取的指针
+you have a pointer that you retrieve via malloc
+
+102
+00:04:50,200 --> 00:04:55,200
+然后你需要
+and then you need to
+
+103
+00:04:56,700 --> 00:04:57,966
+把它存在某处
+store it somewhere
+
+104
+00:04:59,766 --> 00:05:04,266
+无论是在栈中，在另一个全局变量中
+whether that is on the stack in another global variable
+
+105
+00:05:05,266 --> 00:05:06,799
+还是在寄存器中
+or in a register
+
+106
+00:05:06,900 --> 00:05:08,533
+这可能会很棘手
+and this can get pretty tricky
+
+107
+00:05:08,533 --> 00:05:11,099
+如果你看这里，我有两个例子
+I mean if you look here I have 2 examples
+
+108
+00:05:11,866 --> 00:05:16,366
+例子一是栈数据访问
+example one is a stack data access right where
+
+109
+00:05:16,500 --> 00:05:20,300
+我们将栈指针赋值给Rax，然后解引用Rax
+we are moving the stack pointer to Rax and then dereferencing Rax
+
+110
+00:05:20,900 --> 00:05:24,300
+这个可以访问这里的数据
+and this accesses this data right here
+
+111
+00:05:25,200 --> 00:05:28,900
+另一种是任意数据访问
+the other one is an arbitrary data access
+
+112
+00:05:29,100 --> 00:05:29,566
+,由于
+by due
+
+113
+00:05:29,566 --> 00:05:31,566
+引用存储在栈上的指针
+referencing a pointer that's stored on the stack
+
+114
+00:05:31,566 --> 00:05:35,099
+唯一不同的是这些方括号
+and all that's different are these square brackets
+
+115
+00:05:35,100 --> 00:05:39,900
+这里我们在栈指针处解引用数据
+so here we are dereferencing the data at the stack pointer
+
+116
+00:05:40,966 --> 00:05:42,099
+这个数据
+this data
+
+117
+00:05:43,000 --> 00:05:45,133
+抱歉，数据存储在栈顶部
+sorry the data stored at the top of the stack
+
+118
+00:05:45,366 --> 00:05:47,599
+我们解引用这个数据
+we're dereferencing this data
+
+119
+00:05:47,600 --> 00:05:50,266
+赋值给rax，然后解引用它
+moving into rax and then dereferencing that
+
+120
+00:05:50,666 --> 00:05:53,533
+然后将数据读入RDX
+and then reading this data into RDX
+
+121
+00:05:53,700 --> 00:05:56,933
+两个区别明显的不同操作
+two very important different operations
+
+122
+00:05:56,966 --> 00:05:59,499
+后者你更有可能看到
+this is something that you're more likely to see
+
+123
+00:05:59,500 --> 00:06:00,700
+例如
+with for example
+
+124
+00:06:00,866 --> 00:06:02,799
+访问从堆返回的数据
+data return from the heap
+
+125
+00:06:03,966 --> 00:06:04,766
+好吧
+alright
+
+126
+00:06:05,266 --> 00:06:08,333
+最后谈谈数据结构
+finally a word about data structures
+
+127
+00:06:11,200 --> 00:06:14,066
+当你编写代码时，你可能会创建结构体
+when you're writing code you might create structs
+
+128
+00:06:14,133 --> 00:06:15,133
+对象
+objects
+
+129
+00:06:17,700 --> 00:06:22,300
+不同类型变量的复杂组合
+complex combinations of variables of different types
+
+130
+00:06:22,366 --> 00:06:25,266
+所有这些信息在编译过程中都会丢失
+all of this information is lost in the compilation process 
+
+131
+00:06:25,500 --> 00:06:28,900
+你得把这些拼凑起来
+you're gonna have to piece that together
+
+132
+00:06:29,100 --> 00:06:31,133
+基于数据的访问方式
+based on how data is accessed
+
+133
+00:06:31,133 --> 00:06:32,899
+储存方式，使用方式
+how it's stored and how it's used
+
+134
+00:06:32,900 --> 00:06:33,933
+这并不容易
+it's not easy
+
+135
+00:06:35,266 --> 00:06:38,299
+我还没有找到一个好办法
+and I have not found a good way
+
+136
+00:06:38,300 --> 00:06:40,866
+把这些知识传达给你们
+to just convey this knowledge to you
+
+137
+00:06:41,000 --> 00:06:42,466
+你要做的是
+the way that you're going to do it
+
+138
+00:06:42,866 --> 00:06:46,533
+解决一个又一个逆向练习
+is tackle reversing problem after reversing problem
+
+139
+00:06:47,066 --> 00:06:47,866
+直到
+until
+
+140
+00:06:48,566 --> 00:06:50,133
+你理解
+you understand
+
+141
+00:06:51,566 --> 00:06:52,733
+但你会成功的
+but you'll get there
+
+142
+00:06:54,533 --> 00:06:55,666
+下节课见
+see you next video

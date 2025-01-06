@@ -1,0 +1,2772 @@
+1
+00:00:00,700 --> 00:00:02,266
+你好黑客
+hello hackers
+
+2
+00:00:02,600 --> 00:00:04,866
+我是Yan，欢迎来到Pwn学院
+I'm Yan welcome to Pwn College
+
+3
+00:00:05,266 --> 00:00:07,400
+今天我们要讲的是
+Today we're going to be talking about
+
+4
+00:00:08,166 --> 00:00:12,266
+内存，我们汇编课程一部分
+memory as part of our Assembly crash course
+
+5
+00:00:12,533 --> 00:00:15,266
+我们讲过数据
+so we talked about data
+
+6
+00:00:15,533 --> 00:00:16,900
+讲过寄存器
+we talked about registers 
+
+7
+00:00:16,966 --> 00:00:20,566
+我们把数据存在这里，方便快速使用
+where we hold data to quickly work on it
+
+8
+00:00:20,700 --> 00:00:26,400
+寄存器很少
+now there's very few registers right
+
+9
+00:00:28,500 --> 00:00:29,500
+因为它们很贵
+because they're expensive
+
+10
+00:00:29,500 --> 00:00:31,400
+它们必须紧靠CPU
+they need to be right next to the CPU 
+
+11
+00:00:31,400 --> 00:00:33,100
+这样CPU才能直接访问它们
+so the CPU can directly access them
+
+12
+00:00:33,133 --> 00:00:34,433
+它们需要放在CPU里
+they need to be inside the CPU
+
+13
+00:00:34,666 --> 00:00:36,566
+而这里没有太多的空间
+and there's just not a lot of space in there
+
+14
+00:00:36,566 --> 00:00:38,300
+这里很挤
+it's very very cramped
+
+15
+00:00:38,400 --> 00:00:41,233
+所以每隔一段时间
+so every once in a while
+
+16
+00:00:41,466 --> 00:00:43,533
+当运行的太多时
+when we have too much stuff going on
+
+17
+00:00:43,533 --> 00:00:44,366
+有太多的数据时
+too much data 
+
+18
+00:00:44,500 --> 00:00:46,833
+我们需要把数据放到内存
+we need to put it in memory
+
+19
+00:00:48,133 --> 00:00:51,533
+内存是一个巨大的数据保险库
+now memory is a big vault of data
+
+20
+00:00:51,666 --> 00:00:54,966
+就像银行的保险箱一样
+like a safety deposit box vault in a bank
+
+21
+00:00:55,333 --> 00:00:59,466
+我们把数据，放入数字标记的抽屉
+where we just go and we put the data into a number slot
+
+22
+00:01:01,600 --> 00:01:07,766
+还记得在第一讲中提到的CPU架构吗
+remember our crazy CPU architecture from the first lecture
+
+23
+00:01:14,066 --> 00:01:17,000
+我们现在讨论的是这个
+we're talking about this right here
+
+24
+00:01:17,133 --> 00:01:19,200
+CPU是如何获取数据的
+now how does the CPU get at data
+
+25
+00:01:19,200 --> 00:01:21,300
+这超出了这门课的范围
+it's kind of outside the scope of this class
+
+26
+00:01:21,300 --> 00:01:22,333
+但基本上
+but basically
+
+27
+00:01:23,000 --> 00:01:24,933
+需要数据时
+data when it is needed
+
+28
+00:01:24,933 --> 00:01:26,466
+当它被CPU请求时
+when it's requested by the CPU
+
+29
+00:01:26,466 --> 00:01:28,900
+会经过某种桥
+goes over some crazy sort of bridge 
+
+30
+00:01:29,566 --> 00:01:32,766
+来到一层CPU缓存
+into a one level of cache
+
+31
+00:01:32,933 --> 00:01:35,166
+再从那层缓存进入下一级缓存
+goes from that cache into another level of cache
+
+32
+00:01:35,166 --> 00:01:37,700
+然后从缓存进入寄存器
+and it goes from that cache into the registers 
+
+33
+00:01:37,866 --> 00:01:41,233
+然后直接被控制单元使用
+and then used directly by the control unit 
+
+34
+00:01:41,233 --> 00:01:43,333
+或者是CPU的算术单元
+or the arithmetic unit of the CPU
+
+35
+00:01:45,900 --> 00:01:47,133
+这个过程需要时间
+this takes time 
+
+36
+00:01:47,300 --> 00:01:52,000
+所以我们希望数据尽可能多的放在寄存器中
+and so we want to work on registers as much as possible 
+
+37
+00:01:52,000 --> 00:01:53,666
+等需要的时候直接用
+and then go to data when we need
+
+38
+00:01:53,733 --> 00:01:54,466
+我们确实这么做了
+and we do 
+
+39
+00:01:54,700 --> 00:01:58,300
+不确定有几个，总之寄存器很少
+I mean like I don't remember very few registers 
+
+40
+00:01:58,466 --> 00:02:00,766
+但要存储的数据很多
+but there's a lot of data to cover
+
+41
+00:02:00,766 --> 00:02:02,866
+16个通用寄存器
+like 16 general purpose registers 
+
+42
+00:02:02,866 --> 00:02:04,100
+加上很多其他的寄存器
+and a bunch of other ones
+
+43
+00:02:05,166 --> 00:02:09,200
+但想看的猫咪视频有数TB
+but we might need terabytes of cat videos that we need to watch
+
+44
+00:02:09,533 --> 00:02:10,333
+好吧
+all right
+
+45
+00:02:10,866 --> 00:02:12,766
+我们来谈谈内存
+let's talk about memory
+
+46
+00:02:12,766 --> 00:02:14,233
+从进程的角度看
+so from a process perspective 
+
+47
+00:02:14,300 --> 00:02:17,900
+进程做什么都要用内存
+your process uses memory for everything
+
+48
+00:02:17,900 --> 00:02:20,700
+它用内存保存与恢复寄存器
+it uses memory to store and load registers
+
+49
+00:02:21,000 --> 00:02:23,566
+它用内存从硬盘读数据
+it uses memory actually to read data from the disk
+
+50
+00:02:23,633 --> 00:02:24,800
+写数据到硬盘
+write to the disk 
+
+51
+00:02:24,900 --> 00:02:30,333
+所有要在内存、网卡、显卡之间传数据的时候
+and all like shunting data around memory the network card the video card
+
+52
+00:02:30,533 --> 00:02:31,500
+内存有很多
+there's a lot of memory
+
+53
+00:02:31,500 --> 00:02:35,100
+不能给每个内存地址起名
+and there's just too much memory to add to name every location
+
+54
+00:02:35,566 --> 00:02:38,866
+寄存器可以
+there's enough registers to name every register
+
+55
+00:02:38,933 --> 00:02:41,133
+如RAX、RBX、RCX等等
+RAX RBX RCX etc
+
+56
+00:02:41,333 --> 00:02:44,300
+但内存就太多了，不能这么干
+but there is too much memory to do so 
+
+57
+00:02:44,666 --> 00:02:48,966
+所以内存就用的数字
+so memory has numbers 
+
+58
+00:02:49,266 --> 00:02:50,533
+就比如
+it's similar as like
+
+59
+00:02:51,000 --> 00:02:53,900
+大学太大了，无法通过名字来管理每个人
+a university's too big that to track everyone by name
+
+60
+00:02:53,900 --> 00:02:56,700
+他们给每个人一个学生ID
+they give everyone a student ID
+
+61
+00:02:57,666 --> 00:02:59,766
+或员工ID
+or an employee ID you know
+
+62
+00:03:01,366 --> 00:03:03,800
+内存也用数字标识符
+memory has these numerical identifiers
+
+63
+00:03:03,900 --> 00:03:05,566
+内存基本上是
+now memory is basically
+
+64
+00:03:06,266 --> 00:03:09,666
+用0到一个非常大的数字，线性编址
+addressed linearly from zero to a very very high number
+
+65
+00:03:09,800 --> 00:03:12,533
+它曾经差不多是架构的字长
+it used to be more or less the word width of architecture
+
+66
+00:03:12,600 --> 00:03:14,366
+现在它实际上是
+now it's actually something
+
+67
+00:03:14,600 --> 00:03:15,733
+其实也不是
+well that's actually not 
+
+68
+00:03:15,933 --> 00:03:18,333
+总之，现在它从
+anyways now it is from
+
+69
+00:03:18,466 --> 00:03:20,366
+ (详见mmap_min_addr)
+
+70
+00:03:18,466 --> 00:03:20,366
+实际没从0开始
+it's actually not from zero
+
+71
+00:03:20,400 --> 00:03:23,966
+从0开始会带来很多安全问题
+it's there's a lot of security issues that happen
+
+72
+00:03:24,133 --> 00:03:26,166
+如果你能访问地址0
+if you can access memory at zero 
+
+73
+00:03:26,333 --> 00:03:29,600
+又不小心保留了一个初始化为0的指针
+then if you accidentally leave an address initialized to zero 
+
+74
+00:03:29,700 --> 00:03:31,000
+这是有可能的
+that stuff can happen
+
+75
+00:03:31,300 --> 00:03:40,700
+(0x0000 0000 0001 0000 ~ 0x0000 7FFF FFFF FFFF）
+
+76
+00:03:31,300 --> 00:03:40,700
+用户态内存从0x10000到2^47
+but it goes to 2 to the 47th for your process memory 
+
+77
+00:03:40,866 --> 00:03:44,000
+然后是内核态内存
+and then for your kernel memory 
+
+78
+00:03:44,166 --> 00:03:47,666
+进程内存中给操作系统用的那部分
+for your operating system part of your processes memory 
+
+79
+00:03:47,966 --> 00:03:55,866
+从2^47 + 1
+goes from 2 to 47 minus 1（口误）
+
+80
+00:03:56,100 --> 00:04:00,700
+(0xFFFF 8000 0000 0000~0xFFFF FFFF FFFF FFFF)
+
+81
+00:03:56,100 --> 00:04:00,700
+到2^48(忽略为1的高16位)
+and then for your process memory it goes from 2 to 47th all the way to 2 to 48 minus 1
+
+82
+00:04:00,766 --> 00:04:01,266
+总之
+anyways
+
+83
+00:04:01,266 --> 00:04:02,566
+这是一块巨大的内存
+this is an enormous amount of memory 
+
+84
+00:04:02,566 --> 00:04:07,400
+这是127TB的可寻址内存
+that's 127 terabytes of addressable RAM
+
+85
+00:04:08,433 --> 00:04:11,299
+内存可以映射在这里的任意地址
+you can have RAM kind of live anywhere in here
+
+86
+00:04:11,766 --> 00:04:12,866
+都可以放
+that there's memory 
+
+87
+00:04:12,866 --> 00:04:14,166
+没人有这么大的物理内存
+no one has that much RAM 
+
+88
+00:04:14,400 --> 00:04:16,000
+就算你花大价钱
+I don't even think you can spin up a 
+
+89
+00:04:16,000 --> 00:04:18,966
+也创建不了这么大内存的云主机
+massive cloud machine for insane amounts of money with that much RAM
+
+90
+00:04:21,400 --> 00:04:22,433
+这是很大的内存
+it's a lot of RAM 
+
+91
+00:04:23,600 --> 00:04:25,033
+我忘了提，每一个
+I forgot to mention each of these
+
+92
+00:04:25,300 --> 00:04:27,166
+每个地址
+each location each numbered location 
+
+93
+00:04:27,166 --> 00:04:28,933
+表示1字节的内存
+represents 1 byte of memory 
+
+94
+00:04:29,066 --> 00:04:29,800
+即8位
+8 bits
+
+95
+00:04:31,533 --> 00:04:38,000
+没这么多内存，为啥有这么多地址
+so how can you have this much memory addresses if you have not this much RAM 
+
+96
+00:04:38,033 --> 00:04:41,433
+并不是所有内存都是真的
+well not all of your memory is real 
+
+97
+00:04:41,566 --> 00:04:44,099
+事实上，我们使用的是虚拟内存
+in fact we use something called virtual memory 
+
+98
+00:04:44,233 --> 00:04:47,333
+稍后我们将深入了解虚拟内存
+we'll learn a lot about virtual memory later 
+
+99
+00:04:47,700 --> 00:04:51,500
+在后面讨论内核安全的模块中
+in a later module and talk about kernel security 
+
+100
+00:04:51,633 --> 00:04:53,066
+你会明白它的原理
+you'll understand exactly how it works 
+
+101
+00:04:53,066 --> 00:04:54,000
+超级酷
+it's super cool
+
+102
+00:04:55,600 --> 00:04:59,300
+每个进程都有它的虚拟内存空间
+but we have every process has its virtual memory space
+
+103
+00:04:59,333 --> 00:05:01,133
+一开始只有部分填充
+and it starts out just partially filled
+
+104
+00:05:01,533 --> 00:05:05,600
+程序代码会放在这儿
+it's the processes program data is gonna go somewhere
+
+105
+00:05:06,133 --> 00:05:10,000
+放在这儿的是动态分配的内存
+somewhere else is gonna be its dynamically allocated memory 
+
+106
+00:05:10,066 --> 00:05:11,100
+即，堆
+the heap
+
+107
+00:05:11,200 --> 00:05:13,100
+这儿是库代码
+somewhere else is gonna be some library code
+
+108
+00:05:13,300 --> 00:05:14,466
+栈
+the stack
+
+109
+00:05:15,166 --> 00:05:17,000
+其他操作系统辅助区域
+other operating system helper regions
+
+110
+00:05:17,266 --> 00:05:18,566
+你的进程内存中有很多东西
+there's a bunch of stuff in your
+
+111
+00:05:18,733 --> 00:05:22,066
+进程随时可以映射更多内存
+your process can request more memory to be mapped in at any time
+
+112
+00:05:23,966 --> 00:05:32,400
+这基本就是进程的内存视图
+and this is basically the view of memory of your process 
+
+113
+00:05:32,633 --> 00:05:33,399
+请求内存就是，进程直接说
+and it just says hey
+
+114
+00:05:33,800 --> 00:05:37,266
+我想要这块地址的内存
+I want memory at this region at this address 
+
+115
+00:05:37,266 --> 00:05:38,933
+然后拿到它
+and then it grabs it 
+
+116
+00:05:39,066 --> 00:05:43,166
+首先我们来谈谈栈
+so first let's talk about the stack 
+
+117
+00:05:43,200 --> 00:05:44,033
+然后我们会谈到
+and then we'll talk about 
+
+118
+00:05:44,066 --> 00:05:46,933
+如何在寄存器和内存之间传递值
+how to move values between registers and memory
+
+119
+00:05:47,166 --> 00:05:49,000
+当然，用栈也是其中一种方式
+well I mean the stack is one such way
+
+120
+00:05:49,800 --> 00:05:52,266
+栈是一个内存区域
+the stack is a region of memory
+
+121
+00:05:53,666 --> 00:05:55,766
+进程启动时
+that when your process starts up 
+
+122
+00:05:55,900 --> 00:06:00,666
+希望你们还记得进程生命周期系列视频
+and hopefully you recall our whole lecture series about process lifecycle
+
+123
+00:06:00,766 --> 00:06:02,400
+当进程启动时
+when a process starts up
+
+124
+00:06:04,200 --> 00:06:07,866
+会在内存中创建一个称为栈的空间
+a space in memory is created called the stack
+
+125
+00:06:08,266 --> 00:06:09,700
+它在某个地址上
+and it is at some address
+
+126
+00:06:09,700 --> 00:06:12,000
+这个地址通常是一个怪值
+and that address is usually something absurd like
+
+127
+00:06:13,466 --> 00:06:15,066
+我们一会儿再谈它
+whatever we'll talk about it in a second
+
+128
+00:06:19,366 --> 00:06:24,700
+当你想保存寄存器的值时
+when you want to store a register
+
+129
+00:06:24,800 --> 00:06:28,900
+或想临时存储一个值到栈上时
+or a value in memory on the stack for temporary storage
+
+130
+00:06:29,700 --> 00:06:31,766
+你可以push它
+you can push it 
+
+131
+00:06:32,100 --> 00:06:33,733
+把它压入栈
+you push things onto the stack
+
+132
+00:06:34,166 --> 00:06:36,700
+之后再把它们弹出栈
+and then you pop them right back off the stack
+
+133
+00:06:37,700 --> 00:06:39,400
+这里我压入了三个值
+so here I push three values 
+
+134
+00:06:39,400 --> 00:06:42,766
+我把0xc001ca75写入RAX
+I push I write c001 ca75 into RAX
+
+135
+00:06:43,466 --> 00:06:45,133
+然后压入栈
+and then I push cool cats
+
+136
+00:06:45,733 --> 00:06:48,300
+再压入0xb0ba cafe
+then I push b0ba cafe
+
+137
+00:06:49,333 --> 00:06:50,766
+到这里了
+push Boba Cafe 
+
+138
+00:06:50,900 --> 00:06:52,366
+再压入rax
+and I push RAX
+
+139
+00:06:52,900 --> 00:06:54,066
+在这里
+push Rax
+
+140
+00:06:54,733 --> 00:06:58,733
+之后我可以逆序弹出它们
+and then later I can pop them right back off in reverse order
+
+141
+00:06:59,300 --> 00:07:02,866
+我弹出栈顶的值时
+and so when I pop the top value of this 
+
+142
+00:07:03,000 --> 00:07:05,766
+这些值没有身份标识
+now these are values they have no identity
+
+143
+00:07:06,300 --> 00:07:09,333
+它们不记录和原来有关联的寄存器
+they maintain no identity back to the original register 
+
+144
+00:07:09,366 --> 00:07:10,666
+如存放它们之类的关系
+in which they were stored or whatever
+
+145
+00:07:10,800 --> 00:07:13,566
+被压入栈的只有0，1组成的值
+there're just ones and zeros pushed onto the stack
+
+146
+00:07:14,366 --> 00:07:18,100
+栈上一个单元的长度是机器字长
+each entry on the stack is the bitwidth of the architecture
+
+147
+00:07:18,200 --> 00:07:19,733
+每个单元64位
+each entry 64 bits
+
+148
+00:07:19,733 --> 00:07:23,333
+即使我压入一个32位的数，也会用0填充
+even if I push the 32 bit number just zero pads it
+
+149
+00:07:24,466 --> 00:07:28,566
+现在即使是在64位cpu上
+now even on 64 bit CPUs as it says here
+
+150
+00:07:28,866 --> 00:07:31,166
+具体来说是x86的cpu
+oh x86 specifically 
+
+151
+00:07:31,166 --> 00:07:33,166
+只能压入32位立即数
+you can only push 32 bit numbers
+
+152
+00:07:33,166 --> 00:07:36,400
+没有直接压入64位数字的指令
+there's just no instruction to push a 64 bit numbers directly
+
+153
+00:07:36,400 --> 00:07:37,533
+这真让人恼火
+it's very infuriating
+
+154
+00:07:38,200 --> 00:07:39,500
+你必须这样
+you have to do this
+
+155
+00:07:39,500 --> 00:07:41,700
+先把它写进寄存器，然后再压入它
+you have to write it to a register and then push it
+
+156
+00:07:41,800 --> 00:07:43,366
+他们就是没做相应的指令
+they just didn't make an instruction for it
+
+157
+00:07:43,500 --> 00:07:45,566
+我觉得这很蠢，但咋说呢
+which I think it's dumb but whatever
+
+158
+00:07:46,300 --> 00:07:48,300
+我又没研发amd64
+I didn't make AMD64 
+
+159
+00:07:48,366 --> 00:07:49,766
+他们可能有很好的理由
+and they probably had good reasons
+
+160
+00:07:49,866 --> 00:07:51,300
+可能也没人需要这个
+and probably no one needs this anyways
+
+161
+00:07:51,433 --> 00:07:54,700
+好吧，除了汇编老师
+alright except for like assembly teachers
+
+162
+00:07:54,733 --> 00:07:57,166
+关键是能把值放栈上
+so point is we have values on the stack
+
+163
+00:07:57,300 --> 00:07:58,333
+也能拿出来
+we can pop them off
+
+164
+00:07:58,400 --> 00:08:00,733
+还有值是逆序弹出的
+and they are popped in reverse order
+
+165
+00:08:00,733 --> 00:08:01,866
+你可以想象
+you can imagine
+
+166
+00:08:01,866 --> 00:08:03,666
+实际上，栈应该被想象为
+in fact the stack should be imagined as
+
+167
+00:08:03,933 --> 00:08:06,800
+一叠游戏
+like a stack of video games 
+
+168
+00:08:07,100 --> 00:08:08,700
+你把它压到栈上
+you push onto the stack 
+
+169
+00:08:08,833 --> 00:08:10,400
+压入栈
+push onto the stack
+
+170
+00:08:10,533 --> 00:08:11,900
+压入栈
+push onto the stack
+
+171
+00:08:12,100 --> 00:08:15,300
+然后以相反的顺序弹出栈
+then you pop off the stack in reverse order
+
+172
+00:08:15,700 --> 00:08:20,133
+由于栈位于连续的内存空间中
+now since the stack lives in a continuous memory space
+
+173
+00:08:20,333 --> 00:08:22,500
+我喜欢从左到右阅读
+and I like to read from left to right
+
+174
+00:08:22,566 --> 00:08:24,466
+所以从右往左画
+I write it out from left to right
+
+175
+00:08:24,666 --> 00:08:27,933
+稍后会讨论为什么我把值放在右侧
+and we'll talk about why I put stuff on the right of it in a second
+
+176
+00:08:32,600 --> 00:08:37,766
+我压入了rax，它的值为c001 ca74
+I pushed rax the value in that cool cats
+
+177
+00:08:38,266 --> 00:08:39,566
+如同mov
+of course like mov
+
+178
+00:08:39,800 --> 00:08:42,000
+寄存器中还有值
+the value stays also in the register
+
+179
+00:08:42,000 --> 00:08:43,200
+现在2个地方都有值
+now it's in two places
+
+180
+00:08:43,300 --> 00:08:44,700
+然后我压入了b0ba cafe
+then I pushed Boba Cafe
+
+181
+00:08:44,933 --> 00:08:46,300
+然后我又压入了c001 ca75
+then I pushed Cool Cats again 
+
+182
+00:08:46,633 --> 00:08:47,366
+这是现在的栈
+this is my stack
+
+183
+00:08:47,766 --> 00:08:50,600
+等我弹出值到RBX时
+when I pop into RBX
+
+184
+00:08:51,166 --> 00:08:52,800
+这会把c001 ca75
+it's going to take coolcats
+
+185
+00:08:53,466 --> 00:08:55,400
+从栈中移除
+it's going to take it off the stack
+
+186
+00:08:55,733 --> 00:08:58,066
+有趣的是，它还在栈上
+actually fun fact it remains on the stack
+
+187
+00:08:58,266 --> 00:09:00,566
+只是重新定义了栈的结束位置
+we just redefine where the stack ends
+
+188
+00:09:00,766 --> 00:09:03,133
+要是你想读取它们，数据还在那里
+but the bytes are still there if you wanted to get at them
+
+189
+00:09:04,600 --> 00:09:09,100
+然后我们把这个值写进RBX
+and then we write the value that was there into rbx
+
+190
+00:09:11,166 --> 00:09:14,366
+所以RBX变成了c001 ca75
+so in here RBX becomes Cool Cats
+
+191
+00:09:14,700 --> 00:09:16,633
+然后弹出数据到RCX
+and then when we pop into RCX
+
+192
+00:09:17,566 --> 00:09:19,500
+RCX变成了b0ba cafe
+RCX becomes Boba Cafe
+
+193
+00:09:20,700 --> 00:09:21,733
+就是这么简单
+it's that simple
+
+194
+00:09:21,733 --> 00:09:23,766
+没问题
+push pop no problem 
+
+195
+00:09:23,900 --> 00:09:26,500
+栈非常简单
+the stack very simple
+
+196
+00:09:27,366 --> 00:09:28,966
+我们来谈谈地址
+let's talk about addressing 
+
+197
+00:09:28,966 --> 00:09:32,900
+现在栈在内存的某个地址上
+now the stack is in somewhere in memory at an address
+
+198
+00:09:33,066 --> 00:09:37,166
+这个地址通常是0x7f跟着一长串
+that address is typically 0x7f followed by a bunch of garbage
+
+199
+00:09:37,666 --> 00:09:39,666
+因为它通常是做了随机化的
+because it's typically randomly located 
+
+200
+00:09:40,266 --> 00:09:47,133
+为什么它开头是7F
+why is it there at 7F specifically
+
+201
+00:09:47,133 --> 00:09:47,966
+没有真正的原因
+there's no real reason
+
+202
+00:09:48,133 --> 00:09:50,333
+你可以把栈放在任何地方
+you could place the stack anywhere really
+
+203
+00:09:50,466 --> 00:09:52,366
+栈位于内存中非常高的部分
+the stack is in very high parts of memory 
+
+204
+00:09:52,500 --> 00:09:55,466
+因为历史原因
+because historically and here is a crazy thing
+
+205
+00:09:55,500 --> 00:09:56,733
+它会反向增长
+it grows backwards
+
+206
+00:09:56,900 --> 00:10:03,166
+压栈时，栈会向小地址增长
+it grows toward smaller memory addresses as you push onto the stack
+
+207
+00:10:03,300 --> 00:10:08,366
+比如，rsp中是这个050结尾的地址
+if RSP starts out at this crazy address ending in hex 050
+
+208
+00:10:09,700 --> 00:10:11,400
+栈里有c001 ca75
+and it has cool cats on it 
+
+209
+00:10:11,400 --> 00:10:12,766
+我们再压入b0ba cafe
+and we push Boba Cafe
+
+210
+00:10:14,500 --> 00:10:16,466
+c001 ca75在050处
+Cool Cats was at address 050
+
+211
+00:10:16,466 --> 00:10:19,200
+b0ba cafe的地址是048
+Boba Cafe now lives at address 048 
+
+212
+00:10:19,266 --> 00:10:22,966
+它现在是新栈顶
+which coincidentally is the new top of the stack 
+
+213
+00:10:23,100 --> 00:10:26,366
+就是栈的最左侧
+as its term really the left part side of the stack
+
+214
+00:10:26,600 --> 00:10:33,100
+rsp中的地址
+and the address of the stack in the register that stores the address of the stack
+
+215
+00:10:34,366 --> 00:10:37,100
+减小了8
+is decreased by 8 
+
+216
+00:10:37,266 --> 00:10:40,933
+当你把寄存器压入栈时，rsp减小8
+when you push onto the stack the registers decrease by 8 
+
+217
+00:10:40,966 --> 00:10:44,933
+因为栈向内存的开始方向，即向左，增长
+because the stack grows to the left toward the beginning of memory
+
+218
+00:10:45,400 --> 00:10:47,866
+顺便说一下，我的视频是镜像的
+and my video may be mirrored by the way
+
+219
+00:10:47,866 --> 00:10:50,000
+我真的应该把它修好，这太蠢了
+I should really fix that that's dumb all right
+
+220
+00:10:50,900 --> 00:10:51,500
+我们越
+the more we 
+
+221
+00:10:51,766 --> 00:10:53,133
+弹栈时
+when we pop
+
+222
+00:10:53,300 --> 00:10:57,066
+我们把这个值写入rcx
+then we take that value we write that into RCX
+
+223
+00:10:57,300 --> 00:11:00,933
+然后更新rsp
+and then we fix up the stack pointer again 
+
+224
+00:11:01,100 --> 00:11:06,400
+这样它保存的地址还是以050结尾
+so that it holds the address ending in 050
+
+225
+00:11:06,533 --> 00:11:08,333
+恢复到我们压栈前
+what we started before we pushed
+
+226
+00:11:09,633 --> 00:11:10,833
+总之
+TooLong;Didn'tRead 
+
+227
+00:11:10,833 --> 00:11:14,266
+push时，rsp减8
+push subtracts 8 from RSP 
+
+228
+00:11:14,600 --> 00:11:21,933
+pop时，rsp加8
+pop adds 8 to RSP after writing and reading the data respectively
+
+229
+00:11:23,566 --> 00:11:29,366
+你可以直接使用rsp中的地址访问内存
+you can access memory using its addresses directly
+
+230
+00:11:29,500 --> 00:11:30,133
+就是要小心
+just be careful
+
+231
+00:11:30,233 --> 00:11:32,500
+确保那里有东西可以访问
+make sure that there's something there to access
+
+232
+00:11:32,700 --> 00:11:34,166
+内存是虚拟的
+again memory is virtual
+
+233
+00:11:34,166 --> 00:11:35,933
+当尝试访问时，它可能不存在
+it might not exist when you try to access
+
+234
+00:11:36,033 --> 00:11:37,166
+你的程序就会崩溃
+your program will crash
+
+235
+00:11:37,200 --> 00:11:39,566
+事实上，如果你运行这个程序，它肯定会崩溃
+in fact if you run this it definitely crash
+
+236
+00:11:39,800 --> 00:11:41,333
+这基本上是在说，嘿
+but this basically says hey
+
+237
+00:11:42,733 --> 00:11:46,133
+把0x12345这个地址
+take this address 0x12345
+
+238
+00:11:46,300 --> 00:11:47,600
+放到rax中
+move it into rax
+
+239
+00:11:47,733 --> 00:11:49,900
+然后把它当作内存地址
+then use it as a memory address
+
+240
+00:11:49,966 --> 00:11:51,466
+查看内存
+look at the memory 
+
+241
+00:11:51,466 --> 00:11:56,533
+这就是这个方括号的意思
+and that's what these brackets mean 
+
+242
+00:11:56,600 --> 00:11:58,333
+方括号的意思是
+the brackets mean hey there's
+
+243
+00:11:58,800 --> 00:12:00,100
+这是一个内存地址
+this is a memory address 
+
+244
+00:12:00,100 --> 00:12:01,533
+查看该内存地址的数据
+look at the data in memory
+
+245
+00:12:01,666 --> 00:12:03,333
+读入到RBX
+and read it into RBX 
+
+246
+00:12:03,333 --> 00:12:04,966
+RBX是64位寄存器
+RBX is a 64 bit register
+
+247
+00:12:05,400 --> 00:12:09,000
+它将从rax地址处的内存读取64位，8字节
+so it will read 64 bits 8 bytes from rax 
+
+248
+00:12:09,000 --> 00:12:11,700
+内存一次存储一个字节
+memories stores a byte a time
+
+249
+00:12:11,966 --> 00:12:15,333
+虽然读3比特的内存也是有意义的
+though it does make sense to read like 3 bits of memory
+
+250
+00:12:15,566 --> 00:12:20,366
+一次可以读取几个字节或1字节
+you read memory several bytes at a time or one byte at a time 
+
+251
+00:12:20,500 --> 00:12:23,500
+这将把8字节数据读入RBX
+so this will read 8 bytes into RBX 
+
+252
+00:12:23,833 --> 00:12:27,200
+8个字节的地址将从0x12345开始
+and the 8 bytes will start from 0x12345 
+
+253
+00:12:27,400 --> 00:12:37,300
+这将存储rax中的8字节
+all right this will store 64 bits 8 bytes that are in rax
+
+254
+00:12:38,000 --> 00:12:40,333
+抱歉，rbx中的8字节
+no sorry in RBX whatever they were
+
+255
+00:12:40,666 --> 00:12:47,400
+放到0x133337地址开始的内存中
+into the memory space starting at the address 133337
+
+256
+00:12:48,400 --> 00:12:51,066
+和读取内存一样
+so in the same way as the read
+
+257
+00:12:51,333 --> 00:12:53,533
+数据流向
+again information data flows to the
+
+258
+00:12:54,200 --> 00:12:54,900
+镜像了
+with the mirror 
+
+259
+00:12:55,066 --> 00:12:56,166
+左边
+to the left
+
+260
+00:12:58,566 --> 00:13:00,600
+之前我们取出rax指向的内存数据
+we take the memory in rax 
+
+261
+00:13:00,700 --> 00:13:02,533
+再放到rbx中
+and here we read it into RBX 
+
+262
+00:13:02,700 --> 00:13:03,266
+加载到rbx中
+we load it
+
+263
+00:13:03,500 --> 00:13:06,066
+这里取出rbx的数据
+this takes the data in RBX 
+
+264
+00:13:06,166 --> 00:13:11,100
+然后保存到rax作为地址指向的内存
+and we store it into the memory address by RAX
+
+265
+00:13:12,200 --> 00:13:14,766
+现在重要的是这里的值
+now it's the value here that's important
+
+266
+00:13:15,000 --> 00:13:17,233
+如果这个值是在RCX中
+if this value was in RCX 
+
+267
+00:13:17,366 --> 00:13:19,333
+这里是RCX
+and we had RCX here 
+
+268
+00:13:19,433 --> 00:13:21,166
+那么它会指向相同的内存
+it would point to the same memory
+
+269
+00:13:21,500 --> 00:13:23,866
+现在我一直用“指向”这个词
+now I keep using the word point to
+
+270
+00:13:24,600 --> 00:13:30,400
+寄存器中存一个内存地址
+an address in a register of a given memory address 
+
+271
+00:13:30,400 --> 00:13:32,500
+意味着寄存器指向这个内存地址
+means that that register points that memory address 
+
+272
+00:13:32,500 --> 00:13:33,533
+相当于，说
+saying ha ha ha
+
+273
+00:13:33,600 --> 00:13:35,000
+它在那儿，它在那儿
+there it is there it is 
+
+274
+00:13:35,000 --> 00:13:36,100
+那里就是我们要写入的地址
+that's where we're gonna write
+
+275
+00:13:36,366 --> 00:13:37,500
+那里就是我们要读取的地址
+that's where we're gonna read
+
+276
+00:13:37,700 --> 00:13:38,166
+就是这样
+that's it 
+
+277
+00:13:38,166 --> 00:13:40,200
+这就是指针的意思
+that's all the pointer means 
+
+278
+00:13:43,466 --> 00:13:54,000
+一个有趣的例子
+we have a interesting case where we can also
+
+279
+00:13:57,866 --> 00:13:59,666
+指针意味着
+pointer means that
+
+280
+00:14:00,900 --> 00:14:04,900
+寄存器中有一个地址，它指向了一个内存位置
+there's an address in a register that references some memory location 
+
+281
+00:14:04,900 --> 00:14:10,266
+RSP是扩展后的sp栈指针
+well hey RSP is the really extended stack pointer
+
+282
+00:14:10,933 --> 00:14:12,966
+rsp就像我们刚刚说的那样
+rsp as we talked about just now 
+
+283
+00:14:13,066 --> 00:14:14,800
+保存着内存中栈的地址
+holds the address of the stack 
+
+284
+00:14:14,900 --> 00:14:16,100
+你也可以直接访问它
+you can also access it directly
+
+285
+00:14:16,100 --> 00:14:17,133
+这没什么特别的
+nothing special about this
+
+286
+00:14:17,266 --> 00:14:19,933
+这相当于push
+this is equivalent to a push
+
+287
+00:14:20,333 --> 00:14:21,733
+这里不对
+actually this is a lie 
+
+288
+00:14:21,733 --> 00:14:22,733
+应该是8
+this should be 8
+
+289
+00:14:23,266 --> 00:14:24,133
+我的锅
+my bad
+
+290
+00:14:24,766 --> 00:14:27,133
+我暂停修正一下
+let me pause the recording and fix that 
+
+291
+00:14:27,133 --> 00:14:28,733
+因为这样才对
+because that should be correct
+
+292
+00:14:29,600 --> 00:14:32,966
+好了，我们回来了，现在对了
+alright we're back so now it's correct
+
+293
+00:14:34,333 --> 00:14:36,200
+RSP减去8
+subtracting 8 from RSP
+
+294
+00:14:36,566 --> 00:14:40,533
+然后输入你想要压入的值
+and then plopping whatever value you wanted to push
+
+295
+00:14:40,700 --> 00:14:42,966
+这相当于push
+this is equivalent to push
+
+296
+00:14:43,733 --> 00:14:45,333
+很酷，对吧
+pretty cool alright
+
+297
+00:14:45,733 --> 00:14:49,133
+记住，每个内存地址能放1字节
+and remember each memory location contains 1 byte
+
+298
+00:14:49,666 --> 00:14:55,966
+所以如果你写入一个8字节的值到0x133337处
+and so if you write an 8 byte value 64 bit value to 133337
+
+299
+00:14:56,266 --> 00:14:59,733
+你会往0x133337处（写入1字节）
+you will write 133337 that memory location
+
+300
+00:14:59,733 --> 00:15:04,266
+下一个字节写到0x133338
+you will write the next byte to 133338 
+
+301
+00:15:04,433 --> 00:15:05,966
+之后是39，3a...
+and the 9 10
+
+302
+00:15:08,533 --> 00:15:09,766
+这是一个尴尬的错误
+and this is an embarrassing error 
+
+303
+00:15:09,766 --> 00:15:12,366
+因为又错了
+because this is not right again
+
+304
+00:15:12,733 --> 00:15:14,466
+好吧，我改一下
+all right let me fix that
+
+305
+00:15:17,800 --> 00:15:18,766
+好吧
+all right
+
+306
+00:15:19,466 --> 00:15:20,833
+现在改完了
+and now it's fixed okay 
+
+307
+00:15:20,833 --> 00:15:24,333
+抱歉，算错了，没按16进制算
+sorry I had this I have hex fail 
+
+308
+00:15:24,333 --> 00:15:25,000
+总之
+anyways
+
+309
+00:15:25,000 --> 00:15:31,333
+它会写入8字节，从133337写到13333f
+it'll write the 8 bytes from 133337 to 13333f
+
+310
+00:15:32,133 --> 00:15:33,733
+很酷
+pretty cool okay
+
+311
+00:15:34,866 --> 00:15:35,666
+现在
+now
+
+312
+00:15:38,366 --> 00:15:40,466
+我们讨论一下如何控制写入大小
+let's talk about controlling those write sizes
+
+313
+00:15:40,566 --> 00:15:42,866
+你完全可以控制写入大小
+you can absolutely control those write sizes 
+
+314
+00:15:43,500 --> 00:15:46,866
+你可以用部分标识符
+you can use partial
+
+315
+00:15:47,900 --> 00:15:49,400
+我移一下到这里
+let me move myself here
+
+316
+00:15:49,766 --> 00:15:52,400
+你可以用寄存器的部分标识
+you can use partial registers 
+
+317
+00:15:52,833 --> 00:15:56,666
+很容易就能写更少的字节数
+very easy to write fewer bytes
+
+318
+00:15:57,000 --> 00:16:00,733
+这条指令会加载
+so this instruction will load 
+
+319
+00:16:01,133 --> 00:16:04,099
+这两条指令会
+these two instructions will load 8 bytes
+
+320
+00:16:04,266 --> 00:16:09,566
+从12345开始的内存地址，加载8字节到RBX
+from the memory location starting at 12345 into RBX
+
+321
+00:16:10,400 --> 00:16:12,966
+然后写8字节（口误）
+and then write 8 bytes
+
+322
+00:16:13,500 --> 00:16:16,933
+写入4字节，ebx
+write four of those bytes from EBX 
+
+323
+00:16:17,133 --> 00:16:20,600
+到0x133337开始的内存
+into the memory location starting at 133337
+
+324
+00:16:21,900 --> 00:16:25,966
+EBX是一个4字节，32位长的寄存器
+EBX is a 4 byte long 32 bit long register
+
+325
+00:16:26,566 --> 00:16:31,933
+将ebx写入到内存时，会写入4字节
+when you write from EBX you will write those 4 bytes
+
+326
+00:16:31,933 --> 00:16:33,700
+很直接
+super straightforward
+
+327
+00:16:35,533 --> 00:16:38,333
+这个，存储8位，就1字节，AH
+this stores 8 bits just one byte AH
+
+328
+00:16:38,766 --> 00:16:40,833
+就是那个部分寄存器
+just that partial register 
+
+329
+00:16:40,833 --> 00:16:41,533
+好吧
+all right
+
+330
+00:16:44,366 --> 00:16:46,333
+抱歉
+sorry it'll load
+
+331
+00:16:46,733 --> 00:16:49,366
+什么鬼，全是错的
+what the heck man this is full of mistakes
+
+332
+00:16:49,366 --> 00:16:51,200
+抱歉，稍等
+I apologize one second
+
+333
+00:16:53,300 --> 00:16:54,133
+好了
+all right
+
+334
+00:16:54,800 --> 00:16:56,133
+十分抱歉
+apologize about that
+
+335
+00:16:57,966 --> 00:17:06,500
+这将从地址0x12345加载8位数据到bh
+this will load 8 bits from the address 0x12345 to bh
+
+336
+00:17:06,533 --> 00:17:09,766
+只有8位，因为BH是8位宽的寄存器
+just 8 bits because BH is an 8 bit wide register
+
+337
+00:17:09,766 --> 00:17:11,533
+只加载1字节
+just one byte load
+
+338
+00:17:11,533 --> 00:17:12,533
+好吧，别忘了
+all right don't forget 
+
+339
+00:17:12,633 --> 00:17:15,833
+如果你加载数据到EAX, EBX，等等
+if you load into EAX EBX etc etc 
+
+340
+00:17:15,833 --> 00:17:18,700
+会将对应寄存器的高32位清零
+you will zero out the top 32 bits
+
+341
+00:17:18,700 --> 00:17:21,000
+你会忘记它的，然后被它搞到
+you will forget and it'll screw you up
+
+342
+00:17:21,166 --> 00:17:22,333
+这一点都不好玩
+and it's not fun
+
+343
+00:17:22,366 --> 00:17:24,133
+好的
+okay so
+
+344
+00:17:25,333 --> 00:17:28,700
+现在我们讨论了指定大小地写入
+now we're talking about all of these sized writes 
+
+345
+00:17:28,800 --> 00:17:31,266
+但他们很奇怪
+well they are really weird
+
+346
+00:17:31,566 --> 00:17:37,266
+在x86以及大多数现代架构上
+on x86 as well as most modern operating systems
+
+347
+00:17:38,533 --> 00:17:42,800
+数据是以字节为单位逆序存储的
+data is stored backwards byte wides 
+
+348
+00:17:42,966 --> 00:17:45,133
+即所谓的小端序
+and something called little endian
+
+349
+00:17:45,333 --> 00:17:49,200
+这里rax中的c001 ca75
+so here we have cool cats being set to rax
+
+350
+00:17:51,266 --> 00:17:52,466
+很酷
+very awesome
+
+351
+00:17:52,900 --> 00:17:55,300
+我们把c001 ca75
+we write Cool Cats
+
+352
+00:17:56,733 --> 00:18:01,966
+写入到0x10000这个地址
+into hex 10,000 this address 
+
+353
+00:18:02,333 --> 00:18:04,600
+顺序是反的
+it ends up backwards
+
+354
+00:18:05,533 --> 00:18:07,833
+它是用小端序写的
+it's written in little endian 
+
+355
+00:18:07,833 --> 00:18:10,700
+第一个字节，如果你只读取一个字节的话
+the first byte if you wanted to read it
+
+356
+00:18:10,933 --> 00:18:14,533
+会是75
+would end up with 75
+
+357
+00:18:14,933 --> 00:18:16,200
+就是ts
+that's ts 
+
+358
+00:18:16,566 --> 00:18:19,866
+然后是ca
+then ca the next byte backwards 
+
+359
+00:18:19,933 --> 00:18:22,533
+然后01
+then 01 
+
+360
+00:18:22,800 --> 00:18:24,366
+然后c0
+and then co
+
+361
+00:18:25,333 --> 00:18:27,466
+c0 01 ca 75 翻转了一下
+cool cats gets flipped around
+
+362
+00:18:28,166 --> 00:18:33,066
+每次你在寄存器和内存间多字节写入
+any time you do a multiple byte write between registers and memory
+
+363
+00:18:33,600 --> 00:18:34,900
+你的数据都会翻转
+your data gets flipped 
+
+364
+00:18:35,166 --> 00:18:36,566
+只有这一种情况
+that's the only time
+
+365
+00:18:38,266 --> 00:18:39,466
+为什么会这样
+why does this happen
+
+366
+00:18:39,933 --> 00:18:48,833
+它是由于一些有根据的历史原因
+it happens for historical reasons that are rooted in something that makes sense 
+
+367
+00:18:48,933 --> 00:18:53,133
+英特尔发明8008处理器
+so Intel created the 8008 processor 
+
+368
+00:18:53,333 --> 00:18:55,800
+一个古老的处理器
+an ancient ancient processor 
+
+369
+00:18:55,966 --> 00:18:57,133
+一切的前身
+predecessor to everything else 
+
+370
+00:18:57,200 --> 00:18:58,966
+于1972年
+in 1972
+
+371
+00:18:59,100 --> 00:19:01,800
+不是一切，就是所有intel系列处理器的前身
+not everything else but all the other Intel stuff
+
+372
+00:19:02,266 --> 00:19:04,733
+他们是为了一家叫datapoint的公司创造的
+they created for a company called Data Point
+
+373
+00:19:05,500 --> 00:19:10,300
+为了兼容datapoint的现有流程
+and to be compatible with Data Points its existing processes
+
+374
+00:19:10,866 --> 00:19:13,300
+它们使用了相同的端序
+they use the same endianess 
+
+375
+00:19:13,566 --> 00:19:15,033
+这很聪明
+and it's clever 
+
+376
+00:19:15,066 --> 00:19:16,166
+如果你想做加法
+if you wanted to add
+
+377
+00:19:17,200 --> 00:19:20,933
+想一下在小学做的加法
+consider doing like an elementary school long addition 
+
+378
+00:19:20,933 --> 00:19:21,766
+写下一个数字
+you write out a number 
+
+379
+00:19:21,800 --> 00:19:22,866
+再写一个数字
+you write it out another number 
+
+380
+00:19:22,866 --> 00:19:23,700
+然后开始加
+and you add
+
+381
+00:19:23,800 --> 00:19:25,000
+从最右边开始
+and you start on the right 
+
+382
+00:19:25,133 --> 00:19:26,366
+算到左边
+and you work to the left 
+
+383
+00:19:26,500 --> 00:19:29,766
+你从最低有效位开始
+you start at the least significant digits 
+
+384
+00:19:30,033 --> 00:19:31,766
+往最高有效位计算
+and you work toward the more significant digits
+
+385
+00:19:31,833 --> 00:19:32,800
+你这么做的原因是
+and the reason you do that is 
+
+386
+00:19:32,900 --> 00:19:34,366
+在你加的过程中
+as you add that things
+
+387
+00:19:35,666 --> 00:19:41,000
+如果一列的计算结果大于10
+if the result of your addition on the column is greater than 10
+
+388
+00:19:41,000 --> 00:19:42,500
+就进一位
+you carry a 1
+
+389
+00:19:42,833 --> 00:19:44,333
+然后继续这样做
+and then you keep doing that
+
+390
+00:19:45,333 --> 00:19:47,733
+事实证明这更容易做
+and turns out that's easier to do 
+
+391
+00:19:47,800 --> 00:19:53,400
+只能从最低有效位开始往上加
+it's only possible to do if you start from the least significant and move upwards
+
+392
+00:19:53,733 --> 00:19:55,700
+如果你要处理数据
+so if you are going to process data 
+
+393
+00:19:55,833 --> 00:19:57,600
+加一些大数
+and add large numbers
+
+394
+00:19:58,000 --> 00:20:01,200
+这就解释了为什么逆序存储在内存中
+it makes sense you start you store them backwards in memory 
+
+395
+00:20:01,266 --> 00:20:04,866
+先从最低有效字节开始计算
+you start with the least significant byte 
+
+396
+00:20:05,133 --> 00:20:06,600
+再继续
+and you go onwards
+
+397
+00:20:08,266 --> 00:20:09,300
+从历史上看
+historically
+
+398
+00:20:10,133 --> 00:20:11,600
+根据维基百科
+according to Wikipedia
+
+399
+00:20:11,766 --> 00:20:13,600
+我就是在这里看到的
+which is where I track this down to
+
+400
+00:20:14,500 --> 00:20:22,733
+这就是Intel的8008存储多字节值时使用小端序的原因
+that's why Intel went with little endian for 8008 for multi byte values
+
+401
+00:20:22,900 --> 00:20:27,666
+从那时到现代x86的每一步演变
+and every step of the evolution since then up to modern x86
+
+402
+00:20:27,900 --> 00:20:33,200
+都至少与前一代保持了兼容
+has at least kept compatibility with its direct predecessor
+
+403
+00:20:34,333 --> 00:20:36,433
+所以有一定兼容性
+and so there's some level compatibility
+
+404
+00:20:36,733 --> 00:20:38,000
+包括了内存端序
+including the memory endianess
+
+405
+00:20:38,200 --> 00:20:43,300
+小端序数据还有其他好处
+now there's other benefits of little endian data etc etc
+
+406
+00:20:43,533 --> 00:20:46,533
+这就是一个已经做出的选择
+but it's a choice that is made 
+
+407
+00:20:46,633 --> 00:20:48,700
+我们活在其中
+and that's the choice we live in
+
+408
+00:20:49,800 --> 00:20:55,000
+所以现在数据在内存中是逆序存储的
+so data is going to be stored backwards in memory now
+
+409
+00:20:55,366 --> 00:20:58,133
+提醒一下，这只会发生在
+caveats again this only happens
+
+410
+00:20:59,866 --> 00:21:01,866
+这可能不是完全正确的，但总之
+this probably isn't true globally but whatever
+
+411
+00:21:02,300 --> 00:21:03,433
+通常这种情况只发生在
+typically this only happens 
+
+412
+00:21:03,433 --> 00:21:11,733
+寄存器和内存间，一次存储或加载多字节数据的时候
+when storing and loading multiple bytes between registers and memory at a time
+
+413
+00:21:13,566 --> 00:21:15,533
+它只发生在字节级别
+it only happens on the byte level
+
+414
+00:21:15,600 --> 00:21:17,133
+只是字节被倒过来了
+just the bytes get flipped backwards
+
+415
+00:21:17,133 --> 00:21:19,666
+字节中的单个比特保持不变
+the individual bits in the bytes stay intact
+
+416
+00:21:19,666 --> 00:21:21,666
+这里是co，这里还是co
+so co here is co here 
+
+417
+00:21:21,666 --> 00:21:23,100
+不会翻转比特位
+you don't flip the bits
+
+418
+00:21:23,333 --> 00:21:26,066
+存储和加载多字节这种事人们常做
+that's a very very common thing that people do
+
+419
+00:21:26,866 --> 00:21:29,166
+还有压栈和弹栈
+and pushes and pops
+
+420
+00:21:29,600 --> 00:21:30,766
+完全一样
+exactly the same
+
+421
+00:21:30,866 --> 00:21:32,633
+push将一次写入8个字节
+a push will write 8 bytes
+
+422
+00:21:32,966 --> 00:21:35,100
+它会反过来写
+and it will write them in reverse
+
+423
+00:21:35,966 --> 00:21:36,766
+酷
+awesome
+
+424
+00:21:38,933 --> 00:21:40,866
+人们经常混淆这一点
+and people often confuse that 
+
+425
+00:21:40,966 --> 00:21:45,600
+因为栈已经是反向增长了
+because the stack is already growing in reverse 
+
+426
+00:21:45,700 --> 00:21:46,600
+如你所期望的
+as to what you'd expect
+
+427
+00:21:46,733 --> 00:21:51,366
+栈会向更小的内存地址增长
+it's going towards smaller amounts of memory smaller addresses
+
+428
+00:21:51,766 --> 00:21:53,500
+所以人们会觉得
+and so people yeah but like
+
+429
+00:21:53,600 --> 00:21:54,100
+但不对
+but no 
+
+430
+00:21:54,100 --> 00:21:57,700
+压入一个8字节数据，rsp会减小，而数据按小端序写入内存
+it's going to  ?? and memory and things get pushed backwards
+
+431
+00:21:58,133 --> 00:21:59,366
+好酷
+okay cool
+
+432
+00:22:00,766 --> 00:22:02,333
+就和其他内存访问一样
+like any other memory access
+
+433
+00:22:02,966 --> 00:22:04,900
+好了，这就是端序
+all right that's endianess
+
+434
+00:22:04,900 --> 00:22:07,800
+我们来谈谈地址计算
+let's talk about address calculation
+
+435
+00:22:07,800 --> 00:22:13,600
+汇编中，准确说x86架构下二进制中
+well it's assembly or really the x86 architecture in binary 
+
+436
+00:22:13,800 --> 00:22:16,433
+所以非常类似汇编
+and so very similar to ??  assembly 
+
+437
+00:22:16,433 --> 00:22:19,100
+能你做地址计算
+allows you to do address calculations
+
+438
+00:22:19,100 --> 00:22:23,400
+它对访问复杂结构很有用
+so it's useful for like accessing complex structures
+
+439
+00:22:23,866 --> 00:22:25,733
+多组数据等等
+lists of data etc etc
+
+440
+00:22:26,000 --> 00:22:30,700
+这里我们用rax作为栈中的索引
+here we use rax as an index into the stack 
+
+441
+00:22:30,700 --> 00:22:32,100
+一次访问8字节
+8 bytes at a time
+
+442
+00:22:32,533 --> 00:22:35,033
+首先把rax设为0
+so first we set it to zero
+
+443
+00:22:35,400 --> 00:22:38,300
+这是栈顶的数据
+this is the data right at the stack pointer 
+
+444
+00:22:38,500 --> 00:22:39,533
+再设rax为1
+we set it to 1
+
+445
+00:22:39,633 --> 00:22:40,933
+这是下一个元素
+this is the next entry
+
+446
+00:22:41,200 --> 00:22:42,833
+我们可以继续增加rax
+and we can continue incrementing it 
+
+447
+00:22:43,266 --> 00:22:43,733
+依次类推
+and so on
+
+448
+00:22:44,500 --> 00:22:47,900
+如果对栈计算的没错，你能确定目标元素的索引
+you can figure out if your stack calculations are correct
+
+449
+00:22:48,066 --> 00:22:51,000
+或者就是想获得什么东西的地址
+or if you just really want to get a memory address for something else
+
+450
+00:22:51,700 --> 00:22:55,533
+可以用加载有效地址（LEA）指令
+by using the load effective address instruction LEA
+
+451
+00:22:57,200 --> 00:22:59,233
+LEA能让你
+load effective address allows you 
+
+452
+00:22:59,400 --> 00:23:03,666
+完成同样的操作
+to specify that same operation
+
+453
+00:23:03,900 --> 00:23:06,166
+由于某种原因，这里我加了5
+this one I for some reason put a plus 5 
+
+454
+00:23:06,266 --> 00:23:07,933
+这可能是一个bug
+because presumably that's a bug 
+
+455
+00:23:09,066 --> 00:23:10,466
+把地址放到这里
+to load it in there
+
+456
+00:23:10,566 --> 00:23:12,600
+然后你可以检查它
+and then you can inspect it 
+
+457
+00:23:12,733 --> 00:23:13,766
+做你想做的
+and do whatever you want with it
+
+458
+00:23:13,866 --> 00:23:15,333
+传递给函数
+and pass it around to functions
+
+459
+00:23:15,733 --> 00:23:17,333
+都很有趣
+and it's all great fun
+
+460
+00:23:17,966 --> 00:23:18,766
+现在
+now
+
+461
+00:23:20,333 --> 00:23:23,100
+地址计算有限制
+address calculation has limits
+
+462
+00:23:23,533 --> 00:23:26,066
+你不能做任意算术
+you can't just do arbitrary arithmetic in it
+
+463
+00:23:26,200 --> 00:23:30,766
+它需要在CPU上被编码成非常有限的指令
+it needs to be encoded into a very limited instruction on the CPU
+
+464
+00:23:31,133 --> 00:23:33,366
+基本上就是拿一个寄存器
+you basically take register
+
+465
+00:23:34,733 --> 00:23:37,466
+加上一个寄存器乘以2或4或8
+plus a register times either 2 or 4 or 8
+
+466
+00:23:37,633 --> 00:23:39,133
+再加上一个值
+plus a value 
+
+467
+00:23:39,900 --> 00:23:40,933
+只能做这些算术
+that's all you get
+
+468
+00:23:41,866 --> 00:23:45,266
+但这已经足够了
+but it's typically good enough alright
+
+469
+00:23:46,066 --> 00:23:46,600
+现在
+now
+
+470
+00:23:46,600 --> 00:23:53,533
+AMD64的地址计算中有一件很酷的事
+one of the very cool things while you talking about address calculations that AMD64 did
+
+471
+00:23:54,066 --> 00:23:57,766
+是它引入了rip相对寻址
+is introduce rip relative addressing
+
+472
+00:23:57,766 --> 00:24:01,266
+回想一下，rip是指令指针
+recall that rip is the instruction pointer
+
+473
+00:24:01,266 --> 00:24:04,866
+它指向下一条要执行的指令
+it points to the next instruction that will be executed
+
+474
+00:24:06,300 --> 00:24:11,000
+以后讨论控制流时，会讨论更多的rip相关事项
+and we'll talk more about rip when we talk about how to change control flow
+
+475
+00:24:11,200 --> 00:24:12,166
+说到LEA
+load effective address 
+
+476
+00:24:12,333 --> 00:24:16,499
+你不能直接读取RIP的值
+you can't move data out of the instruction pointer directly
+
+477
+00:24:16,533 --> 00:24:17,133
+你不能直接说嘿
+you can't just say hey
+
+478
+00:24:17,133 --> 00:24:19,000
+下一条指令的地址是什么
+what's the address of the next instruction
+
+479
+00:24:19,133 --> 00:24:22,300
+这不是mov指令能做的
+it just isn't something the mov instruction does
+
+480
+00:24:22,366 --> 00:24:23,933
+它不支持
+it just wasn't supported
+
+481
+00:24:24,400 --> 00:24:25,933
+而LEA
+load effective address
+
+482
+00:24:26,733 --> 00:24:32,533
+能访问64位x86上的指令指针
+is able to access the instruction pointer on 64 bit x86
+
+483
+00:24:33,000 --> 00:24:36,300
+所以当你想知道
+and so when you want to know
+
+484
+00:24:36,300 --> 00:24:38,300
+下一条指令的地址是什么
+hey what's the address of the next instruction
+
+485
+00:24:38,566 --> 00:24:39,333
+你可以这么做
+you can do this 
+
+486
+00:24:39,533 --> 00:24:41,166
+把它加载到rax
+and you can load it into rax
+
+487
+00:24:41,300 --> 00:24:45,300
+你还可以对它做地址计算
+you can also do arbitrary address operations with indexing
+
+488
+00:24:45,733 --> 00:24:48,666
+就像我们在前一页所做的那样
+exactly what we did in the previous page 
+
+489
+00:24:48,800 --> 00:24:50,700
+乘以8，乘以2之类的
+multiplying by 8 by 2 whatever
+
+490
+00:24:51,900 --> 00:24:55,333
+而且聪明的AMD
+also AMD in their infinite wisdom 
+
+491
+00:24:55,466 --> 00:24:58,900
+在x86基础上设计amd64
+when they designed amd64 out of x86
+
+492
+00:24:59,166 --> 00:25:01,466
+并给我们带来了64位架构时
+and gave us this 64 bit architecture 
+
+493
+00:25:01,533 --> 00:25:02,366
+这很伟大
+that's awesome
+
+494
+00:25:02,766 --> 00:25:07,733
+还允许我们直接访问rip指向的内存
+allowed us also to directly access memory offset from the instruction
+
+495
+00:25:07,900 --> 00:25:10,500
+甚至往里写数据
+now even writing there right 
+
+496
+00:25:10,800 --> 00:25:12,666
+这里有一个警告
+now there's a caveat here
+
+497
+00:25:13,400 --> 00:25:17,400
+你将在shellcoding模块中了解到
+as you will learn in the shellcoding module 
+
+498
+00:25:17,633 --> 00:25:19,400
+内存通常不是
+memory isn't typically
+
+499
+00:25:23,200 --> 00:25:26,333
+存储代码的内存通常不能被写入
+memory that holds code isn't typically able to be written to
+
+500
+00:25:26,533 --> 00:25:28,566
+但有能写的情况
+but if it can it can 
+
+501
+00:25:28,800 --> 00:25:30,700
+你能基于rip，做间接寻址
+or you can offset it from the code 
+
+502
+00:25:30,800 --> 00:25:34,800
+事实上，这个rip相对寻址
+in fact this rip relative addressing enables 
+
+503
+00:25:35,566 --> 00:25:38,900
+对在代码周围嵌入数据，非常有用
+super useful when you embed data around your code 
+
+504
+00:25:38,966 --> 00:25:44,033
+每个现代二进制都这么做
+which every modern binary does explicitly 
+
+505
+00:25:44,233 --> 00:25:45,533
+一个ELF文件
+an ELF file
+
+506
+00:25:45,733 --> 00:25:47,200
+包括它的数据和代码
+including its data and its code 
+
+507
+00:25:47,266 --> 00:25:51,500
+实际上是作为一个大块加载到内存中的
+is actually loaded into memory as a big chunk
+
+508
+00:25:52,666 --> 00:25:57,600
+由于我们可以做rip相对寻址
+and the fact that we can do rip relative addressing
+
+509
+00:25:58,500 --> 00:25:59,666
+又因为我们知道文件的大小
+because we know the size of the file
+
+510
+00:25:59,866 --> 00:26:01,966
+知道数据相对于代码的位置
+we know where relative to code the data is
+
+511
+00:26:02,266 --> 00:26:03,866
+所以现在可以访问数据了
+you can now get at the data
+
+512
+00:26:04,333 --> 00:26:06,800
+这就实现了很酷的安全特性
+and this enables cool security features 
+
+513
+00:26:06,800 --> 00:26:11,333
+比如可以把二进制文件随机放到内存的任何地方
+like being able to put that file anywhere in memory at random 
+
+514
+00:26:11,333 --> 00:26:12,733
+而不影响它的功能
+and still have it function
+
+515
+00:26:12,800 --> 00:26:16,700
+因为它不依赖于一个特定的地址
+because it doesn't rely on a specific address to beyond
+
+516
+00:26:16,733 --> 00:26:19,533
+所有的访问都是相对于rip的
+all accesses are relative to where it's executing
+
+517
+00:26:19,933 --> 00:26:25,566
+非常酷，一个强大的现代安全功能
+very cool and a powers modern security features 
+
+518
+00:26:25,566 --> 00:26:26,066
+很酷
+cool
+
+519
+00:26:26,066 --> 00:26:28,266
+这就是rip相对寻址
+so that's rip relative addressing
+
+520
+00:26:30,966 --> 00:26:31,766
+现在
+now
+
+521
+00:26:32,400 --> 00:26:35,900
+你可以向内存写入立即数
+you can write immediate values to memory
+
+522
+00:26:37,866 --> 00:26:40,100
+但是你必须指定它们的大小
+but you must specify their size
+
+523
+00:26:42,133 --> 00:26:50,100
+因为CPU不知道0x1337要占多大
+because the CPU doesn't know how big 0x1337 is
+
+524
+00:26:50,100 --> 00:26:52,000
+它可能知道
+it knows  it could potential know 
+
+525
+00:26:52,000 --> 00:26:53,700
+汇编器，实际上不是CPU
+the assembler actually not the CPU
+
+526
+00:26:53,700 --> 00:26:54,633
+汇编器不知道
+the assembler doesn't know 
+
+527
+00:26:54,866 --> 00:26:57,333
+这条指令该告诉cpu做什么
+what instruction taught but what to tell the CPU to do
+
+528
+00:26:58,300 --> 00:27:04,500
+它是该告诉CPU写入00001337
+it could is it telling the CPU to write 00001337 
+
+529
+00:27:04,700 --> 00:27:06,933
+还是说写入4个字节
+or is it telling that 4 bytes 
+
+530
+00:27:07,100 --> 00:27:10,333
+或者告诉CPU写入2字节1337呢
+or is it telling the CPU to write 2 bytes 1337
+
+531
+00:27:10,833 --> 00:27:12,333
+2个不同的指令
+2 different instructions
+
+532
+00:27:12,800 --> 00:27:15,666
+两种不同的二进制表示
+two different representations in binary
+
+533
+00:27:16,166 --> 00:27:18,266
+所以你可以显示指定一个大小
+and so you can specify a size 
+
+534
+00:27:18,366 --> 00:27:19,133
+你可以说嘿
+you can say hey
+
+535
+00:27:19,266 --> 00:27:22,066
+Rax目前是双字指针
+rax is currently a double word pointer
+
+536
+00:27:22,700 --> 00:27:24,366
+它指向一个双字
+it's pointing to a double word 
+
+537
+00:27:24,600 --> 00:27:26,400
+所以写入4字节
+so write 4 bytes
+
+538
+00:27:27,300 --> 00:27:28,366
+取决于你的汇编器
+depending on your assembler
+
+539
+00:27:28,366 --> 00:27:30,800
+可能写作DWORD，而不是DWORD PTR
+it might want DWORD instead of DWORD PTR
+
+540
+00:27:31,366 --> 00:27:32,466
+或QWORD
+or QWORD
+
+541
+00:27:34,400 --> 00:27:35,500
+或WORD
+or WORD 
+
+542
+00:27:35,500 --> 00:27:36,533
+这就是它们的原理
+that's how these work
+
+543
+00:27:37,133 --> 00:27:40,266
+我会在后面的shellcoding中讲到它
+and I actually have that later in the shellcoding
+
+544
+00:27:40,333 --> 00:27:42,366
+因为在那里更相关
+because that's where it becomes a little more relevant
+
+545
+00:27:43,066 --> 00:27:43,866
+好吧
+all right 
+
+546
+00:27:44,133 --> 00:27:48,933
+最后，栈并不是唯一的内存区域
+and finally the stack isn't the only memory region
+
+547
+00:27:49,066 --> 00:27:51,700
+还有其他的内存区域，我们稍后会学到
+there are other memory regions that we'll learn about later
+
+548
+00:27:53,133 --> 00:27:54,266
+或者我猜是栈
+or I guess the stack 
+
+549
+00:27:54,400 --> 00:27:59,100
+或者用rip相对寻址可以访问到的二进制代码
+or your binary code which is accessible with rip relative addressing
+
+550
+00:27:59,400 --> 00:28:04,133
+栈可以通过push pop和RSP寻址来访问
+the stack is accessible with push pop and addressing into RSP
+
+551
+00:28:04,266 --> 00:28:06,266
+还有其他的内存区域
+well there are other memory regions
+
+552
+00:28:08,200 --> 00:28:13,533
+你可以在程序中申请分配内存
+and you can also allocate other memories in your program
+
+553
+00:28:13,766 --> 00:28:15,400
+我们稍后再谈
+we'll talk about that later
+
+554
+00:28:15,600 --> 00:28:17,700
+希望你们对内存了解很多了
+hopefully you know a lot about memory
+
+555
+00:28:18,666 --> 00:28:19,866
+再见
+see you next time
+

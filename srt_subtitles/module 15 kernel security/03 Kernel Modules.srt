@@ -1,0 +1,2515 @@
+1
+00:00:00,733 --> 00:00:01,766
+你好黑客
+hello hackers
+
+2
+00:00:02,233 --> 00:00:07,266
+我们看一下PWN学院内核模块的第三个视频
+let's dive into the third video in the kernel module of pwn college 
+
+3
+00:00:08,566 --> 00:00:09,566
+内核的模块
+modules 
+
+4
+00:00:09,933 --> 00:00:15,033
+今天我们要讲的是内核的模块
+so we're going to talk today in this video about kernel modules
+
+5
+00:00:15,166 --> 00:00:23,966
+内核模块是Linux生态系统的重要组成部分
+kernel modules are an important part of the Linux ecosystem let's say 
+
+6
+00:00:24,866 --> 00:00:25,966
+它们是什么
+what are they
+
+7
+00:00:26,066 --> 00:00:27,833
+它们基本上就是库
+they are basically libraries 
+
+8
+00:00:28,233 --> 00:00:34,066
+概念上类似于用户空间的库
+conceptually analogous to a user space library
+
+9
+00:00:34,600 --> 00:00:38,300
+你可以将libc加载到进程中
+so you might load libc into your process 
+
+10
+00:00:38,900 --> 00:00:42,900
+以提供某些功能
+to provide certain functionality 
+
+11
+00:00:43,233 --> 00:00:44,366
+同样地
+in a similar way
+
+12
+00:00:44,400 --> 00:00:50,400
+内核将内核模块加载到自身以提供功能
+a kernel loads kernel modules into itself to provide functionality
+
+13
+00:00:50,866 --> 00:00:52,599
+内核模块是一个elf文件
+kernel module is an elf file
+
+14
+00:00:52,700 --> 00:00:53,900
+它有一个不同的后缀名
+it has a different extension 
+
+15
+00:00:54,033 --> 00:00:55,733
+.ko而不是.so
+.ko instead of .so
+
+16
+00:00:55,866 --> 00:00:57,299
+但它是一个elf文件
+but it is an elf file 
+
+17
+00:00:58,166 --> 00:01:03,866
+它也有段、节等等，就像elf文件一样
+and it has segment sections etc just like an elf file
+
+18
+00:01:04,066 --> 00:01:07,333
+就像so库
+and just like a shared object the library
+
+19
+00:01:07,400 --> 00:01:10,366
+但它会被加载到内核的地址空间
+it is loaded into the address space of the kernel
+
+20
+00:01:11,366 --> 00:01:14,699
+类似于库会被加载到进程的地址空间
+similar to how a library is loaded into the address space of a process 
+
+21
+00:01:14,800 --> 00:01:19,566
+类似于库会以该进程的身份运行
+and similar to how a library is running as that process
+
+22
+00:01:19,733 --> 00:01:22,599
+模块会以内核的身份运行
+the module is running as the kernel
+
+23
+00:01:26,100 --> 00:01:31,166
+内核模块主要用于实现设备驱动程序
+kernel modules are used to implement predominantly device drivers
+
+24
+00:01:31,366 --> 00:01:33,366
+如果你有显卡的话
+if you have a graphics card
+
+25
+00:01:33,566 --> 00:01:35,399
+我有一个显卡
+i have a graphics card
+
+26
+00:01:35,666 --> 00:01:38,799
+提前看一下
+so i'll show you looking a little bit ahead 
+
+27
+00:01:39,033 --> 00:01:40,133
+执行lsmod
+do an lsmod
+
+28
+00:01:40,133 --> 00:01:43,299
+它列出了我系统上运行的模块
+this lists the modules running on my system
+
+29
+00:01:43,500 --> 00:01:49,766
+我的nvidia显卡已经加载到内核中了
+and i have my nvidia graphics cards loaded into my kernel 
+
+30
+00:01:50,133 --> 00:01:53,366
+显卡模块驱动程序
+graphic card modules drivers
+
+31
+00:01:53,866 --> 00:01:56,966
+这是一个内核驱动
+so that's one thing that kernel drivers provide 
+
+32
+00:01:57,533 --> 00:01:58,566
+文件系统
+file systems
+
+33
+00:01:58,566 --> 00:02:03,333
+许多文件系统实现都在内核中
+a lot of file system implementations are in the kernel 
+
+34
+00:02:03,400 --> 00:02:04,933
+这样更快
+it's faster that way
+
+35
+00:02:05,500 --> 00:02:09,733
+你可以用fuse在用户空间实现文件系统
+you can implement file systems in user space using something called fuse
+
+36
+00:02:10,100 --> 00:02:11,766
+我希望那是一个模块
+i was hoping that's a module 
+
+37
+00:02:12,566 --> 00:02:13,666
+也许它编译进了
+maybe that's compiled in 
+
+38
+00:02:13,766 --> 00:02:18,666
+但我想我的文件系统已经编译进内核了
+but i guess my file systems are compiled in 
+
+39
+00:02:18,700 --> 00:02:19,966
+或者至少
+or at least you know
+
+40
+00:02:21,300 --> 00:02:22,600
+我们接着讲
+we'll move on from that
+
+41
+00:02:24,200 --> 00:02:27,833
+文件系统可以是动态加载的内核模块
+file systems can be kernel modules loaded on the fly 
+
+42
+00:02:28,566 --> 00:02:30,133
+网络功能
+networking functionality 
+
+43
+00:02:30,633 --> 00:02:33,666
+比如这里的防火墙
+so for example my firewall here
+
+44
+00:02:36,900 --> 00:02:37,700
+是
+is
+
+45
+00:02:40,800 --> 00:02:46,700
+或至少防火墙中的一些功能是内核模块
+or at least some functionality in my firewall is a kernel module
+
+46
+00:02:48,166 --> 00:02:49,866
+还有很多其他的东西
+and various other stuff 
+
+47
+00:02:50,733 --> 00:02:53,099
+比如，CPU特性的硬件支持
+hardware support for CPU features
+
+48
+00:02:53,566 --> 00:02:55,599
+加密之类的
+for Crypto stuff like this 
+
+49
+00:02:55,733 --> 00:02:59,299
+任何你只想在特定情况加载的功能
+anything that you might want to load in certain circumstances 
+
+50
+00:02:59,433 --> 00:03:01,066
+或者只想在某些系统加载的功能
+or in certain systems but not others 
+
+51
+00:03:01,533 --> 00:03:04,666
+都适用于做成内核模块
+works well as a kernel module as a library
+
+52
+00:03:06,766 --> 00:03:08,933
+那么如何与这些模块交互呢
+so how do you interact with these modules
+
+53
+00:03:09,066 --> 00:03:10,733
+显然我们会讨论
+because obviously we're going to be talking about 
+
+54
+00:03:10,833 --> 00:03:15,666
+你该如何与这些外加到内核的模块交互
+how you interact with these additions to the kernel 
+
+55
+00:03:15,833 --> 00:03:18,333
+最终利用里面的漏洞
+exploit vulnerabilities eventually
+
+56
+00:03:19,100 --> 00:03:20,633
+当我们把所有的东西放在一起
+when we start putting it all together 
+
+57
+00:03:20,766 --> 00:03:24,733
+然后实现提权之类的
+and then achieve privilege escalation or what have you
+
+58
+00:03:27,766 --> 00:03:28,866
+从历史上看
+historically
+
+59
+00:03:29,933 --> 00:03:31,599
+有很多交互点
+there's a number of interaction points
+
+60
+00:03:31,766 --> 00:03:33,466
+我们会讲到其中的一些
+and we're gonna cover a bunch of them
+
+61
+00:03:33,933 --> 00:03:36,099
+其中一些是只有以前有的
+some of them are historical
+
+62
+00:03:36,100 --> 00:03:36,866
+比如这个
+like this one 
+
+63
+00:03:37,400 --> 00:03:38,566
+曾经
+historically
+
+64
+00:03:38,933 --> 00:03:45,233
+给内核模块，注册系统调用处理程序，并不难
+it was not too difficult for a kernel module to register a syscall handler
+
+65
+00:03:45,866 --> 00:03:48,766
+因此，可能你加载一个内核模块
+so you might suddenly load a kernel module
+
+66
+00:03:48,900 --> 00:03:53,466
+就有了一个新的系统调用，叫sysyan
+suddenly have a new system call, called sysyan
+
+67
+00:03:53,900 --> 00:03:56,100
+你可以给sysyan传参数
+and you could call sysyan with some arguments
+
+68
+00:03:56,366 --> 00:04:00,699
+然后该模块会收到
+and then the module would receive that 
+
+69
+00:04:00,766 --> 00:04:03,366
+会检测到该系统调用，执行它
+would intercept that system call and do stuff 
+
+70
+00:04:03,900 --> 00:04:08,400
+这在现代内核中显然是不支持的
+this is very explicitly unsupported in modern kernels
+
+71
+00:04:08,533 --> 00:04:12,333
+内核开发人员想尽办法让这变得更加困难
+kernel developers have gone out of their way to make this more difficult
+
+72
+00:04:12,433 --> 00:04:15,866
+它经常被rootkit利用
+it was often used by root kits 
+
+73
+00:04:16,000 --> 00:04:21,966
+用来覆盖open之类的
+to overwrite the functionality for open and so forth 
+
+74
+00:04:22,133 --> 00:04:26,333
+用来在系统中隐藏恶意软件
+to hide malicious software on a system 
+
+75
+00:04:26,533 --> 00:04:29,766
+让试图找它的合法用户，找不到
+from legitimate users that were trying to find it
+
+76
+00:04:31,333 --> 00:04:33,399
+这不是
+it's not really a 
+
+77
+00:04:34,166 --> 00:04:35,833
+双方对抗了十多年了
+fought over a decade now 
+
+78
+00:04:35,900 --> 00:04:40,100
+这种内核模块使用方式已经不支持了
+not a supported way of using kernel modules
+
+79
+00:04:40,800 --> 00:04:45,933
+内核模块也可以注册中断
+a kernel module could also register interrupts
+
+80
+00:04:46,100 --> 00:04:50,966
+你可能还记得一些shellcode或沙盒逃逸中的题
+so you might remember in some of the shellcoding or jailbreaking challenges
+
+81
+00:04:51,066 --> 00:04:53,166
+你用int指令
+you use the int instruction 
+
+82
+00:04:53,366 --> 00:04:56,199
+用中断，触发系统调用
+interrupt to trigger system calls
+
+83
+00:04:56,400 --> 00:05:01,666
+这是最初的32位x86的系统调用方式
+this was the 32 bit x86 way of doing system calls originally
+
+84
+00:05:02,466 --> 00:05:05,366
+在Linux中，它是int 0x80
+and in Linux that's int 0x80
+
+85
+00:05:05,533 --> 00:05:08,033
+Int 128将跳转到内核
+int 128 will jump into the kernel 
+
+86
+00:05:08,500 --> 00:05:09,733
+然后进行系统调用
+and do your system call 
+
+87
+00:05:10,133 --> 00:05:14,833
+没人阻止你int 一个别的数
+well nothing stop you from doing int other number
+
+88
+00:05:15,100 --> 00:05:17,866
+你可以做从0到255的任何事
+you can do anything from you know 0 to 255
+
+89
+00:05:18,466 --> 00:05:20,466
+其中一些有语义含义
+some of those have other semantic meanings
+
+90
+00:05:20,800 --> 00:05:21,666
+但举个例子
+but for example
+
+91
+00:05:21,733 --> 00:05:25,333
+你可以为int 42指令创建一个钩子
+you could create a hook for an int 42 instruction
+
+92
+00:05:26,133 --> 00:05:32,533
+你可以用LIDT或LGDT指令来创建它
+and you could create it by using the LIDT or the LGDT instruction 
+
+93
+00:05:33,000 --> 00:05:41,033
+将中断处理程序注册给CPU
+to load an interrupt handler into the cpu 
+
+94
+00:05:41,200 --> 00:05:43,300
+这样当int 42时
+so when int 42 happens 
+
+95
+00:05:43,733 --> 00:05:44,366
+处理程序
+the handler 
+
+96
+00:05:44,366 --> 00:05:47,233
+你模块中的函数的地址
+that address of it within your module of a function 
+
+97
+00:05:47,233 --> 00:05:49,366
+会被调用，来处理这个中断
+will get called to handle that 
+
+98
+00:05:49,900 --> 00:05:54,600
+这实际上是超级有助于魔改原有功能
+this is actually super useful for retrofitting crazy functionality
+
+99
+00:05:54,700 --> 00:05:57,266
+例如，有两个中断
+for example there are two interrupts that are
+
+100
+00:05:57,866 --> 00:05:59,466
+你可以用一个字节来触发
+that you can trigger using one byte
+
+101
+00:05:59,600 --> 00:06:02,233
+当然int 0x80或int 0x42
+of course int 0x80 or int 42 
+
+102
+00:06:02,333 --> 00:06:03,933
+这是两字节的指令
+that's two byte instruction
+
+103
+00:06:04,933 --> 00:06:07,199
+但int3和int1
+but an int 3 and an int 1 
+
+104
+00:06:07,333 --> 00:06:10,733
+实际上，int1好像不是实际的名字
+actually i don't think the int 1 is the actual name
+
+105
+00:06:10,833 --> 00:06:13,466
+我记得指令的名字是icebp
+i think it's ice is the name of the instruction
+
+106
+00:06:15,100 --> 00:06:16,966
+这些都是单字节指令
+those are single byte instructions 
+
+107
+00:06:17,133 --> 00:06:27,466
+你可以把它扔到任何地方去劫持某些功能
+that you can just throw anywhere to hook certain functionality 
+
+108
+00:06:27,533 --> 00:06:28,299
+举个例子
+so for example
+
+109
+00:06:28,700 --> 00:06:34,166
+GDB将int3 0xcc插入到软件中，来设置断点
+gdb inserts int 3 0xcc to set break points in software
+
+110
+00:06:34,233 --> 00:06:35,766
+但你可以创建一个模块
+but you could create a module 
+
+111
+00:06:36,000 --> 00:06:39,266
+改变int3的功能
+that changes what int3 does 
+
+112
+00:06:39,400 --> 00:06:43,900
+不像Linux内核的正常功能那样，引起SIGTRAP
+instead of causing a SIGTRAP as is the normal functionality of the Linux kernel
+
+113
+00:06:44,133 --> 00:06:46,599
+Int3可以运行你自定义的代码
+int3 could run your custom code 
+
+114
+00:06:46,866 --> 00:06:51,699
+例如，记录函数跳转的位置
+that for example records where functions are jumping
+
+115
+00:06:51,866 --> 00:06:54,499
+有一次我和一个朋友
+i once with a friend of mine
+
+116
+00:06:54,600 --> 00:06:56,266
+写了一个内核模块
+wrote a kernel module 
+
+117
+00:06:56,466 --> 00:06:58,933
+结合自定义加载程序
+where combined with a custom loader
+
+118
+00:06:59,033 --> 00:07:02,699
+把每个函数的开头替换为int 3
+that would replace the beginning of every function with int 3
+
+119
+00:07:02,800 --> 00:07:08,133
+每一个函数的末尾都替换成int 1，或反过来
+and the end of every function with int 1 or vice versa
+
+120
+00:07:08,933 --> 00:07:10,133
+基本上
+would basically
+
+121
+00:07:10,500 --> 00:07:12,600
+记录了函数调用关系
+keep track of what functions were calling each other
+
+122
+00:07:12,733 --> 00:07:14,833
+确保进程控制流不被劫持
+and make sure that control flow didn't get hijacked 
+
+123
+00:07:15,666 --> 00:07:16,333
+例如
+for example
+
+124
+00:07:16,966 --> 00:07:18,933
+你可以做这样疯狂的事
+you can do crazy stuff like that
+
+125
+00:07:20,933 --> 00:07:23,499
+你还可以做更疯狂的事情
+you can also do even crazier stuff 
+
+126
+00:07:23,566 --> 00:07:29,633
+比如劫持非法操作码的中断
+like hook the interrupt that happens when you trigger invalid code 
+
+127
+00:07:29,800 --> 00:07:33,300
+通常这会导致一个SIGILL被传到你的进程
+usually that causes a SIGILL to be delivered to your process
+
+128
+00:07:33,500 --> 00:07:37,666
+你肯定已经在ROP或shellcode模块，头疼过了
+as you'll i'm sure have painfully found out in the rop and shellcoding modules
+
+129
+00:07:38,566 --> 00:07:40,066
+但利用内核模块
+but with a kernel module
+
+130
+00:07:40,066 --> 00:07:41,299
+你可以让它做任何事
+you could make that do anything 
+
+131
+00:07:41,566 --> 00:07:42,799
+我记得是6号中断
+i think it's interrupt 6
+
+132
+00:07:43,933 --> 00:07:44,899
+不太确定
+don't quote me on that 
+
+133
+00:07:45,000 --> 00:07:51,000
+它是一个可劫持的中断
+and you know it is a hookable interrupt and
+
+134
+00:07:51,066 --> 00:07:55,733
+它已经被安全研究员用于改造安全系统了
+it has been used by security researchers to like retrofit security
+
+135
+00:07:57,300 --> 00:07:58,600
+实际上，我的一个学生
+actually one of my students
+
+136
+00:07:58,733 --> 00:08:01,899
+你可以点击这个链接
+you can click this link
+
+137
+00:08:02,066 --> 00:08:08,066
+看看他的研究视频
+and go to his video of the research that he did 
+
+138
+00:08:08,200 --> 00:08:12,133
+改进出更安全的read和write函数
+to retrofit safer reads and writes 
+
+139
+00:08:12,533 --> 00:08:14,799
+通过未定义指令
+by using undefined instructions
+
+140
+00:08:14,966 --> 00:08:18,333
+利用未定义的指令在软件中创建它们
+and abusing undefined instructions to basically create them in software 
+
+141
+00:08:18,800 --> 00:08:22,033
+通常这是一个定制的交互方法
+usually this is a bespoke interaction method 
+
+142
+00:08:22,166 --> 00:08:27,499
+没人会把这样的模块作为产品发布
+no one really ships production modules that do that
+
+143
+00:08:29,700 --> 00:08:33,466
+一种经常使用的交互方法
+one interaction method that is used quite a lot 
+
+144
+00:08:33,466 --> 00:08:34,899
+是文件
+is files
+
+145
+00:08:35,100 --> 00:08:38,733
+所以最常见的与模块交互的方式
+so the most common way in fact of interacting with modules
+
+146
+00:08:38,733 --> 00:08:42,066
+是模块创建一个文件
+is that the module creates a file 
+
+147
+00:08:42,866 --> 00:08:47,399
+或在文件系统的某处注册一个设备文件
+or registers a device file somewhere on the file system
+
+148
+00:08:47,533 --> 00:08:49,599
+这个某处可以是/dev
+and this somewhere can be /dev 
+
+149
+00:08:49,833 --> 00:08:55,499
+这是创建设备文件的传统位置
+this was the traditional place to create device files 
+
+150
+00:08:55,600 --> 00:08:58,566
+如果你现在看看/dev
+if you look at /dev right now
+
+151
+00:09:02,000 --> 00:09:04,666
+如果你查看Linux系统上的/dev
+if you look at /dev on your Linux system
+
+152
+00:09:04,800 --> 00:09:05,533
+有很多东西
+there's a lot of stuff 
+
+153
+00:09:05,666 --> 00:09:06,399
+例如
+for example
+
+154
+00:09:06,866 --> 00:09:10,966
+这个文件代表我硬盘
+this is a file representing my hard drive
+
+155
+00:09:12,400 --> 00:09:16,066
+如果我是root的话，我可以打开它
+and i can actually open it if i'm root
+
+156
+00:09:16,066 --> 00:09:17,666
+我有点害怕那样做
+i'm a little afraid to do that
+
+157
+00:09:18,533 --> 00:09:19,366
+但我可以打开它
+but i could open it
+
+158
+00:09:19,366 --> 00:09:22,633
+然后大量输出硬盘中的内容
+and actually scream out my hard drive contents 
+
+159
+00:09:22,966 --> 00:09:24,499
+比如可以用cat
+using cat for example
+
+160
+00:09:24,600 --> 00:09:26,833
+就是普通的交互，它只是一个文件
+just normal interaction it is just a file 
+
+161
+00:09:27,466 --> 00:09:31,199
+cd-rom是我的光驱
+cd rom is you know my cd drive 
+
+162
+00:09:31,533 --> 00:09:34,899
+DVD驱动器，是的，这台电脑还有DVD驱动器
+dvd drive and yes this computer has a dvd drive 
+
+163
+00:09:35,633 --> 00:09:36,333
+等等
+and so on 
+
+164
+00:09:36,533 --> 00:09:39,333
+这里有很多不同的设备
+so there's a lot of different devices here
+
+165
+00:09:39,533 --> 00:09:42,033
+能直接与内核模块通信
+that talk directly to kernel modules
+
+166
+00:09:42,100 --> 00:09:43,133
+这很酷
+which is pretty cool
+
+167
+00:09:44,700 --> 00:09:45,866
+还有/proc
+there's also /proc 
+
+168
+00:09:46,033 --> 00:09:47,966
+你用过/proc
+you have played around with /proc
+
+169
+00:09:48,166 --> 00:09:51,366
+/proc也是
+ well /proc is also a place for 
+
+170
+00:09:52,266 --> 00:09:55,499
+它最初是一个获取运行进程信息的地方
+it started out as a place to get information about running processes 
+
+171
+00:09:55,866 --> 00:09:56,599
+在Linux中
+in Linux
+
+172
+00:09:56,600 --> 00:10:02,000
+它扩展成了内核模块交互的地方
+it kind of expanded into this mess of kernel module interactions
+
+173
+00:10:02,000 --> 00:10:04,033
+很多内核模块等等
+a lot of kernel modules and so forth 
+
+174
+00:10:04,133 --> 00:10:06,733
+很多都被移到了/sys中
+and a lot of that got moved into /sys
+
+175
+00:10:06,900 --> 00:10:13,400
+但内核模块中，你还能在/proc创建文件
+but you can still create files in /proc from within kernel modules and
+
+176
+00:10:15,400 --> 00:10:17,300
+然后在用户空间与之交互
+have user space interact with them
+
+177
+00:10:17,533 --> 00:10:20,799
+通过文件与模块交互
+to interact with the module through a file
+
+178
+00:10:20,800 --> 00:10:22,200
+你只需调用open
+you just call open
+
+179
+00:10:22,966 --> 00:10:24,466
+就是这么简单
+that's it's that simple 
+
+180
+00:10:24,566 --> 00:10:25,199
+你调用open
+you call open
+
+181
+00:10:25,200 --> 00:10:29,500
+然后read，write，或一会儿讲的其它选择
+and then either read write or i'll talk about alternatives later
+
+182
+00:10:30,166 --> 00:10:32,099
+你可以与这些模块进行交互
+and you can interact with these modules 
+
+183
+00:10:32,933 --> 00:10:34,433
+读写都很简单
+read write very simple 
+
+184
+00:10:34,566 --> 00:10:35,733
+在内核空间中
+so in kernel space
+
+185
+00:10:35,866 --> 00:10:38,333
+你可以为，给模块注册的文件
+you can register a read handler and a write handler 
+
+186
+00:10:38,333 --> 00:10:43,333
+注册一个读处理程序和一个写处理程序
+for the file that you register for your module
+
+187
+00:10:43,666 --> 00:10:46,266
+然后做一些常规操作
+and then you can do stuff normal stuff
+
+188
+00:10:46,366 --> 00:10:47,599
+比如读入
+like read in 
+
+189
+00:10:48,366 --> 00:10:49,499
+这个读入有问题
+that's a invalid read 
+
+190
+00:10:49,633 --> 00:10:50,166
+马上
+one sec
+
+191
+00:10:50,466 --> 00:10:51,433
+我修正一下
+let me fix that 
+
+192
+00:10:55,900 --> 00:11:00,133
+在用户空间中，你可以读这个文件
+in userspace you can read from that file
+
+193
+00:11:00,200 --> 00:11:09,133
+这会让你内核模块处理程序被调用
+and that will cause your kernel's handlers to be called and
+
+194
+00:11:12,900 --> 00:11:15,100
+这个读取请求会被你的
+the read will be handled by your 
+
+195
+00:11:15,300 --> 00:11:15,800
+抱歉
+sorry
+
+196
+00:11:15,933 --> 00:11:21,166
+内核模块注册的处理程序处理
+your kernel modules handler functions that you register in the module
+
+197
+00:11:21,466 --> 00:11:27,099
+这对处理一滴溜一滴溜数据的内核模块很有用
+this is useful for modules that deal with like blobs of data 
+
+198
+00:11:27,266 --> 00:11:28,399
+如麦克风
+like a microphone
+
+199
+00:11:28,966 --> 00:11:30,566
+就比如有一个麦克风内核模块
+so if you have a module for a microphone
+
+200
+00:11:30,633 --> 00:11:31,799
+或相机内核模块
+or module for a camera
+
+201
+00:11:32,600 --> 00:11:34,500
+完了有人要读它
+and someone starts reading from it
+
+202
+00:11:34,800 --> 00:11:37,766
+这个device_read/write就正管这种情况
+that's exactly what this interface is for 
+
+203
+00:11:37,900 --> 00:11:39,766
+有一个更高级的接口
+there's a more advanced interface 
+
+204
+00:11:40,300 --> 00:11:46,033
+叫io控制，ioctl
+that uses what is called io control ioctl 
+
+205
+00:11:46,933 --> 00:11:48,733
+ioctl是一个系统调用
+ioctl is a system call 
+
+206
+00:11:49,066 --> 00:11:57,266
+当然，这提供了一个更灵活的接口
+of course that provides a much more flexible interface 
+
+207
+00:11:57,600 --> 00:12:01,266
+稍等，我的硬件出了问题
+one sec i'm having hardware problems this
+
+208
+00:12:03,400 --> 00:12:04,900
+我的鼠标坏了
+my mouse just broke
+
+209
+00:12:05,366 --> 00:12:07,699
+不能推进幻灯片
+so i can't advance a slide
+
+210
+00:12:09,533 --> 00:12:10,899
+好了
+there we go okay 
+
+211
+00:12:11,100 --> 00:12:16,066
+ioctl提供了一个灵活得多的接口
+so ioctl provides a much more flexible interface 
+
+212
+00:12:16,333 --> 00:12:19,333
+你注册一个ioctl处理程序
+basically you register an ioctl handler
+
+213
+00:12:19,733 --> 00:12:25,999
+在用户空间中，你仍然可以像往常一样打开文件
+and from user space you still open the file as normal
+
+214
+00:12:26,166 --> 00:12:30,366
+然后你调用ioctl
+and you invoke an ioctl syscall 
+
+215
+00:12:30,566 --> 00:12:31,766
+用上那个文件描述符
+with that file descriptor 
+
+216
+00:12:31,833 --> 00:12:33,166
+一个命令码
+a command code
+
+217
+00:12:33,200 --> 00:12:39,100
+它是由内核模块定义并检查的
+and this is a command code that's defined that's checked by the function in the kernel module
+
+218
+00:12:39,466 --> 00:12:40,766
+这是一个自定义命令码
+so it's a custom command code
+
+219
+00:12:40,866 --> 00:12:42,833
+你可以发送任意数据
+and you can send arbitrary data
+
+220
+00:12:43,233 --> 00:12:44,399
+这是非常灵活的
+this is very flexible
+
+221
+00:12:44,533 --> 00:12:45,699
+也很危险
+also very dangerous 
+
+222
+00:12:45,700 --> 00:12:47,866
+这些数据在内核中很容易被错误处理
+this data is very easy to mishandle in the kernel
+
+223
+00:12:48,100 --> 00:12:49,666
+造成了很多漏洞
+causing a lot of vulnerabilities
+
+224
+00:12:50,133 --> 00:12:53,933
+许多漏洞都源于ioctl
+a lot of vulnerabilities come from ioctl
+
+225
+00:12:56,400 --> 00:13:01,133
+源于一些糟糕的ioctl处理程序实现
+like badly implemented ioctl handlers in kernel modules
+
+226
+00:13:01,500 --> 00:13:07,733
+该接口用于写入和读取非流式数据
+this interface is useful for setting and retrieving non stream data 
+
+227
+00:13:08,000 --> 00:13:09,533
+所以如果你有一个网络摄像头驱动程序
+so if you have a webcam driver
+
+228
+00:13:09,933 --> 00:13:13,466
+你可能会流式的上传视频
+you might stream out the video
+
+229
+00:13:13,566 --> 00:13:17,266
+就用read
+using a just read you know
+
+230
+00:13:19,133 --> 00:13:23,466
+用read系统调用，和内核模块中的read处理程序
+using a read syscall and the appropriate read handler in the kernel module
+
+231
+00:13:23,700 --> 00:13:29,700
+但你可能会检索和设置，分辨率、色彩平衡等选项
+but you might retrieve and set options such as resolution color balance and so forth 
+
+232
+00:13:29,933 --> 00:13:32,199
+就可以用ioctl
+using ioctl as an example 
+
+233
+00:13:34,500 --> 00:13:38,966
+一旦你触发了和内核的交互
+so let's say once you trigger some interaction with the kernel
+
+234
+00:13:39,066 --> 00:13:40,166
+你打开文件
+you open the file
+
+235
+00:13:40,166 --> 00:13:42,666
+向文件中写入内容
+you write stuff into the file 
+
+236
+00:13:42,766 --> 00:13:44,399
+读出数据，之类的
+read from it or whatever 
+
+237
+00:13:44,400 --> 00:13:46,666
+内核模块能做什么
+what does the kernel module do
+
+238
+00:13:48,133 --> 00:13:49,766
+内核模块可以做任何事情
+the kernel module can do anything
+
+239
+00:13:51,400 --> 00:13:54,800
+因为它运行在0环
+because it is running in ring 0
+
+240
+00:13:55,300 --> 00:13:56,200
+但通常
+but typically
+
+241
+00:13:56,400 --> 00:13:58,233
+内核模块很守规矩
+kernel modules are fairly well behaved 
+
+242
+00:13:59,033 --> 00:14:05,933
+通常它会从进程中读取一些内容
+typically it'll read something from your process 
+
+243
+00:14:06,300 --> 00:14:14,733
+比如，用ioctl，读取你提供的数据
+for example using ioctl it will read that your provided data
+
+244
+00:14:15,666 --> 00:14:20,299
+我们一会儿会看copy_from_user和copy_to_user
+and we'll look at copy_from_user and copy_to_user in a sec
+
+245
+00:14:21,066 --> 00:14:22,466
+它会做一些事情
+it'll do stuff 
+
+246
+00:14:23,500 --> 00:14:25,366
+它会打开文件
+so it'll open files 
+
+247
+00:14:25,800 --> 00:14:27,466
+读取文件
+you know read from files 
+
+248
+00:14:27,566 --> 00:14:28,933
+与硬件交互
+interact with hardware 
+
+249
+00:14:29,200 --> 00:14:33,100
+做各种驱动程序要做的事情
+do all sorts of whatever it's driver stuff that it does 
+
+250
+00:14:33,400 --> 00:14:37,800
+然后它用copy_to_user将数据写回用户空间
+and then it'll write data back to user space using copy_to_user 
+
+251
+00:14:37,933 --> 00:14:40,199
+在ioctl中很常见
+again very common in ioctl
+
+252
+00:14:40,366 --> 00:14:43,433
+但read也是这么处理的
+but also how read is handled
+
+253
+00:14:43,533 --> 00:14:45,399
+write是这么处理的
+so this is how write would be handled
+
+254
+00:14:45,566 --> 00:14:47,199
+read是这么处理的
+this is how read is handled
+
+255
+00:14:47,266 --> 00:14:49,799
+然后返回到用户空间
+and then it returns to user space 
+
+256
+00:14:50,300 --> 00:14:51,800
+很酷
+very cool stuff 
+
+257
+00:14:53,133 --> 00:14:56,199
+那么如何编译模块呢
+so how do you compile modules
+
+258
+00:14:57,933 --> 00:14:59,366
+编译模块
+you compile modules
+
+259
+00:15:00,933 --> 00:15:02,766
+你可以按照网上的指南去做
+there's guides online you can follow
+
+260
+00:15:03,000 --> 00:15:08,866
+但我们为你创建了一个简单的环境，叫pwnkernel
+but again we created a simple environment for you called pwnkernel
+
+261
+00:15:09,066 --> 00:15:11,299
+在pwncollege的github仓库中
+under the pwn college GitHub organization 
+
+262
+00:15:12,566 --> 00:15:13,933
+它很简单
+it's very simple
+
+263
+00:15:16,900 --> 00:15:19,333
+现在我们在/pwn/kernel中
+here we are in /pwn/kernel
+
+264
+00:15:19,600 --> 00:15:21,966
+进入src
+if we go into src
+
+265
+00:15:22,100 --> 00:15:23,700
+这里有很多模块
+i have a bunch of modules here 
+
+266
+00:15:24,933 --> 00:15:26,666
+只需要运行build
+you just run build
+
+267
+00:15:26,933 --> 00:15:28,499
+它会把它们都编译好
+and it'll build all of them 
+
+268
+00:15:29,066 --> 00:15:32,266
+部署到内核中
+deploy them into the kernel
+
+269
+00:15:36,800 --> 00:15:38,500
+实际上这里错了
+so actually this is incorrect
+
+270
+00:15:38,733 --> 00:15:39,699
+我改一下
+let me fix that real quick 
+
+271
+00:15:39,833 --> 00:15:40,899
+这是build.sh
+it's build.sh
+
+272
+00:15:45,933 --> 00:15:48,333
+如果你想创建自己的内核模块
+so if you want to create your own kernel module
+
+273
+00:15:48,500 --> 00:15:54,333
+受益于这里的PWN学院框架
+benefiting from the pwn college framework here 
+
+274
+00:15:54,866 --> 00:15:56,299
+你可以进入src
+you're going to source
+
+275
+00:15:56,433 --> 00:15:58,733
+这是放着我们的内核模块
+this is where our kernel modules live
+
+276
+00:15:58,966 --> 00:16:00,666
+还有一堆临时文件
+there's a bunch of temporary files in here 
+
+277
+00:16:00,966 --> 00:16:04,633
+你可以在这里创建
+but you can create
+
+278
+00:16:08,466 --> 00:16:11,033
+这是最简单的，我一会儿给你们看
+this is the simplest one i'll show it to you in a sec 
+
+279
+00:16:11,400 --> 00:16:15,900
+然后创建，比如yanmodule.c
+and create hello let's say yanmodule.c
+
+280
+00:16:18,166 --> 00:16:19,599
+编辑makefile
+you edit the makefile 
+
+281
+00:16:19,700 --> 00:16:23,466
+然后在这里添加yanmodule.o
+and just add yanmodule.o here
+
+282
+00:16:23,566 --> 00:16:25,366
+我不知道为什么是.o
+i don't know why .o for this
+
+283
+00:16:25,466 --> 00:16:26,833
+但你就这么做吧
+but just do it 
+
+284
+00:16:27,333 --> 00:16:28,499
+就是这么简单
+and it's that simple 
+
+285
+00:16:28,500 --> 00:16:29,600
+然后执行build
+then you do a build
+
+286
+00:16:33,900 --> 00:16:38,700
+然后pwnkernel会
+and then pwnkernel will go through 
+
+287
+00:16:39,033 --> 00:16:41,366
+构建出所有模块，包括你的模块
+build everything including your module
+
+288
+00:16:41,800 --> 00:16:43,800
+并将其部署到正在运行的内核中（口误）
+and deploy it in the running kernel
+
+289
+00:16:44,066 --> 00:16:45,099
+哦,抱歉
+oh sorry
+
+290
+00:16:45,100 --> 00:16:48,066
+将其部署到一个新的用户空间文件系统中
+deploy it in a new user space file system 
+
+291
+00:16:48,433 --> 00:16:53,033
+然后你可以用launch启动内核
+where you can then call launch to start the kernel 
+
+292
+00:16:53,166 --> 00:16:56,999
+所有的模块都在这里
+and all of the modules are right here
+
+293
+00:16:57,133 --> 00:16:58,866
+yanmodule.ko在这里
+so here's the yanmodule.ko
+
+294
+00:16:58,866 --> 00:17:00,166
+很棒
+awesome stuff okay
+
+295
+00:17:00,366 --> 00:17:01,533
+我们创建了一个模块
+so we've created a module 
+
+296
+00:17:01,600 --> 00:17:08,300
+那么我们如何加载一个模块呢
+so how do we load a module
+
+297
+00:17:09,500 --> 00:17:11,966
+我要展示
+so i'm going to show you actually
+
+298
+00:17:12,066 --> 00:17:13,333
+先关了这个
+let's kill the this 
+
+299
+00:17:13,433 --> 00:17:14,399
+我不应该
+i shouldn't have 
+
+300
+00:17:14,400 --> 00:17:15,366
+没关系
+well it doesn't matter 
+
+301
+00:17:15,766 --> 00:17:17,766
+我们来看看yanmodule是什么
+so let's see what yanmodule is
+
+302
+00:17:19,933 --> 00:17:20,766
+yanmodule
+yanmodule 
+
+303
+00:17:20,766 --> 00:17:24,399
+实际就是拷贝了一份hello_log
+or really i just copied it from hello_log that module 
+
+304
+00:17:25,466 --> 00:17:28,099
+它是最小的内核模块
+it is the smallest possible kernel module 
+
+305
+00:17:28,700 --> 00:17:29,666
+它所做的一切
+all it does 
+
+306
+00:17:30,100 --> 00:17:31,866
+哦，我忘了给你们看我的屏幕了
+oops i forgot to show you my screen
+
+307
+00:17:32,200 --> 00:17:35,500
+yanmodule是最小的内核模块
+ yanmodule is the smallest possible kernel module
+
+308
+00:17:36,166 --> 00:17:37,799
+其实它就是hello_log
+hello_log.c rather 
+
+309
+00:17:38,033 --> 00:17:44,966
+它就往内核日志中打印一条hello
+all it does is print to the kernel log hello
+
+310
+00:17:45,166 --> 00:17:46,699
+还有一条goodbye
+and then print goodbye
+
+311
+00:17:46,933 --> 00:17:48,933
+加载时打印hello
+hello is printed when it is loaded
+
+312
+00:17:49,166 --> 00:17:51,966
+卸载时打印goodbye
+goodbye is printed when it is unloaded
+
+313
+00:17:53,366 --> 00:17:55,733
+我们启动内核
+so let's launch the kernel
+
+314
+00:17:58,700 --> 00:17:59,300
+开始吧
+here we go
+
+315
+00:17:59,300 --> 00:18:01,366
+我们现在在小机器里
+we are inside our tiny machine 
+
+316
+00:18:02,100 --> 00:18:04,366
+hello_log在这儿
+here is hello_log
+
+317
+00:18:04,733 --> 00:18:06,833
+如何加载模块
+how do you load modules
+
+318
+00:18:06,966 --> 00:18:08,633
+很容易，用insmod
+very easy insmod 
+
+319
+00:18:09,000 --> 00:18:11,700
+实际是init_module系统调用
+or realistically the init_module system call 
+
+320
+00:18:12,200 --> 00:18:14,066
+需要文件名等参数
+takes a file name and so forth 
+
+321
+00:18:14,166 --> 00:18:15,533
+你可以在man手册上看看
+you can look it at the manpage
+
+322
+00:18:16,233 --> 00:18:18,966
+但这通常是通过insmod完成的
+but it's usually done through the insmod utility 
+
+323
+00:18:19,066 --> 00:18:21,833
+当然，你必须有合适权限
+of course you have to have the right capabilities 
+
+324
+00:18:21,966 --> 00:18:25,466
+实际上，我们差不多得是root
+realisticly we have to be more or less root normally
+
+325
+00:18:26,733 --> 00:18:31,333
+幸运的是，这个虚拟机中，我们是root
+luckily we are root right now in my configuration of this vm
+
+326
+00:18:31,600 --> 00:18:35,200
+所以我可以执行insmod hello_log
+so i can do insmod hello_log 
+
+327
+00:18:35,300 --> 00:18:36,766
+非常简单
+and again very simple 
+
+328
+00:18:36,766 --> 00:18:39,566
+它就初始化时打印条日志，退出时打印一条
+all it does is log on init log on cleanup 
+
+329
+00:18:39,833 --> 00:18:41,299
+我们开始吧
+and here we go
+
+330
+00:18:41,800 --> 00:18:42,900
+加载完了
+i'm loaded it 
+
+331
+00:18:43,033 --> 00:18:46,399
+打出了日志
+and it's gives me this log 
+
+332
+00:18:46,466 --> 00:18:47,533
+好的
+okay awesome
+
+333
+00:18:47,533 --> 00:18:48,066
+接下来呢
+what's next 
+
+334
+00:18:48,633 --> 00:18:49,866
+列出模块
+listing modules
+
+335
+00:18:50,066 --> 00:18:51,766
+我在视频开始的时候做过
+i did this at the beginning of the video
+
+336
+00:18:51,866 --> 00:18:53,399
+用lsmod
+but you can lsmod
+
+337
+00:18:53,733 --> 00:18:54,866
+能看到它
+and we can see that 
+
+338
+00:18:54,933 --> 00:18:56,866
+就加载了它一个
+this is the only module i have loaded
+
+339
+00:18:57,000 --> 00:18:58,533
+还能看到加载位置
+and where it's loaded actually
+
+340
+00:18:58,533 --> 00:18:59,766
+这非常有用
+which is very useful
+
+341
+00:19:00,600 --> 00:19:01,966
+好的，还有什么
+okay what else 
+
+342
+00:19:02,066 --> 00:19:03,466
+删除模块
+removing modules
+
+343
+00:19:03,466 --> 00:19:06,333
+能用rmmod删除这个模块
+so i can remove this module using rmmod
+
+344
+00:19:06,900 --> 00:19:07,866
+rmmod hello_log
+rmmod hello_log 
+
+345
+00:19:08,366 --> 00:19:11,199
+很有礼貌地跟我说了再见
+and says goodbye to me very polite
+
+346
+00:19:13,400 --> 00:19:14,600
+lsmod看一下，已经不在了
+lsmod is no longer there 
+
+347
+00:19:14,600 --> 00:19:16,066
+我可以再insmod一次
+i can insmod it again
+
+348
+00:19:18,500 --> 00:19:19,400
+它又回来了
+it's back
+
+349
+00:19:21,666 --> 00:19:23,199
+我再rmmod一次
+and i can rmmod it again
+
+350
+00:19:25,333 --> 00:19:26,166
+太棒了
+awesome
+
+351
+00:19:26,700 --> 00:19:28,766
+好了，这很简单
+all right that was nice and simple 
+
+352
+00:19:29,633 --> 00:19:33,266
+现在我要再花几分钟
+now i'm going to take a couple of minutes
+
+353
+00:19:33,366 --> 00:19:35,133
+演示几个示例模块
+and run through a couple of example modules 
+
+354
+00:19:35,200 --> 00:19:36,533
+目前只看了hello_log
+we just looked at hello_log 
+
+355
+00:19:36,900 --> 00:19:37,800
+它很简单
+it's very simple 
+
+356
+00:19:38,000 --> 00:19:42,133
+内核开发听起来很可怕
+again kernel development sounds scary
+
+357
+00:19:42,600 --> 00:19:44,666
+但你用它，就能写一个模块
+but you can write a module with just this
+
+358
+00:19:45,733 --> 00:19:47,999
+并能让内核执行你的代码
+and you have code execution with kernel 
+
+359
+00:19:48,300 --> 00:19:49,100
+太棒了
+that's awesome 
+
+360
+00:19:53,700 --> 00:19:55,000
+看看还有什么
+let's see what else we got
+
+361
+00:19:55,700 --> 00:19:57,400
+我们看看hello_dev_char
+let's look at hello_dev_char
+
+362
+00:19:57,600 --> 00:20:04,666
+这创建了一个字符设备文件，我们可以读写它
+so this basically just creates a character device file that we can read and write from
+
+363
+00:20:05,500 --> 00:20:06,466
+我们快速浏览一下
+let's take a quick look
+
+364
+00:20:06,566 --> 00:20:08,466
+它稍微复杂点
+it's a little more complicated
+
+365
+00:20:13,966 --> 00:20:15,266
+你可以看到
+so you can see
+
+366
+00:20:16,366 --> 00:20:20,799
+它有更多的函数
+it has a couple of more functions 
+
+367
+00:20:21,266 --> 00:20:22,999
+稍微复杂点
+things are a little more complicated
+
+368
+00:20:23,466 --> 00:20:27,033
+它做的一件事是注册字符设备
+one thing that it does is do this register character device
+
+369
+00:20:27,166 --> 00:20:27,999
+它基本就是
+a character device is basically
+
+370
+00:20:28,000 --> 00:20:30,700
+每次能读取一个字符
+ just a device that you can read one character at a time from
+
+371
+00:20:30,700 --> 00:20:32,400
+或几个字符的设备
+or however many characters at a time from 
+
+372
+00:20:32,766 --> 00:20:34,133
+相较于块设备
+as opposed to a block device
+
+373
+00:20:34,133 --> 00:20:36,199
+一次要读取特定数量的数据块
+where you have to read certain amounts of blocks
+
+374
+00:20:38,000 --> 00:20:40,366
+块设备，例如有硬盘
+a block device is like a hard drive for example
+
+375
+00:20:40,466 --> 00:20:42,499
+字符设备，有麦克风
+a character device is like a microphone
+
+376
+00:20:45,566 --> 00:20:47,133
+该模块初始化时
+when this module is initialized
+
+377
+00:20:47,133 --> 00:20:50,499
+它注册了一个名为pwn-college-char的字符设备
+it registers a character device called pwn college
+
+378
+00:20:51,333 --> 00:21:02,399
+但该方式注册完，还要在/dev下创建设备文件
+but it registers it in a way that we still have to create the device file in /dev
+
+379
+00:21:03,200 --> 00:21:05,100
+它会告诉我们怎么做
+and it'll actually tell us how to do that 
+
+380
+00:21:05,400 --> 00:21:06,766
+当我们调用register_chrdev后
+when we call register device
+
+381
+00:21:06,900 --> 00:21:08,533
+它会返回一个major_number
+it receives a major number 
+
+382
+00:21:08,533 --> 00:21:11,099
+这是一个标识符
+this is an identifier
+
+383
+00:21:11,100 --> 00:21:12,400
+有点像文件描述符
+kind of like a file descriptor 
+
+384
+00:21:12,966 --> 00:21:23,499
+它是一个数字，表明这是你的设备
+in a very different way it is a number that says this is your device 
+
+385
+00:21:23,900 --> 00:21:31,866
+当带有该标识的设备被打开时
+when a device with that identifying number is opened
+
+386
+00:21:32,166 --> 00:21:34,166
+我们的内核模块会被调用
+our kernel module will be invoked
+
+387
+00:21:34,466 --> 00:21:38,099
+它会注册这个file_operations结构体
+and then it registers this file operations struct
+
+388
+00:21:38,400 --> 00:21:42,066
+file_operations有一堆函数指针
+file operations struct has a bunch of function pointers 
+
+389
+00:21:42,533 --> 00:21:45,333
+指向read、write、open和release
+to read write open and release 
+
+390
+00:21:45,500 --> 00:21:48,000
+打开文件时，调用open
+so open gets called when the file is open
+
+391
+00:21:48,200 --> 00:21:50,000
+关闭文件时，调用release
+release gets called when the file is closed
+
+392
+00:21:50,566 --> 00:21:55,199
+read和write会在文件被读取和写入时调用
+read and write gets called when the file is read from or written to
+
+393
+00:21:55,300 --> 00:21:57,933
+这里我们可以看到非常简单的东西
+and here we can see something very very simple here
+
+394
+00:21:58,200 --> 00:21:59,933
+执行device_read时
+we do a device read 
+
+395
+00:22:00,966 --> 00:22:02,499
+打开设备时
+when the device is opened
+
+396
+00:22:02,700 --> 00:22:04,666
+我们就打一条日志，说打开了
+all we do is log that it's been open 
+
+397
+00:22:05,000 --> 00:22:06,000
+关闭设备时
+when it's closed
+
+398
+00:22:06,000 --> 00:22:08,066
+打一条日志，说关上了
+all we do is log that it's been closed
+
+399
+00:22:08,500 --> 00:22:12,166
+当设备被读取时
+when the device has been being read from
+
+400
+00:22:13,200 --> 00:22:21,133
+我们返回字符串Hello pwn.college!，然后返回
+we just return the string hello pwn college and we return
+
+401
+00:22:24,800 --> 00:22:27,200
+我们用copy_to_user
+we use copy_to_user
+
+402
+00:22:27,466 --> 00:22:29,866
+copy_to_user是一个内核函数
+copy_to_user is a kernel function 
+
+403
+00:22:30,666 --> 00:22:36,299
+能将数据安全地复制到用户空间
+that copies data back into user space safely
+
+404
+00:22:37,500 --> 00:22:38,766
+所以数据
+so the data 
+
+405
+00:22:39,133 --> 00:22:44,833
+目标地址就是我们传入的buffer指针
+the destination is whatever this buffer pointer that we were passed in 
+
+406
+00:22:45,200 --> 00:22:46,933
+要拷贝的msg
+we copy the message
+
+407
+00:22:48,733 --> 00:22:49,799
+即Hello pwn.college!
+hello pwn college
+
+408
+00:22:49,900 --> 00:22:51,100
+还有长度
+and the length 
+
+409
+00:22:51,233 --> 00:22:54,866
+这就是我们输出到用户空间的方式
+and this is how we output to the user
+
+410
+00:23:00,400 --> 00:23:03,366
+他们会读取到的数据
+the data that they're going to read
+
+411
+00:23:03,833 --> 00:23:06,099
+这个驱动程序实际上不支持写入
+and this driver doesn't actually support write
+
+412
+00:23:06,200 --> 00:23:08,533
+它说一下不支持，然后返回错误码EINVAL
+it just says it returns an EINVAL error code
+
+413
+00:23:08,600 --> 00:23:12,500
+这些就是syscall后在rax中拿到的错误码
+and these are the error codes that you keep getting in rax from the syscalls
+
+414
+00:23:12,800 --> 00:23:13,800
+这个错误代码
+this error code
+
+415
+00:23:13,900 --> 00:23:20,133
+这是它输出的长度
+this is how much it will have written
+
+416
+00:23:21,100 --> 00:23:25,733
+我记得copy_to_user会返回还剩多少没输出到用户空间
+i think copy_to_user returns how much is left to write out of this amount 
+
+417
+00:23:26,500 --> 00:23:29,133
+如果一次没全输出到用户空间
+if it fails to write the whole thing all at once
+
+418
+00:23:29,700 --> 00:23:33,433
+这就返回它已经输出了多少
+and so this returns how much it has written
+
+419
+00:23:33,666 --> 00:23:34,999
+当然，这需要对齐
+of course this needs to line up 
+
+420
+00:23:35,233 --> 00:23:37,366
+否则read会表现得很奇怪
+or read will act very strangely 
+
+421
+00:23:38,466 --> 00:23:41,099
+基本上就是这样
+so that's basically it 
+
+422
+00:23:41,366 --> 00:23:45,366
+我们insmod hello
+let's um insmod hello
+
+423
+00:23:46,733 --> 00:23:47,966
+哦，在这里
+oops it's over here 
+
+424
+00:23:49,800 --> 00:23:52,933
+insmod hello_dev_char
+insmod hello_dev_char 
+
+425
+00:23:53,800 --> 00:23:54,500
+所以它说好的
+so it says okay
+
+426
+00:23:54,700 --> 00:23:57,633
+我们注册的主设备号是248
+we registered major number 248 
+
+427
+00:23:57,900 --> 00:24:00,366
+我们创建一个设备文件
+let's create a device file 
+
+428
+00:24:00,433 --> 00:24:03,899
+mknod表示make node
+mknod is make node 
+
+429
+00:24:04,366 --> 00:24:06,566
+它会创建一个设备文件
+it creates a device file
+
+430
+00:24:07,666 --> 00:24:09,066
+这个c表示是字符设备
+and this says character device
+
+431
+00:24:09,166 --> 00:24:12,133
+这个是该模块分配到的主设备号
+and this is the major number that identifier that this module was assigned 
+
+432
+00:24:12,633 --> 00:24:14,166
+在它调用register_chrdev的时候
+when it called registered device
+
+433
+00:24:15,766 --> 00:24:16,533
+在这里
+right here
+
+434
+00:24:16,566 --> 00:24:18,266
+注册字符设备
+registered character device 
+
+435
+00:24:19,133 --> 00:24:20,366
+我们运行这个
+we run this 
+
+436
+00:24:20,600 --> 00:24:23,833
+现在我们有了一个设备文件
+okay now we have a device 
+
+437
+00:24:24,000 --> 00:24:25,500
+我们读它
+if we read from this
+
+438
+00:24:25,933 --> 00:24:27,999
+会得到Hello pwn.college!
+we will get hello pwn college 
+
+439
+00:24:28,200 --> 00:24:29,933
+我们这里用head看一下
+so let's do head here
+
+440
+00:24:30,300 --> 00:24:31,733
+Hello pwn.college!
+hello pwn college
+
+441
+00:24:32,066 --> 00:24:33,366
+很酷吧
+pretty cool huh
+
+442
+00:24:34,100 --> 00:24:38,066
+为什么我们有这么多
+why do we have a whole bunch of hello pwn colleges
+
+443
+00:24:38,366 --> 00:24:43,199
+因为head会一直读取，直到它读取了一定行数
+because head will keep reading until it reads some amount of lines
+
+444
+00:24:43,333 --> 00:24:44,299
+这就是head的工作方式
+that's what head does
+
+445
+00:24:44,400 --> 00:24:45,366
+如果用cat
+if i've had done cat
+
+446
+00:24:45,366 --> 00:24:47,499
+会一直卡在这里
+we would just be sitting here forever
+
+447
+00:24:48,266 --> 00:24:49,766
+如果我们只想读一次
+if we want to read just once 
+
+448
+00:24:49,900 --> 00:24:51,700
+可以用dd
+there's a shell utility dd
+
+449
+00:24:52,266 --> 00:24:54,599
+它的参数格式很奇怪
+it takes a weird argument format if
+
+450
+00:24:54,866 --> 00:25:00,066
+if，即输入文件，/dev/pwn.college-char
+and we have the input files /dev/pwn.college-char 
+
+451
+00:25:00,533 --> 00:25:02,366
+of，即输出文件，/dev/stdout
+of /dev/stdout 
+
+452
+00:25:02,766 --> 00:25:04,333
+再给一个读取的字节数
+we give it a byte size to read
+
+453
+00:25:04,500 --> 00:25:06,933
+让它一次读128字节
+it'll read a hundred and twenty eight bytes at a time
+
+454
+00:25:06,933 --> 00:25:08,299
+且只读一次
+and to say read only once 
+
+455
+00:25:08,900 --> 00:25:09,733
+和
+and 
+
+456
+00:25:13,000 --> 00:25:15,533
+我们的输出在哪里
+where's our output
+
+457
+00:25:24,466 --> 00:25:25,099
+就是这个
+there it is 
+
+458
+00:25:25,366 --> 00:25:28,399
+我们输出到文件描述符1
+so we've output it to file descriptor one 
+
+459
+00:25:28,800 --> 00:25:29,533
+就好了
+and here we go 
+
+460
+00:25:30,766 --> 00:25:31,966
+这就是我们的
+so that is our
+
+461
+00:25:35,800 --> 00:25:36,733
+字符设备
+character device 
+
+462
+00:25:37,000 --> 00:25:41,400
+有个类似的proc设备
+there's a similar one for a proc device
+
+463
+00:25:41,500 --> 00:25:42,866
+它不在/dev中
+instead of in /dev
+
+464
+00:25:42,900 --> 00:25:44,533
+我们用proc_create
+we use proc_create 
+
+465
+00:25:44,533 --> 00:25:46,266
+这个简单多了
+this is much simpler
+
+466
+00:25:46,333 --> 00:25:48,566
+因为它会自动创建设备文件
+because it automatically creates the device 
+
+467
+00:25:49,000 --> 00:25:50,766
+然后它会告诉我们，创建好了
+and then it'll tell us that's been created
+
+468
+00:25:50,900 --> 00:25:53,300
+然后我们可以用完全相同的方式和它互动
+and then we can interact with it in exactly the same way
+
+469
+00:25:53,733 --> 00:25:55,099
+其余的都是一样的
+the rest is the same 
+
+470
+00:25:55,200 --> 00:25:57,400
+就是改变了创建的地方
+it just changes where it creates it
+
+471
+00:25:57,700 --> 00:25:58,966
+这是一个不同的模块
+it's a different module 
+
+472
+00:25:59,066 --> 00:26:02,466
+我们insmod hello_proc_char
+so let's insmod hello_proc_char
+
+473
+00:26:05,066 --> 00:26:05,866
+怎么了
+what's going on
+
+474
+00:26:11,933 --> 00:26:13,533
+为什么不打印呢?
+why didn't print
+
+475
+00:26:14,000 --> 00:26:15,133
+我们重新启动内核
+let's restart the kernel
+
+476
+00:26:15,300 --> 00:26:17,700
+也许是别的模块有bug
+maybe there's some bug in a different module 
+
+477
+00:26:17,866 --> 00:26:19,333
+好了，开始吧
+okay here we go
+
+478
+00:26:21,200 --> 00:26:22,700
+hello_proc_char
+hello_proc_char 
+
+479
+00:26:23,033 --> 00:26:23,766
+好了
+there we go
+
+480
+00:26:29,933 --> 00:26:30,733
+创建了设备文件
+it created it 
+
+481
+00:26:30,733 --> 00:26:31,799
+不知道为什么没打印
+i don't know why it didn't print 
+
+482
+00:26:32,033 --> 00:26:32,966
+相同的用法
+same thing
+
+483
+00:26:34,366 --> 00:26:35,933
+这里是自动创建的
+so here it auto creates it 
+
+484
+00:26:36,100 --> 00:26:40,600
+我们可以读它
+and now we can read from it 
+
+485
+00:26:41,766 --> 00:26:43,799
+我们再看一个
+let's look at one other one 
+
+486
+00:26:44,066 --> 00:26:55,433
+这是ioctl的交互方式
+and that is the ioctl way of interaction 
+
+487
+00:26:55,566 --> 00:27:01,799
+这个有点疯狂
+and this one is kind of a little crazier
+
+488
+00:27:01,966 --> 00:27:04,099
+我们
+so we
+
+489
+00:27:12,966 --> 00:27:15,933
+我们下次演示这个ioctl
+actually let's save this ioctl demo
+
+490
+00:27:15,933 --> 00:27:18,399
+因为要30分钟了
+because we're going on to 30 minutes 
+
+491
+00:27:18,500 --> 00:27:22,733
+下一模块演示它
+for the next module where i will show it off in
+
+492
+00:27:22,800 --> 00:27:23,333
+哦,抱歉
+oh sorry 
+
+493
+00:27:23,433 --> 00:27:28,499
+下个视频中我将在另一个内核模块中展示它
+for the next video where i'll show it off in the context of a different module
+
+494
+00:27:30,100 --> 00:27:31,733
+这个make_root.c
+this make_root.c
+
+495
+00:27:31,966 --> 00:27:36,666
+它是展示内核漏洞的一个好的方式
+that's going to be an awesome way of showing off an actual kernel exploit 
+
+496
+00:27:36,900 --> 00:27:38,266
+不算是一个真正的内核漏洞
+or not an actual kernel exploit
+
+497
+00:27:38,266 --> 00:27:40,266
+算是内核的一个小后门
+but a little back door in the kernel
+
+498
+00:27:40,933 --> 00:27:49,099
+这就是我们关于内核模块的速成课
+so that is all for our quick quick crash course into kernel modules
+
+499
+00:27:50,266 --> 00:27:51,066
+当然
+of course
+
+500
+00:27:51,300 --> 00:27:55,166
+这个模块的练习题中
+for the challenge problems in this module
+
+501
+00:27:55,166 --> 00:27:58,099
+你将主要与内核模块进行交互
+you'll mostly be interacting with kernel modules
+
+502
+00:27:58,333 --> 00:28:03,066
+用它们来帮助你获取模拟器中的flag
+trying to use them to help you retrieve a flag inside your emulator
+
+503
+00:28:06,333 --> 00:28:07,299
+感谢收看
+thanks for watching
+

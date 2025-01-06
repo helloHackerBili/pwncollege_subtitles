@@ -1,0 +1,20 @@
+01 Introduction
+    https://www.youtube.com/watch?v=ClVocVk1c5g&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l
+
+02 Functions and Frames
+    https://www.youtube.com/watch?v=3IdeyjrMBA4&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l&index=2
+
+03 Data Access
+    https://www.youtube.com/watch?v=AtVprTb5xBs&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l&index=3
+    
+04 Static Tools
+    https://www.youtube.com/watch?v=ls4Eoew6aSY&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l&index=4
+
+05 Dynamic Tools
+    https://www.youtube.com/watch?v=HcBordv7aWU&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l&index=5
+
+06 Real-World Applications
+    https://www.youtube.com/watch?v=2pqvHSy11JE&list=PL-ymxv0nOtqrGVyPIpJeostmi7zW5JS5l&index=6
+
+practice here
+    https://pwn.college/program-security/reverse-engineering/

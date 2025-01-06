@@ -1,0 +1,11 @@
+01 introduction
+    https://www.youtube.com/watch?v=715v_-YnpT8&list=PL-ymxv0nOtqomtHqMqqgpuvWdVSs9NCBK
+
+02 Common Challenges
+    https://www.youtube.com/watch?v=i1jXV8W-CYQ&list=PL-ymxv0nOtqomtHqMqqgpuvWdVSs9NCBK&index=2
+
+03 Data Execution Prevention
+    https://www.youtube.com/watch?v=GH4NBLtPmyo&list=PL-ymxv0nOtqomtHqMqqgpuvWdVSs9NCBK&index=3
+    
+practice here
+    https://pwn.college/program-security/shellcode-injection/

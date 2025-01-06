@@ -1,0 +1,3625 @@
+1
+00:00:00,733 --> 00:00:02,500
+你好,学生
+hello students
+
+2
+00:00:02,733 --> 00:00:07,200
+欢迎来到基础系列的视频
+welcome to yet another entry in our fundamental series 
+
+3
+00:00:07,300 --> 00:00:10,933
+今天我们讨论汇编
+today we'll be talking about assembly code 
+
+4
+00:00:12,366 --> 00:00:16,766
+还记得我在讲计算机体系结构时
+if you recall when i talked about computer architecture
+
+5
+00:00:16,766 --> 00:00:20,000
+我给你们看的这张关于电脑的示意图吗
+i showed you this diagram of what more or less a computer is
+
+6
+00:00:20,000 --> 00:00:21,666
+我说了
+and i made the statement that
+
+7
+00:00:22,966 --> 00:00:25,966
+CPU关注的
+everything that the cpu concerns itself with 
+
+8
+00:00:26,000 --> 00:00:27,600
+只有二进制指令
+is binary code instructions
+
+9
+00:00:27,600 --> 00:00:30,733
+不管你最初用什么语言写的代码
+no matter what you originally write your code in 
+
+10
+00:00:30,900 --> 00:00:36,333
+C, Python，够疯的话，甚至是Ruby
+C Python even Ruby if you're a crazy person
+
+11
+00:00:37,000 --> 00:00:43,200
+最终CPU上运行的都是二进制指令
+etc right and then you're gonna end up running binary instructions on a cpu
+
+12
+00:00:43,500 --> 00:00:52,933
+CPU基本只接受汇编作为它的指定语言
+and that cpu basically only accept assembly as its true programming language
+
+13
+00:00:52,933 --> 00:01:01,733
+汇编基本就表示了二进制代码
+so assembly is a programming language representation of basically binary code 
+
+14
+00:01:02,200 --> 00:01:04,000
+它俩是非常直接的映射关系
+very straightforward mapping
+
+15
+00:01:04,800 --> 00:01:09,666
+我们将讨论汇编语言中的几个概念
+we're going to talk about several concepts in assembly language
+
+16
+00:01:09,666 --> 00:01:14,000
+这门课你们需要知道三个主要的
+really three main ones that you need to know for this course
+
+17
+00:01:14,800 --> 00:01:17,233
+指令、寄存器和内存
+instructions registers and memory 
+
+18
+00:01:18,100 --> 00:01:19,966
+再次提醒大家
+again as a reminder
+
+19
+00:01:20,700 --> 00:01:24,133
+这个基本系列应该是一个回顾
+this fundamental series is supposed to be a review
+
+20
+00:01:24,200 --> 00:01:26,800
+也许能填补你知识上的一些小空白
+maybe fill it some small gap you have in the knowledge
+
+21
+00:01:26,800 --> 00:01:28,566
+如果这对你是全新的
+if this is really new material to you
+
+22
+00:01:28,566 --> 00:01:31,533
+那你还没准备好上这门课
+then you are not ready to approach this course
+
+23
+00:01:32,566 --> 00:01:35,500
+你应该在上课前先学习汇编
+and you should go learn that before taking it 
+
+24
+00:01:35,566 --> 00:01:37,366
+熟悉的话，我们开始吧
+otherwise let's roll 
+
+25
+00:01:37,633 --> 00:01:39,600
+我们从寄存器开始
+we actually started with registers
+
+26
+00:01:40,366 --> 00:01:42,733
+寄存器是非常快
+registers are essentially very very fast
+
+27
+00:01:42,766 --> 00:01:48,000
+非常临时以及昂贵的存储数据的地方
+very very temporary and very very expensive places to store your data
+
+28
+00:01:48,000 --> 00:01:50,766
+这个昂贵是字面上的钱上的贵
+i say expensive as in literally the financial sense 
+
+29
+00:01:50,833 --> 00:01:52,166
+它们在CPU里
+they're right there in the cpu
+
+30
+00:01:52,166 --> 00:01:53,266
+它们要占用空间
+they take up space 
+
+31
+00:01:53,433 --> 00:01:57,100
+需要与环境连接上
+they need to be connected to everything
+
+32
+00:01:58,900 --> 00:02:00,833
+很难设计
+they're very hard to design in 
+
+33
+00:02:00,833 --> 00:02:03,200
+所以历史上
+and so historically there have been very very
+
+34
+00:02:04,333 --> 00:02:09,166
+设计时，它们一直很短缺
+there's been a shortage of them in architecture designs
+
+35
+00:02:09,800 --> 00:02:11,466
+如果你回顾过去
+if you go back in time
+
+36
+00:02:11,466 --> 00:02:13,000
+很旧之前
+if you go way back in time
+
+37
+00:02:13,666 --> 00:02:18,100
+常看到早期架构中只有2个寄存器
+you frequently see early architectures with like two registers
+
+38
+00:02:18,966 --> 00:02:22,500
+8085出现的时候
+the 8085 when it came around
+
+39
+00:02:22,633 --> 00:02:24,700
+它是一个8位的架构
+it was an 8 bit architecture 
+
+40
+00:02:24,833 --> 00:02:29,066
+它是现代AMD64架构
+that is the precursor to the precursor to 
+
+41
+00:02:32,000 --> 00:02:35,100
+前身的前身
+yeah the precursor to the precursor to the
+
+42
+00:02:37,300 --> 00:02:42,100
+的前身
+precursor to the modern AMD64 architecture
+
+43
+00:02:43,333 --> 00:02:44,466
+可能说的还是不准
+i probably still screwed that up
+
+44
+00:02:44,466 --> 00:02:49,533
+但无论如何，它是X86，以及amd64的祖先
+but anyways it was an ancestor of X86 of AMD64 specifically
+
+45
+00:02:51,566 --> 00:02:55,566
+它有7个8位的通用寄存器
+and it had seven general purpose 8 bit registers
+
+46
+00:02:56,900 --> 00:03:05,866
+Intel创建8086时，被扩展为16位
+that were all extended and modified a little bit to 16 bit when Intel created 8086
+
+47
+00:03:06,000 --> 00:03:09,600
+他们把这7个8位寄存器
+so they took all these 7 8 bit registers
+
+48
+00:03:09,600 --> 00:03:14,166
+扩展成了8个16位寄存器
+they ended up with 8 general purpose 16 bit registers
+
+49
+00:03:14,266 --> 00:03:18,700
+从寄存器A变成了寄存器AX
+so you went from A register A to register AX
+
+50
+00:03:18,733 --> 00:03:20,300
+X表示扩展
+which is A eXtended 
+
+51
+00:03:20,300 --> 00:03:21,866
+后面x86出现了
+then x86 came around
+
+52
+00:03:22,033 --> 00:03:28,566
+并进一步扩展到32位
+and extended it further to 32 bit
+
+53
+00:03:29,333 --> 00:03:32,033
+从AX变成了EAX
+right and you went from ax to eax 
+
+54
+00:03:32,066 --> 00:03:33,800
+我猜是Extended A eXtended
+i guess Extended A eXtended
+
+55
+00:03:33,800 --> 00:03:35,866
+只是猜测，别引用
+that's a guess don't quote me on that
+
+56
+00:03:37,966 --> 00:03:43,400
+再从32位的X86到AMD64
+you went from X86 with 32 bits to AMD 64
+
+57
+00:03:43,400 --> 00:03:45,500
+AMD沿用了英特尔的架构
+AMD took intels architecture
+
+58
+00:03:45,600 --> 00:03:49,333
+又增加了额外32位
+and kind of put an extra 32 bits in it
+
+59
+00:03:49,400 --> 00:03:50,866
+并创建了amd64
+and created amd64
+
+60
+00:03:50,866 --> 00:03:55,866
+还增加了寄存器的数量
+they also extended the amount of registers that we have all together
+
+61
+00:03:56,600 --> 00:04:02,666
+就有了RAX
+and then you have like Really extended A rax 
+
+62
+00:04:02,666 --> 00:04:03,766
+arm架构也是
+arm also
+
+63
+00:04:04,400 --> 00:04:05,633
+有很多寄存器
+a lot of registers 
+
+64
+00:04:06,033 --> 00:04:07,333
+同样的概念
+same sort of concepts 
+
+65
+00:04:07,466 --> 00:04:10,766
+其他架构，MIPS等
+other architectures mips etc 
+
+66
+00:04:11,966 --> 00:04:15,066
+通用寄存器用于保存通用数据
+general purpose registers are there to hold general data
+
+67
+00:04:15,200 --> 00:04:20,200
+其中一些也有稍微特定的用途
+some of them have also slightly specific purposes 
+
+68
+00:04:20,333 --> 00:04:22,100
+像加粗的sp
+the stack pointers that are bold
+
+69
+00:04:22,300 --> 00:04:23,866
+加粗的bp
+and the frame pointers that are bold 
+
+70
+00:04:24,000 --> 00:04:29,466
+amd64中的RSP RBP，我们稍后会提到
+so RSP RBP in amd64 we'll talk about them in a second 
+
+71
+00:04:30,533 --> 00:04:33,266
+还有arm上的R13与R14
+and on arm r13 and r14
+
+72
+00:04:33,600 --> 00:04:34,966
+都提供相同的功能
+serve the same function
+
+73
+00:04:36,000 --> 00:04:39,800
+还有特殊用途的寄存器
+there's also special registers with special tasks 
+
+74
+00:04:39,900 --> 00:04:40,666
+例如
+for example
+
+75
+00:04:40,866 --> 00:04:45,933
+amd64中的RIP
+rip is the Really extended Instruction Pointer on amd64
+
+76
+00:04:47,666 --> 00:04:48,933
+arm上的R15
+r15 on arm
+
+77
+00:04:49,466 --> 00:04:52,066
+这里存储着下一条指令的地址
+that's where the address of the next instruction is stored
+
+78
+00:04:52,066 --> 00:04:56,900
+这样CPU就知道去哪里拿
+so that the cpu can retrieve it 
+
+79
+00:04:57,833 --> 00:04:58,866
+一般来说
+generally speaking
+
+80
+00:04:58,866 --> 00:05:02,800
+不会直接与这些指令寄存器交互
+you don't interact with these instructions directly
+
+81
+00:05:03,933 --> 00:05:05,300
+但这也看
+although that varies
+
+82
+00:05:05,766 --> 00:05:10,600
+是否直接与这些寄存器交互
+the level of direct interaction with these registers 
+
+83
+00:05:11,400 --> 00:05:12,766
+例如指令寄存器
+like the instruction point registers 
+
+84
+00:05:12,833 --> 00:05:14,133
+因架构而异
+varies by architecture
+
+85
+00:05:16,266 --> 00:05:17,800
+还有各种扩展
+there are also various extensions 
+
+86
+00:05:17,933 --> 00:05:20,500
+添加了其他专用寄存器
+that add other specialized registers
+
+87
+00:05:21,000 --> 00:05:27,833
+很早的时候，x87曾是x86的协处理器
+x87 used to be a coprocessor to the x86 in the very early days 
+
+88
+00:05:27,966 --> 00:05:29,366
+它增加了浮点数
+that added floating point
+
+89
+00:05:29,433 --> 00:05:32,400
+支持了浮点寄存器和操作之类的
+support floating point registers and operations and so forth 
+
+90
+00:05:33,100 --> 00:05:34,733
+多媒体扩展
+multimedia extensions
+
+91
+00:05:36,300 --> 00:05:42,700
+增加了大量更大的寄存器来执行复杂的操作
+added tons of larger registers to do complex operations
+
+92
+00:05:43,300 --> 00:05:45,500
+在现代机器中
+in a modern machine
+
+93
+00:05:45,666 --> 00:05:50,400
+在现代64位intel或amd的处理器中
+in a modern 64 bit intel or amd processor
+
+94
+00:05:50,400 --> 00:05:55,400
+寄存器的大小可以达到512位
+you have registers that are up to like 512 bits in size
+
+95
+00:05:55,566 --> 00:05:56,500
+这很疯狂
+it's pretty crazy stuff
+
+96
+00:05:56,500 --> 00:06:01,500
+但是这里主要关注通用寄存器
+but we'll focus here mostly on the general purpose registers
+
+97
+00:06:01,533 --> 00:06:04,400
+在接下来的课程中
+and actually in the rest of the class
+
+98
+00:06:04,400 --> 00:06:10,566
+主要关注64位AMD/Intel架构
+we will focus mostly on 64 bit AMD/Intel Architecture 
+
+99
+00:06:12,800 --> 00:06:15,266
+这些通用寄存器
+these general purpose registers
+
+100
+00:06:15,566 --> 00:06:18,000
+顺便说一下，可以只访问一个寄存器中的部分
+by the way can all be accessed partially 
+
+101
+00:06:19,000 --> 00:06:20,700
+例如 rax
+you have a register rax
+
+102
+00:06:20,700 --> 00:06:26,200
+可以用eax访问它的低32位
+you can access its lower 32 bits using eax 
+
+103
+00:06:26,533 --> 00:06:30,466
+这也是为什么我会介绍其发展历史
+that's why i went through the whole history lesson of course
+
+104
+00:06:30,600 --> 00:06:31,266
+不只是为了好玩
+not just for fun
+
+105
+00:06:31,266 --> 00:06:32,100
+虽然是很有趣
+although it is fun
+
+106
+00:06:32,266 --> 00:06:36,033
+可以用ax访问低16位
+you can access the lower 16 bits using ax 
+
+107
+00:06:36,500 --> 00:06:39,333
+用al访问低8位
+can access the lower 8 bits using al
+
+108
+00:06:39,466 --> 00:06:43,833
+用ah访问低16位中的高8位
+and then the higher 8 bits using ah or slightly higher
+
+109
+00:06:44,900 --> 00:06:46,400
+如幻灯片所示
+like it shows on the slide 
+
+110
+00:06:47,466 --> 00:06:49,333
+这是由于历史原因
+due to a historical oddity
+
+111
+00:06:49,600 --> 00:06:51,133
+向后兼容
+backwards compatibility
+
+112
+00:06:51,800 --> 00:06:56,366
+AMD在开发AMD64时做的一个选择就是
+a choice made by AMD when they were creating AMD64 is that 
+
+113
+00:06:56,366 --> 00:06:58,433
+以任何方式访问eax
+accessing eax in any way 
+
+114
+00:06:58,500 --> 00:07:03,433
+修改它，将清除rax的前32位
+modifying it will wipe out the top 32 bits of rax 
+
+115
+00:07:04,166 --> 00:07:06,066
+这很烦人
+this is annoying
+
+116
+00:07:06,100 --> 00:07:09,066
+因为用ax、ah或al修改，都不会这样
+because it doesn't hold true for ax or ah or al 
+
+117
+00:07:09,066 --> 00:07:12,933
+你可以直接用它们，不会改动rax其余部分
+you can access those independently without messing up the rest of the register
+
+118
+00:07:13,300 --> 00:07:14,933
+这非常烦人
+it's extremely annoying
+
+119
+00:07:14,933 --> 00:07:19,100
+你将至少要花一个小时
+and you will spend at least one hour of your life
+
+120
+00:07:19,100 --> 00:07:20,166
+对着电脑大喊大叫
+screaming at your computer
+
+121
+00:07:20,166 --> 00:07:22,133
+因为你的shellcode不起作用
+because your shellcode doesn't work
+
+122
+00:07:23,166 --> 00:07:24,533
+或你的rop chain不起作用
+or your rop chain doesn't work
+
+123
+00:07:24,533 --> 00:07:27,200
+或别的什么，只是因为你忘了这一点
+or something only to realize that you forgot about that
+
+124
+00:07:27,333 --> 00:07:28,500
+所以要做好准备
+so just be ready 
+
+125
+00:07:28,833 --> 00:07:32,566
+rax不是唯一一个可以部分访问的
+rax isn't the only one that can be partially accessed 
+
+126
+00:07:33,366 --> 00:07:36,200
+通用寄存器或多或少都可以部分访问
+more or less every general purpose register can be partially accessed
+
+127
+00:07:36,200 --> 00:07:39,133
+但只有 a、c、d和b
+but only acd and b 
+
+128
+00:07:39,333 --> 00:07:41,200
+rax、rcx等等
+rax rcx and so forth
+
+129
+00:07:41,800 --> 00:07:49,333
+可以访问低16位的高8位
+can be accessed with their the high byte of the low 16 bits
+
+130
+00:07:50,166 --> 00:07:51,666
+很好，这些是寄存器
+cool so those are registers
+
+131
+00:07:51,666 --> 00:07:54,033
+这是我们临时存储数据的地方
+that's where we store our data temporarily 
+
+132
+00:07:54,033 --> 00:07:55,966
+当寄存器用完的时候
+again when we run out of registers
+
+133
+00:07:56,300 --> 00:08:00,900
+能用的寄存器越少，就越常发生
+which happens more frequently  the less registers you have to work with 
+
+134
+00:08:00,966 --> 00:08:02,900
+你就得把数据放到内存中了
+you have to spill them out to memory
+
+135
+00:08:02,900 --> 00:08:04,633
+这个过程很烦
+which is an annoying process 
+
+136
+00:08:04,633 --> 00:08:07,800
+但编译器会帮你做好
+but the compiler does all this for you 
+
+137
+00:08:07,800 --> 00:08:09,433
+除非你要手写汇编
+unless you're handcrafting assembly
+
+138
+00:08:10,266 --> 00:08:11,866
+我们来谈谈指令吧
+let's talk about instructions 
+
+139
+00:08:12,133 --> 00:08:17,166
+指令告诉CPU要做什么
+instructions tell the cpu what to do
+
+140
+00:08:19,500 --> 00:08:23,866
+它们通常有几种不同的形式
+and they generally they take several different forms
+
+141
+00:08:23,866 --> 00:08:28,166
+我们一会儿会讲指令类型
+which we'll talk about individual instruction types in a second
+
+142
+00:08:28,866 --> 00:08:31,933
+通常他们有一个操作符与几个操作数
+but generally they have an operator and several operands 
+
+143
+00:08:32,033 --> 00:08:36,466
+我们以后会讲到这些
+so we'll talk about all these in the future size
+
+144
+00:08:36,466 --> 00:08:38,966
+但我要介绍一个有用的参考文档
+but i'll point out a useful reference
+
+145
+00:08:40,700 --> 00:08:45,366
+就是这个线上的x86汇编列表
+is this online x86 assembly listing
+
+146
+00:08:45,533 --> 00:08:46,266
+这很酷
+which is very cool 
+
+147
+00:08:46,333 --> 00:08:49,000
+你可以看到指令
+you can see the instructions
+
+148
+00:08:49,000 --> 00:08:52,733
+它们长什么样
+you can see what they look like 
+
+149
+00:08:53,666 --> 00:08:58,900
+和实际的二进制与16进制值
+in terms of the actual binary and hexadecimal values
+
+150
+00:09:00,666 --> 00:09:03,366
+我们来看看指令类型
+so let's roll with instruction types
+
+151
+00:09:03,500 --> 00:09:05,966
+类型1：数据操作
+type number 1 data manipulation
+
+152
+00:09:07,366 --> 00:09:09,800
+这很直接
+this is a fairly straightforward 
+
+153
+00:09:10,233 --> 00:09:12,866
+我看到了一个令人尴尬的错误
+i just saw a very embarrassing mistake on here
+
+154
+00:09:12,866 --> 00:09:14,333
+但我们就坚持看一下
+but we're gonna power through anyways
+
+155
+00:09:14,833 --> 00:09:16,666
+后面会指出这个错误
+i'll get to the embarrassing mistake all right
+
+156
+00:09:16,800 --> 00:09:24,800
+有几种不同的操作数据的方法
+so a couple of different ways to manipulate data
+
+157
+00:09:25,100 --> 00:09:26,200
+有很多很多不同的方式
+many many different ways
+
+158
+00:09:26,200 --> 00:09:28,566
+我就举几个例子
+i'll go through a couple as high level examples 
+
+159
+00:09:28,700 --> 00:09:30,400
+这里就是个复习
+again this should be review
+
+160
+00:09:30,400 --> 00:09:32,966
+你应该能找出幻灯片上的错误
+you should have spotted the mistake on this slide
+
+161
+00:09:33,166 --> 00:09:37,133
+如果没有，就先学习一下汇编
+if you didn't go learn more assembly
+
+162
+00:09:39,100 --> 00:09:40,633
+简单说一下
+as a quick note
+
+163
+00:09:41,500 --> 00:09:42,300
+这里的一切
+everything here
+
+164
+00:09:42,300 --> 00:09:43,466
+以及这门课的所有内容
+and everything in this course 
+
+165
+00:09:43,533 --> 00:09:48,800
+将使用英特尔汇编语法
+is going to be using Intel assembly syntax for amd64 
+
+166
+00:09:48,866 --> 00:09:51,366
+有两种汇编语法
+there are two assembly syntaxes 
+
+167
+00:09:51,366 --> 00:09:52,466
+一个合适
+one is correct
+
+168
+00:09:52,466 --> 00:09:53,266
+一个不合适
+one is wrong 
+
+169
+00:09:54,400 --> 00:09:57,766
+一个是intel公司创建的
+the one was created by Intel
+
+170
+00:09:57,766 --> 00:09:59,533
+也是intel用的
+it's the syntax that Intel uses 
+
+171
+00:09:59,533 --> 00:10:01,966
+另一个是由AT&T创建的
+another one created by AT&T
+
+172
+00:10:01,966 --> 00:10:04,166
+至少被称为AT&T语法
+or at least it's called the AT&T syntax
+
+173
+00:10:05,200 --> 00:10:11,333
+告诉我你上次用AT&T芯片是什么时候
+tell me when was the last time you used an AT&T chip 
+
+174
+00:10:11,700 --> 00:10:14,366
+这应该就说明了
+and that should tell you
+
+175
+00:10:14,366 --> 00:10:17,800
+哪种语法是合适的
+which is the correct assembly format to use
+
+176
+00:10:18,133 --> 00:10:21,600
+请不要使用AT&T汇编格式
+please don't use AT&T assembly format 
+
+177
+00:10:21,733 --> 00:10:22,466
+它很令人困惑
+it's confusing
+
+178
+00:10:22,466 --> 00:10:25,100
+不适合用它
+it's just the wrong way to go
+
+179
+00:10:25,100 --> 00:10:25,966
+请用intel格式
+use intel
+
+180
+00:10:26,333 --> 00:10:27,900
+这些都是intel汇编格式
+so this is all an Intel Assembly format 
+
+181
+00:10:27,966 --> 00:10:30,266
+本课程都采用intel格式
+the rest of the course will be an Intel Assembly format
+
+182
+00:10:30,600 --> 00:10:32,466
+请用合适的格式
+please use the right format 
+
+183
+00:10:32,466 --> 00:10:34,600
+总之，intel汇编格式中
+anyways in Intel Assembly format
+
+184
+00:10:36,300 --> 00:10:39,133
+数据主要从右流向左
+data flows mostly right to left 
+
+185
+00:10:39,833 --> 00:10:41,566
+视频是镜像的
+i'm mirrored in the video
+
+186
+00:10:41,566 --> 00:10:43,300
+从右到左
+so right to left
+
+187
+00:10:43,500 --> 00:10:45,900
+我们来看第一个例子
+so we take in the first example
+
+188
+00:10:45,900 --> 00:10:48,066
+RBX在这里
+RBX that's here 
+
+189
+00:10:48,666 --> 00:10:50,566
+把它放到rax中
+and we move it into rax 
+
+190
+00:10:50,900 --> 00:10:52,333
+好的
+boom nice and simple
+
+191
+00:10:52,366 --> 00:10:54,000
+这和C语言相符
+this makes sense in c
+
+192
+00:10:54,133 --> 00:10:56,566
+可以写成rax = RBX
+you would write rax equals RBX right
+
+193
+00:10:57,366 --> 00:11:01,000
+这是一个内存访问
+okay this this is a memory access 
+
+194
+00:11:01,566 --> 00:11:02,966
+取RBX
+we take RBX
+
+195
+00:11:03,500 --> 00:11:04,766
+加4
+we add four to it
+
+196
+00:11:05,066 --> 00:11:06,500
+能得到一个数字
+this gives us a number 
+
+197
+00:11:06,500 --> 00:11:10,700
+访问该数字指向的内存地址
+we look in memory at the location reference by that number
+
+198
+00:11:11,166 --> 00:11:14,700
+如果rbx中是80,000
+if that number is if rbx is 80,000
+
+199
+00:11:14,733 --> 00:11:15,700
+然后加上4
+and we add four to it 
+
+200
+00:11:15,766 --> 00:11:18,333
+是80004
+we look at 80,004
+
+201
+00:11:18,333 --> 00:11:20,666
+从这里加载8字节
+we load 8 bytes out of that 
+
+202
+00:11:20,766 --> 00:11:21,700
+即64位
+64 bits
+
+203
+00:11:21,700 --> 00:11:23,866
+我们把它
+and we put it
+
+204
+00:11:23,866 --> 00:11:25,333
+我们把它放到rax
+we move it into rax
+
+205
+00:11:28,500 --> 00:11:30,733
+这里注意一点
+there's a little bit of magic in this statement
+
+206
+00:11:30,733 --> 00:11:35,166
+它是如何知道要加载8字节的
+in that it knows to load 8 bytes 
+
+207
+00:11:35,300 --> 00:11:38,100
+因为rax的长度是8字节
+because rax is 8 bytes long
+
+208
+00:11:38,100 --> 00:11:40,900
+也可以显示指出要加载的大小
+you can also explicitly give sizes
+
+209
+00:11:41,300 --> 00:11:41,966
+但
+but again
+
+210
+00:11:41,966 --> 00:11:43,433
+这里是复习
+this is a high level review 
+
+211
+00:11:43,433 --> 00:11:45,133
+如果你不知道如何显示指定大小
+if you don't know how to do that
+
+212
+00:11:45,166 --> 00:11:49,466
+可先学学汇编
+please go learn assembly 
+
+213
+00:11:50,366 --> 00:11:52,533
+然后是加法指令
+add arithmetic instructions
+
+214
+00:11:52,533 --> 00:11:56,533
+你可以将rbx加到rax中
+you can of course take RBX add it to rax 
+
+215
+00:11:57,400 --> 00:11:58,300
+等一下
+wait a second
+
+216
+00:12:00,100 --> 00:12:01,300
+我一直指反了
+i've been going backwards whole time
+
+217
+00:12:01,466 --> 00:12:06,366
+你可以取出rbx值，加上rax值，存在rax中
+you can take RBX add it to RAX and store it in RAX
+
+218
+00:12:06,366 --> 00:12:11,766
+等价于c中的rax += rbx
+this is basically RAX plus equals RBX in the c equivalent
+
+219
+00:12:12,500 --> 00:12:15,300
+这里就是错误的地方了
+this is where my embarrassing mistake is 
+
+220
+00:12:15,700 --> 00:12:18,200
+mul是乘数指令
+mul is a multiplier a multiplication 
+
+221
+00:12:18,200 --> 00:12:20,933
+它只需要接收一个寄存器参数
+it only takes actually one register argument 
+
+222
+00:12:21,066 --> 00:12:25,666
+它会将其与rax相乘
+it multiplies whatever is an rax by the argument
+
+223
+00:12:25,666 --> 00:12:28,133
+并将超过64位的值放到rdx中
+and also stores the overflow in rdx
+
+224
+00:12:28,133 --> 00:12:30,866
+所以这里的rdi没用
+so this ignored this rdi
+
+225
+00:12:31,933 --> 00:12:37,600
+这就是rax = rax * rsi
+this will do rax equals rax times rsi 
+
+226
+00:12:37,766 --> 00:12:41,200
+当然2个64位数字的乘法
+and of course multiplication of 2 64 bit numbers
+
+227
+00:12:41,300 --> 00:12:43,700
+能产生比64位大得多的数字
+can produce a much larger number than 64 bits
+
+228
+00:12:43,800 --> 00:12:45,900
+所有的溢出都放入RDX
+all that overflow goes into rdx
+
+229
+00:12:47,800 --> 00:12:50,266
+inc rax使RAX自增1
+inc RAX increments rax by one 
+
+230
+00:12:50,666 --> 00:12:55,766
+inc一个rax指向的内存地址
+inc the memory location pointed to by rax 
+
+231
+00:12:56,066 --> 00:13:00,500
+会让该内存地址中的值自增1
+increments the value in that memory
+
+232
+00:13:00,866 --> 00:13:01,800
+这里是复习
+this should all be a review
+
+233
+00:13:01,800 --> 00:13:06,366
+只有几个数据操作的例子
+just a couple of high level examples on what data manipulation instructions can look like
+
+234
+00:13:07,166 --> 00:13:07,966
+我忘了
+i forgot
+
+235
+00:13:07,966 --> 00:13:10,900
+我应该加上一个数据存储的指令
+i should have probably put in a data store instruction
+
+236
+00:13:11,033 --> 00:13:13,866
+这个从内存读出数据
+this reads data from memory
+
+237
+00:13:14,166 --> 00:13:18,400
+如果把这两个操作数反过来
+if you just reverse these two operands
+
+238
+00:13:18,500 --> 00:13:21,666
+将把rax的值写入rbx+4指向的内存
+you will be writing rax into rbx + 4
+
+239
+00:13:22,466 --> 00:13:23,266
+我们继续
+let's move on 
+
+240
+00:13:23,533 --> 00:13:25,266
+控制流程指令
+control flow instruction
+
+241
+00:13:25,366 --> 00:13:30,133
+控制流由条件与无条件跳转决定
+so control flow is determined by conditional and unconditional jumps
+
+242
+00:13:30,666 --> 00:13:32,933
+和c语言中的if语句一样
+same way you have an if statement in c 
+
+243
+00:13:32,933 --> 00:13:35,033
+c语言中的if语句
+or when you have an if statement in c 
+
+244
+00:13:35,033 --> 00:13:37,966
+会编译成条件、无条件跳转
+gets compiled into some conditional unconditional jumps
+
+245
+00:13:38,000 --> 00:13:39,100
+函数调用
+if you have a function call 
+
+246
+00:13:39,333 --> 00:13:41,200
+会编译成call指令
+gets compiled into a call instruction 
+
+247
+00:13:41,766 --> 00:13:42,733
+函数返回
+when you return
+
+248
+00:13:42,733 --> 00:13:44,133
+会编译成ret指令
+that's a ret instruction
+
+249
+00:13:46,400 --> 00:13:54,200
+x86或AMD64汇编，支持许多种条件跳转
+x86 or AMD64 assembly supports a number of conditional jump types 
+
+250
+00:13:54,966 --> 00:13:57,033
+有符号可以跳转（js）
+you can jump if something is signed
+
+251
+00:13:57,166 --> 00:13:58,366
+无符号也可跳转（jns）
+so negative you can jump 
+
+252
+00:13:58,800 --> 00:14:01,200
+如果两个值相等
+if two values are equal 
+
+253
+00:14:01,200 --> 00:14:04,500
+一般先执行比较指令，然后跳转指令
+and generally you do a comparison and then the jump 
+
+254
+00:14:04,666 --> 00:14:07,299
+比如这个跳转指令
+so if you have this jump
+
+255
+00:14:07,366 --> 00:14:11,500
+这里的jb表示低于某个值就跳转
+jb means jump if below right here
+
+256
+00:14:11,666 --> 00:14:17,066
+这是jl，的无符号版跳转指令
+this is an unsigned less than as opposed to less than which is signed
+
+257
+00:14:19,733 --> 00:14:26,099
+待会会讲到补码，以及有无符号
+we'll talk about two's complement and signed and unsigned toward then
+
+258
+00:14:32,100 --> 00:14:34,966
+这里只是低于某个值就跳转
+so this says jump below some location
+
+259
+00:14:35,066 --> 00:14:36,300
+但低于什么值呢
+but jump below what 
+
+260
+00:14:36,733 --> 00:14:41,933
+这里没有任何条件
+there's no condition here 
+
+261
+00:14:42,033 --> 00:14:46,700
+但实际上在此之前已经比较了，并保存了结果
+well the conditions actually checked earlier and saved
+
+262
+00:14:46,866 --> 00:14:51,066
+然后该跳转指令再使用它
+and this the conditional jump uses it right
+
+263
+00:14:51,066 --> 00:14:52,266
+我们看看原理
+let's see how this works 
+
+264
+00:14:52,266 --> 00:14:57,666
+实际上有一个特殊的寄存器叫标志寄存器
+there's actually a special register called the flags register
+
+265
+00:14:57,733 --> 00:15:01,266
+x86、amd64和arm上都有
+it exists on x86 on AMD64 on arm
+
+266
+00:15:02,133 --> 00:15:09,733
+这个寄存器有一堆标志位
+and this register has a bunch of single bit flags
+
+267
+00:15:09,733 --> 00:15:13,666
+算数操作指令会修改它
+that are updated by arithmetic operations
+
+268
+00:15:13,933 --> 00:15:17,466
+以及几个其他类型的指令
+and certain other types of instructions
+
+269
+00:15:17,500 --> 00:15:18,700
+举个例子
+so for example
+
+270
+00:15:18,700 --> 00:15:21,200
+amd64中的cmp指令
+the compare instruction in amd64
+
+271
+00:15:21,200 --> 00:15:22,566
+它会做一个减法
+it does a subtraction 
+
+272
+00:15:22,633 --> 00:15:23,900
+丢弃结果
+discards the result
+
+273
+00:15:24,066 --> 00:15:27,233
+但会修改各种标志位
+but updates the various flags 
+
+274
+00:15:27,300 --> 00:15:31,933
+例如，ZF标志位结果是0
+the flags are for example the zero flag is the result zero 
+
+275
+00:15:31,933 --> 00:15:33,366
+所以cmp rax rbx
+so cmp rax rbx 
+
+276
+00:15:34,133 --> 00:15:35,966
+如果rax和RBX相等
+if rax and rbx are equal
+
+277
+00:15:36,366 --> 00:15:38,133
+ZF将被置为1
+the zero flag will be set to one
+
+278
+00:15:38,466 --> 00:15:42,866
+之后比较是否相等的je
+then a resulting je for jump if they were equal
+
+279
+00:15:42,866 --> 00:15:44,766
+会检查ZF是否为1
+checks if the zero flag is one 
+
+280
+00:15:45,166 --> 00:15:46,833
+很简单对吧
+fairly straightforward right
+
+281
+00:15:46,933 --> 00:15:48,466
+这就是它的工作原理
+and that's how it works 
+
+282
+00:15:48,733 --> 00:15:50,933
+通过组合起这些标志位
+and by combining these different flags
+
+283
+00:15:50,933 --> 00:15:54,566
+可以区分很多不同的条件
+you can actually tell a lot of different conditions
+
+284
+00:15:54,600 --> 00:15:58,266
+如果执行rax - rbx
+so if you do an rax minus rbx
+
+285
+00:15:59,566 --> 00:16:01,266
+用cmp，或sub指令
+with a compare or with a subtract
+
+286
+00:16:01,366 --> 00:16:03,100
+如果不想丢弃计算结果的话
+if you don't want to discard the result
+
+287
+00:16:03,100 --> 00:16:04,200
+你也可以这样做
+you can also do that
+
+288
+00:16:05,600 --> 00:16:08,366
+这会设置SF位和ZF位
+it'll set you know the sign flag and the zero flag
+
+289
+00:16:09,100 --> 00:16:15,333
+你可以查看，比如 jle的跳转条件
+you can look for conditions where for example jump less than or equal
+
+290
+00:16:15,400 --> 00:16:17,366
+ZF要是1
+the zero flag should be one
+
+291
+00:16:18,666 --> 00:16:22,500
+或者 SF不等于OF
+or the sign flag is not equal to the overflow flag
+
+292
+00:16:22,500 --> 00:16:26,100
+我不打算仔细研究它的含义
+i'm not gonna go through and examine the meaning of this
+
+293
+00:16:26,100 --> 00:16:29,000
+因为这也需要我做一些准备
+because also it takes a little bit of preparation on my part 
+
+294
+00:16:30,233 --> 00:16:33,166
+但是如果你感兴趣的话
+but if you're interested
+
+295
+00:16:33,400 --> 00:16:35,933
+你可以去深入了解这些
+you can go read further into this
+
+296
+00:16:35,933 --> 00:16:42,000
+这是进行条件检查和跳转的一种聪明方法
+it's a fairly clever way of doing these sort of conditional checks and jumps
+
+297
+00:16:42,533 --> 00:16:50,500
+这就是条件控制在x86、amd64、arm等架构中的工作方式
+that's how conditional control flow works in x86 amd64 arm and so forth 
+
+298
+00:16:50,566 --> 00:16:51,933
+arm有点不同
+i mean arm is a little different
+
+299
+00:16:51,933 --> 00:16:53,966
+但概念是一样的
+but concept is the same
+
+300
+00:16:55,900 --> 00:16:56,433
+最后
+finally
+
+301
+00:16:57,666 --> 00:17:00,466
+我们要讨论的最后一种指令是
+i think this the last type of instruction we'll talk about 
+
+302
+00:17:00,533 --> 00:17:01,800
+系统调用
+is system calls
+
+303
+00:17:01,800 --> 00:17:04,566
+所有程序都必须与外部交互
+all programs have to interact with the outside world
+
+304
+00:17:05,900 --> 00:17:09,766
+这主要是通过系统调用完成的
+and this is done primarily via system calls 
+
+305
+00:17:10,033 --> 00:17:17,666
+每次互动都是这样进行的
+so each interaction is done this way
+
+306
+00:17:17,900 --> 00:17:18,933
+每个系统调用
+each system call
+
+307
+00:17:19,366 --> 00:17:25,200
+系统调用会调用os功能
+a system call is a dispatch into operating system functionality
+
+308
+00:17:25,500 --> 00:17:31,000
+就是程序叫os为它做点事
+where the program asks the operating system to do something for it
+
+309
+00:17:31,166 --> 00:17:32,900
+触发系统调用时
+when you trigger a system call 
+
+310
+00:17:33,133 --> 00:17:34,533
+程序停止
+your program stops 
+
+311
+00:17:35,100 --> 00:17:38,566
+os内核接管控制权，完成请求内容
+the OS kernel takes control carries out the request
+
+312
+00:17:38,733 --> 00:17:40,300
+然后返回控制权给程序
+and then returns to your program
+
+313
+00:17:41,966 --> 00:17:48,400
+amd64上使用系统调用要，设置rax为目标系统调用号
+on amd64 you create a system call by setting rax to a system call number
+
+314
+00:17:50,900 --> 00:17:58,200
+根据调用约定将参数存储在rdi、rsi等中
+by storing arguments in rdi rsi etc according to the calling convention
+
+315
+00:17:58,300 --> 00:18:00,433
+稍后我们会讨论调用约定
+we'll talk more about calling convention in a sec
+
+316
+00:18:00,466 --> 00:18:03,100
+再使用syscall指令
+and by using the syscall instruction
+
+317
+00:18:03,166 --> 00:18:04,366
+就好了
+and boom 
+
+318
+00:18:04,700 --> 00:18:07,900
+如果你想在外部调试
+then from outside if you wanna debug
+
+319
+00:18:07,966 --> 00:18:12,699
+系统调用使用有问题的shellcode
+shellcode that's doing system calls incorrectly
+
+320
+00:18:12,733 --> 00:18:14,566
+你可以使用strace
+you can use strace 
+
+321
+00:18:14,666 --> 00:18:19,866
+我展示一下这大概是什么样的
+so let me show you what that might look like
+
+322
+00:18:24,766 --> 00:18:25,900
+到了
+here we are
+
+323
+00:18:27,566 --> 00:18:30,400
+我再放上一个屏幕视图
+actually let me bring on up another view 
+
+324
+00:18:30,900 --> 00:18:31,800
+好了
+there we go
+
+325
+00:18:33,533 --> 00:18:36,000
+右上方的这个
+this over here on the top right
+
+326
+00:18:36,100 --> 00:18:37,866
+是Linux系统调用表
+is the linux syscall table 
+
+327
+00:18:38,100 --> 00:18:43,833
+它是Ryan A Chapman维护的
+as maintained by the great Ryan A Chapman 
+
+328
+00:18:44,233 --> 00:18:49,866
+Ryan A Chapman做的这个表
+Ryan A Chapman contributed this to the world
+
+329
+00:18:50,066 --> 00:18:52,100
+我几乎每天都看它
+and i look at it almost every day
+
+330
+00:18:52,233 --> 00:18:56,366
+这张表列出了Linux所有的系统调用
+it is a table of all of the system calls in Linux
+
+331
+00:18:56,366 --> 00:18:59,133
+有一些老的版本，现在来说比较老的
+as of some old, relatively old now, version
+
+332
+00:18:59,133 --> 00:19:00,200
+还是很有用的
+but still relevant 
+
+333
+00:19:01,166 --> 00:19:05,066
+还有他们各种各样的参数等等
+and their various arguments and so forth
+
+334
+00:19:05,466 --> 00:19:07,200
+下一张幻灯片上有链接
+i have it linked on the next slide 
+
+335
+00:19:07,700 --> 00:19:11,566
+我们看一眼下一张幻灯片
+but actually let's go to the next slide
+
+336
+00:19:12,566 --> 00:19:13,366
+所以
+so
+
+337
+00:19:16,200 --> 00:19:18,700
+如果你想查看，链接就在下方这里
+the link is right down here if you want to follow along
+
+338
+00:19:19,466 --> 00:19:20,933
+有很多系统调用
+there are a lot of syscalls
+
+339
+00:19:20,933 --> 00:19:25,800
+我这里主要演示exit
+i'm gonna demonstrate mostly the exit syscall right now
+
+340
+00:19:25,800 --> 00:19:29,000
+之后可能还会展示几个
+and then maybe a couple of other ones later
+
+341
+00:19:29,000 --> 00:19:31,066
+但你应该了解这些系统调用
+but honestly you should know all this
+
+342
+00:19:31,066 --> 00:19:32,800
+我们也可能不会展示更多
+maybe we won't demonstrate them
+
+343
+00:19:33,533 --> 00:19:39,033
+我们看一个简单程序
+let's look at a simple program that we're gonna write from scratch 
+
+344
+00:19:39,200 --> 00:19:41,566
+我已经写好了
+that i actually already wrote from scratch
+
+345
+00:19:43,566 --> 00:19:44,533
+就叫exit
+called exit 
+
+346
+00:19:45,133 --> 00:19:48,400
+有一些汇编的样板模式
+there're some boiler plate for the assembler
+
+347
+00:19:48,833 --> 00:19:52,866
+这个表示，程序入口就在这里
+it says okay the started entry point is gonna be right here
+
+348
+00:19:53,000 --> 00:19:58,400
+有一个全局符号叫入口点
+there is a global symbol called an entry point
+
+349
+00:19:58,533 --> 00:20:00,266
+就在这里
+it's gonna be right here 
+
+350
+00:20:01,566 --> 00:20:03,866
+我们用的Intel语法
+we're using Intel syntax
+
+351
+00:20:04,466 --> 00:20:07,600
+我们可以用GCC编译它
+and we can just compile this with gcc
+
+352
+00:20:07,600 --> 00:20:10,166
+或者你汇编它
+or you can also just assemble it and so forth 
+
+353
+00:20:10,366 --> 00:20:15,933
+可以用gcc的子组件
+with different sub components of gcc 
+
+354
+00:20:16,033 --> 00:20:19,500
+我们就用整个gcc
+but we just use the big gcc
+
+355
+00:20:23,800 --> 00:20:26,733
+不要链接libc
+we have to not link in libc
+
+356
+00:20:28,533 --> 00:20:29,333
+好的
+all right
+
+357
+00:20:29,400 --> 00:20:31,633
+现在我们可以执行它了
+and now we can just execute it
+
+358
+00:20:31,866 --> 00:20:32,933
+它会做什么
+so what does this do
+
+359
+00:20:33,000 --> 00:20:34,466
+它将rax设为60
+it moves 60 to rax 
+
+360
+00:20:35,766 --> 00:20:38,566
+60号系统调用是什么
+what is syscall 60
+
+361
+00:20:39,866 --> 00:20:42,033
+它表示exit
+syscall 60 is exit 
+
+362
+00:20:42,300 --> 00:20:44,400
+它通过rdi接收一个参数
+and it takes one argument through rdi
+
+363
+00:20:44,400 --> 00:20:45,700
+这个参数是错误码
+which is the error code 
+
+364
+00:20:46,166 --> 00:20:49,166
+这个参数我们给了它42
+that argument we gave it 42
+
+365
+00:20:51,166 --> 00:20:54,566
+如果我们检查返回值
+so if we do check the return value 
+
+366
+00:20:54,633 --> 00:20:59,000
+这是在bash中检查前一个程序返回值的方法
+this is how you check the return value of the previous program in bash 
+
+367
+00:20:59,366 --> 00:21:00,100
+就是这个
+there it is 
+
+368
+00:21:00,466 --> 00:21:00,966
+42
+42 
+
+369
+00:21:01,433 --> 00:21:02,866
+我们也可以strace看一下
+we can also strace this
+
+370
+00:21:04,700 --> 00:21:08,933
+能看到做了些设置
+and we can see that it does some set up
+
+371
+00:21:11,600 --> 00:21:13,500
+不知道什么时候发生的
+wherever that happens
+
+372
+00:21:14,333 --> 00:21:17,233
+然后执行了exit
+and then it does the exit 
+
+373
+00:21:17,700 --> 00:21:19,433
+酷
+cool so 
+
+374
+00:21:21,266 --> 00:21:23,500
+有趣的是
+it's interesting that oh
+
+375
+00:21:27,000 --> 00:21:28,866
+这编译成了一个so
+so this is a shared object 
+
+376
+00:21:28,866 --> 00:21:29,566
+看一下
+let me see
+
+377
+00:21:31,200 --> 00:21:32,166
+能这样吗
+can we do this
+
+378
+00:21:35,100 --> 00:21:35,966
+没问题
+that's right 
+
+379
+00:21:35,966 --> 00:21:37,466
+这样它就执行了exit
+boom all it does is exit 
+
+380
+00:21:37,633 --> 00:21:39,266
+很棒
+awesome cool
+
+381
+00:21:39,300 --> 00:21:40,100
+好吧
+okay
+
+382
+00:21:40,333 --> 00:21:44,800
+取决于你看这些视频的顺序
+so depending on the order you watch these videos
+
+383
+00:21:44,800 --> 00:21:47,066
+你可能已经知道为什么会这样
+you might understand what happened here 
+
+384
+00:21:48,233 --> 00:21:51,166
+看了Linux进程生命周期，你就会知道
+in the Linux process lifecycle you will understand 
+
+385
+00:21:51,666 --> 00:21:56,266
+为什么它和它不一样
+why this was different from this
+
+386
+00:21:57,266 --> 00:22:02,366
+就是因为它和它的差异
+because of the difference between this and that 
+
+387
+00:22:04,766 --> 00:22:05,966
+具体来说是它
+specifically that 
+
+388
+00:22:08,133 --> 00:22:12,766
+我们继续
+let's roll onwards
+
+389
+00:22:19,000 --> 00:22:19,800
+好吧
+all right
+
+390
+00:22:19,966 --> 00:22:21,600
+这就是系统调用
+so that was system calls
+
+391
+00:22:22,066 --> 00:22:24,566
+我们接着看看内存
+let's move on to memory 
+
+392
+00:22:24,733 --> 00:22:33,533
+我要讲的是几种不同类型的内存
+i'm gonna go at a very high level of several different types of memory
+
+393
+00:22:33,733 --> 00:22:35,800
+但主要讲的是栈
+but really mostly is gonna cover the stack 
+
+394
+00:22:36,700 --> 00:22:44,266
+在amd64和大多数现代架构中
+so in amd64 and most modern architectures
+
+395
+00:22:44,966 --> 00:22:49,600
+内存中有一个地方叫栈
+there's a place in memory called the stack
+
+396
+00:22:49,733 --> 00:22:53,966
+负责存储一些东西
+which is responsible for storing a number of things 
+
+397
+00:22:54,266 --> 00:22:58,300
+它存储了
+it stores the
+
+398
+00:23:01,533 --> 00:23:02,500
+稍等
+hold on hold on
+
+399
+00:23:05,200 --> 00:23:06,866
+稍等一下，我马上回来
+one second i'll be right back
+
+400
+00:23:08,866 --> 00:23:09,933
+好的，很抱歉
+okay sorry about that 
+
+401
+00:23:10,100 --> 00:23:12,100
+我回来了
+i am back all right
+
+402
+00:23:12,100 --> 00:23:12,933
+内存
+so memory
+
+403
+00:23:14,000 --> 00:23:16,700
+栈实现了许多功能
+this stack fulfills a number of functions 
+
+404
+00:23:16,833 --> 00:23:18,566
+你应该已经注意到了
+you should already notice 
+
+405
+00:23:18,566 --> 00:23:19,466
+如果没有
+if you do not
+
+406
+00:23:19,766 --> 00:23:28,100
+请查阅并研究栈在x86汇编中的作用
+please go look up and study what the stack does in a x86 assembly 
+
+407
+00:23:28,700 --> 00:23:33,000
+它记录了函数调用栈
+essentially it tracks the call stack 
+
+408
+00:23:33,133 --> 00:23:35,733
+所以无论何时你调用一个函数
+so whenever you call a function
+
+409
+00:23:35,866 --> 00:23:42,966
+要返回到的指令的地址，即返回地址
+the return address to the instruction that that function should return to
+
+410
+00:23:43,200 --> 00:23:44,933
+会被压入栈
+gets pushed onto the stack
+
+411
+00:23:45,000 --> 00:23:47,300
+函数返回时
+and when you return from a function
+
+412
+00:23:47,300 --> 00:23:49,400
+返回地址会从栈中弹出
+it gets popped off of the stack
+
+413
+00:23:51,800 --> 00:23:54,366
+栈还包含了局部变量
+the stack also contains local variables
+
+414
+00:23:54,366 --> 00:23:56,933
+这就要说到基指针和栈帧指针了
+that's where the base pointer and the frame pointer
+
+415
+00:23:57,066 --> 00:23:59,766
+或者说基指针寄存器bp和栈指针寄存器sp
+or the base pointer and the stack pointer come in 
+
+416
+00:24:00,300 --> 00:24:03,166
+它俩会记录当前栈帧
+to track where in the stack you currently are
+
+417
+00:24:03,400 --> 00:24:09,666
+在栈里的起始位置与终止位置
+and where in the stack your current function kind of ends its allocated space
+
+418
+00:24:14,200 --> 00:24:16,133
+栈提供了一些空间
+the stack provides some scratch space
+
+419
+00:24:16,166 --> 00:24:19,233
+来缓解寄存器耗尽的问题
+to alleviate register exhaustion 
+
+420
+00:24:20,100 --> 00:24:23,566
+该问题大多存在于x86架构
+again more of an issue on x86
+
+421
+00:24:23,600 --> 00:24:28,700
+但由于调用约定，还是会省着用寄存器
+but you still save off a lot of registers because of calling conventions
+
+422
+00:24:28,700 --> 00:24:30,000
+我们马上就会讨论调用约定
+as we'll discuss in a second
+
+423
+00:24:30,133 --> 00:24:31,666
+在其他架构上也是如此
+on other architectures as well
+
+424
+00:24:32,500 --> 00:24:36,566
+当然还是会经常遇到寄存器耗尽的问题
+and you of course run into register exhaustion everywhere still
+
+425
+00:24:37,300 --> 00:24:40,600
+x86架构
+and the stack on x86 is always 
+
+426
+00:24:40,600 --> 00:24:45,233
+32位x86架构上，只用栈传参
+on 32 bit x86 is always used to pass function arguments 
+
+427
+00:24:45,300 --> 00:24:46,400
+其他架构上
+on other architecture
+
+428
+00:24:46,600 --> 00:24:51,700
+有很多参数的话，还是会用到栈传参
+it is still used to pass arguments to functions that take a lot of arguments
+
+429
+00:24:52,466 --> 00:24:57,466
+amd64上的相关寄存器是RSP和RBP
+all right relevant registers on amd64 is RSP and RBP 
+
+430
+00:24:57,666 --> 00:24:59,700
+相关的指令是push和pop
+relevant instructions push and pop 
+
+431
+00:25:00,000 --> 00:25:01,866
+push会往栈上写数据
+push write something to the stack 
+
+432
+00:25:02,066 --> 00:25:04,000
+pop从栈上读出数据
+pop reads it off of the stack
+
+433
+00:25:05,633 --> 00:25:10,999
+你应该已经知道栈是反方向增长的
+you should already know that the stack grows backwards 
+
+434
+00:25:11,633 --> 00:25:16,666
+对于栈，我的展示方式是从右到左
+the way that i demonstrate the stack is right to left 
+
+435
+00:25:18,266 --> 00:25:21,466
+内存从大到小，展示的方式是从右往左
+the way i demonstrate memory in class is right to left
+
+436
+00:25:21,833 --> 00:25:23,666
+而栈顶是向左增长的
+and the stack grows to the left 
+
+437
+00:25:23,866 --> 00:25:24,700
+最左为0
+left is zero
+
+438
+00:25:24,700 --> 00:25:28,466
+最右边是十六进制的FFFFFFFF
+right is ffffffff in hexadecimal
+
+439
+00:25:32,166 --> 00:25:36,966
+这是历史原因导致的
+it is the reason for that is other historical oddities
+
+440
+00:25:36,966 --> 00:25:41,566
+但现在就是这样
+but that's where we are today all right
+
+441
+00:25:41,933 --> 00:25:48,333
+我们来看看其他类型的内存
+let's move on to other types of memory 
+
+442
+00:25:48,466 --> 00:25:50,500
+我意思是内存还是就这么一大块
+i mean it's all one big memory
+
+443
+00:25:50,833 --> 00:25:53,300
+amd64不分段
+amd64 is not segmented
+
+444
+00:25:53,300 --> 00:25:55,733
+没有特殊内存之类的
+there are no special memories or anything like that
+
+445
+00:25:58,200 --> 00:26:01,566
+但有些内存不是用于栈的
+but memories used for other things than the stack
+
+446
+00:26:02,000 --> 00:26:07,066
+我们会在之后的模块讨论动态分配内存
+we'll talk about dynamically allocated memory in a future module
+
+447
+00:26:07,066 --> 00:26:09,800
+你还没必要为此担心
+you don't necessarily have to worry about it yet
+
+448
+00:26:10,300 --> 00:26:11,800
+但它的特性很明显
+but it will feature very prominently 
+
+449
+00:26:12,000 --> 00:26:17,366
+某种程度来说，内存可以按意愿来映射，去映射
+memory can be mapped unmapped more or less at will
+
+450
+00:26:17,900 --> 00:26:21,066
+并且在一般的程序中经常这样
+and is frequently in normal operational program
+
+451
+00:26:22,166 --> 00:26:25,300
+你还可以将文件映射到内存中
+you can also have files mapped into memory
+
+452
+00:26:26,333 --> 00:26:36,000
+讲Linux进程生命周期中的共享内存时，我会讨论一下它
+i'll discuss that a little bit in terms of shared memory in the Linux lifecycle lecture 
+
+453
+00:26:36,966 --> 00:26:42,500
+这也是基础系列的内容
+that's also in this fundamentals series
+
+454
+00:26:44,300 --> 00:26:47,600
+要记住的一件事是
+one thing to keep in mind is that 
+
+455
+00:26:48,766 --> 00:26:51,666
+大多数现代架构中
+on most modern architectures
+
+456
+00:26:52,100 --> 00:26:54,366
+数据是反序存储的
+data is stored backwards 
+
+457
+00:26:54,833 --> 00:26:57,266
+如果你有一个8位的
+as in if you have an 8 bit
+
+458
+00:27:01,600 --> 00:27:04,600
+8字节的数字
+an 8 byte integer
+
+459
+00:27:05,000 --> 00:27:08,066
+如一二三四
+that is one two three four 
+
+460
+00:27:08,533 --> 00:27:10,800
+0x 01 02 03 04
+0x 01 02 03 04
+
+461
+00:27:11,000 --> 00:27:11,800
+它不是
+which is not
+
+462
+00:27:14,500 --> 00:27:16,533
+抱歉，我累了
+ugh sorry i'm tired ugh
+
+463
+00:27:17,866 --> 00:27:19,633
+等一下，我喝杯水
+let me get a drink of water one sec 
+
+464
+00:27:20,166 --> 00:27:22,066
+好吧，我回来了，抱歉
+all right i'm back sorry about that 
+
+465
+00:27:22,466 --> 00:27:24,500
+该讲端序了
+so endianess again
+
+466
+00:27:24,733 --> 00:27:26,133
+我们快速复习一下
+let's really quickly cover this 
+
+467
+00:27:26,133 --> 00:27:30,300
+如果要存储这个值
+if you were to store the value
+
+468
+00:27:30,300 --> 00:27:35,000
+0x01234567
+0x01234567
+
+469
+00:27:35,300 --> 00:27:38,433
+到内存地址0x100
+at memory location 0x100
+
+470
+00:27:38,633 --> 00:27:43,266
+在x86或arm的默认配置中
+in x86 or default configurations of arm
+
+471
+00:27:43,700 --> 00:27:47,900
+或现代的MIPS、PBC的默认配置
+or modern defaults on MIPS and PBC even now
+
+472
+00:27:48,700 --> 00:27:56,600
+它将被反序存储为0x67 45 23 01
+it would get stored backwards  as 0x67 45 23 01
+
+473
+00:27:56,733 --> 00:27:58,400
+以字节为单位反序存储
+so the bytes are reversed 
+
+474
+00:27:58,733 --> 00:28:00,466
+不是位，是字节
+not the bits the bytes
+
+475
+00:28:01,000 --> 00:28:02,100
+为什么会这样
+why does this happen
+
+476
+00:28:03,700 --> 00:28:07,400
+有很多可能的理论
+there's a number of potential theories
+
+477
+00:28:07,733 --> 00:28:10,500
+一种观点是
+one idea is historically
+
+478
+00:28:10,600 --> 00:28:20,933
+以前的算法通常更关心最低有效位
+you were interested in the least significant bits more frequently in algorithms
+
+479
+00:28:20,966 --> 00:28:22,100
+我不知道这是不是真的
+i don't know if this is true 
+
+480
+00:28:22,200 --> 00:28:27,966
+而且以前的内存都是串行的非常慢的介质
+and because memory used to be read sequentially out of very slow medium
+
+481
+00:28:28,533 --> 00:28:32,100
+比如纸带、鼓之类的
+such as punch cards or drums or something like that 
+
+482
+00:28:33,300 --> 00:28:39,733
+这样先读取最低有效位计算的更快
+it was faster to get at the early memory at the least significant bits first
+
+483
+00:28:40,366 --> 00:28:41,466
+我不知道这是不是真的
+i don't know if that's true
+
+484
+00:28:41,533 --> 00:28:43,066
+我在什么地方读到过
+i read that somewhere
+
+485
+00:28:43,166 --> 00:28:50,600
+也读到过这样的观点，这样更容易处理不同的大小
+i've also read arguments that it is easier to address different sizes
+
+486
+00:28:50,600 --> 00:28:52,933
+例如，在一个数组中
+for example in an array
+
+487
+00:28:57,266 --> 00:28:59,866
+如果你想读出某个元素
+if you want to read something
+
+488
+00:28:59,866 --> 00:29:03,100
+将其转换成char或short
+cast something to a char or a short
+
+489
+00:29:03,100 --> 00:29:05,000
+这样更容易计算
+it just much easier to make that calculation
+
+490
+00:29:05,000 --> 00:29:13,866
+它就位于该值的内存空间的开头的话
+if it is at the beginning of the memory space for the value
+
+491
+00:29:14,666 --> 00:29:17,900
+我还听说它使向后兼容变得更容易
+i've also heard that it made backwards compatibility easier
+
+492
+00:29:18,300 --> 00:29:19,566
+真正的原因是什么
+what are the real reasons
+
+493
+00:29:19,633 --> 00:29:21,200
+我肯定他们就在网上的某处
+i'm sure they're out there somewhere
+
+494
+00:29:21,266 --> 00:29:22,933
+但他们不在这里
+but they're not in this lecture
+
+495
+00:29:22,933 --> 00:29:27,000
+这里就是几种猜想
+but a couple of speculations are in this lecture
+
+496
+00:29:28,266 --> 00:29:33,200
+接着讲下一个概念
+let's move on to the next concept 
+
+497
+00:29:33,700 --> 00:29:34,700
+符号表示
+signedness
+
+498
+00:29:34,866 --> 00:29:39,733
+这是一个棘手的问题
+so there's this tricky question 
+
+499
+00:29:39,766 --> 00:29:44,766
+应该如何存储一个数字是正的还是负的
+of how to store the fact that a number is positive or negative
+
+500
+00:29:45,133 --> 00:29:47,333
+之前看了一个指令
+i showed you an instruction that
+
+501
+00:29:47,333 --> 00:29:49,533
+add rax rbx
+said add rax RBX 
+
+502
+00:29:49,533 --> 00:29:54,600
+rax是正数还是负数
+is rax a positive number rax a negative number 
+
+503
+00:29:54,666 --> 00:29:55,366
+谁知道呢
+who knows 
+
+504
+00:29:56,133 --> 00:29:57,766
+我们该怎么指定
+or how do we specify 
+
+505
+00:29:57,833 --> 00:29:58,800
+一个想法是
+so one idea
+
+506
+00:29:58,800 --> 00:30:02,033
+一个早期的想法是使用一个符号位
+an early idea was to use a signed bit 
+
+507
+00:30:02,033 --> 00:30:03,333
+所以
+so you say okay
+
+508
+00:30:05,000 --> 00:30:11,566
+寄存器的最高位
+you have the first bit in a register or whatever or in any value
+
+509
+00:30:11,733 --> 00:30:14,066
+表示该值是正的还是负的
+says whether it's negative or positive
+
+510
+00:30:14,733 --> 00:30:16,800
+我们举一个8位的例子
+let's have an example here with 8 bits
+
+511
+00:30:17,166 --> 00:30:18,033
+它就在幻灯片上
+we have it on the slide 
+
+512
+00:30:19,166 --> 00:30:23,166
+这个00...11表示+3
+this all zeros followed by 11 is a positive 3 
+
+513
+00:30:23,666 --> 00:30:27,400
+这个100...11表示-3
+and 1 followed by 0 followed by 11 would be a -3
+
+514
+00:30:27,466 --> 00:30:29,466
+这有一些缺点
+so this has a number of drawbacks
+
+515
+00:30:29,566 --> 00:30:31,133
+一个缺点是
+one drawback is that 
+
+516
+00:30:31,300 --> 00:30:34,366
+现在0有了两种不同的表示方法
+you now have two different representation for zero
+
+517
+00:30:34,466 --> 00:30:36,000
++0 和 -0
+a positive zero and a negative zero 
+
+518
+00:30:36,366 --> 00:30:38,633
+这在数学上很奇怪
+this is mathematically weird
+
+519
+00:30:38,866 --> 00:30:41,800
+这使很多数学运算变得复杂
+and it complicates a lot of math
+
+520
+00:30:43,000 --> 00:30:44,066
+另一个缺点是
+another drawback
+
+521
+00:30:44,066 --> 00:30:46,733
+所有的操作都要
+is that all of your operations have to be 
+
+522
+00:30:46,933 --> 00:30:47,933
+你好，咪咪
+hello 
+
+523
+00:30:49,166 --> 00:30:50,266
+我的猫走了进来
+my cat walked back in 
+
+524
+00:30:50,433 --> 00:30:53,366
+所有的操作都要注意符号
+all your operations have to be signedness aware
+
+525
+00:30:55,366 --> 00:30:57,566
+这很糟糕
+this is bad 
+
+526
+00:30:57,700 --> 00:31:02,133
+因为这样必须复杂化
+because you have to complicate 
+
+527
+00:31:02,366 --> 00:31:06,833
+加法、减法等的实现
+the implementation of every add every subtract etc 
+
+528
+00:31:06,933 --> 00:31:08,133
+如你所见
+as you can see
+
+529
+00:31:09,266 --> 00:31:10,566
+根据
+depending on
+
+530
+00:31:14,300 --> 00:31:15,800
+这有一个bug，没问题
+there's a bug in oh yeah
+
+531
+00:31:15,900 --> 00:31:16,900
+如你所见
+as you can see 
+
+532
+00:31:16,900 --> 00:31:20,600
+对于8位的无符号数
+for an unsigned 8 bit value 
+
+533
+00:31:20,600 --> 00:31:23,400
+如果以255加1
+if you add a 1 to 255
+
+534
+00:31:23,400 --> 00:31:24,933
+会得到0
+you end up with a zero 
+
+535
+00:31:24,933 --> 00:31:25,900
+如果是有符号的
+if it's signed
+
+536
+00:31:25,900 --> 00:31:27,666
+-127（和前面255是同一个值）加1
+you add a one to negative 127
+
+537
+00:31:27,966 --> 00:31:29,366
+却要是-126
+you have with negative 126
+
+538
+00:31:29,400 --> 00:31:31,600
+而且不能都按有符号的处理
+and you also don't want to have everything being signed
+
+539
+00:31:31,733 --> 00:31:34,100
+因为这样能表示的值的范围将大大减小
+because you lose quite a lot of range
+
+540
+00:31:34,300 --> 00:31:36,300
+相比于不这样的话
+that you would be able to express otherwise
+
+541
+00:31:36,366 --> 00:31:38,166
+因为这个符号位，将丢失一半的范围
+you lose half of it to that signed bit
+
+542
+00:31:40,066 --> 00:31:45,800
+一个聪明但很疯狂的想法是补码
+so a clever but very crazy idea is what's called 2's complement
+
+543
+00:31:47,300 --> 00:31:48,600
+这个想法是这样的
+the idea is this
+
+544
+00:31:48,600 --> 00:31:51,533
+0只有一种表示形式
+we have one representation of 0 
+
+545
+00:31:52,133 --> 00:31:54,066
+如果用它减去1
+if you subtract one from that 
+
+546
+00:31:54,400 --> 00:31:58,300
+无符号的话，会得到-1
+you get -1 if you are in unsigned world
+
+547
+00:31:59,900 --> 00:32:02,266
+抱歉，有符号，会得到-1
+or sorry -1 if you're in signed world
+
+548
+00:32:02,333 --> 00:32:04,600
+无符号，则是255
+or 255 if you're in unsigned world
+
+549
+00:32:04,800 --> 00:32:08,633
+它们都是0xff
+both of them use 0xff 
+
+550
+00:32:09,100 --> 00:32:13,966
+二进制表示为8个1
+as in the 8 bit repentation all ones in binary right
+
+551
+00:32:15,466 --> 00:32:17,766
+如果再减去1
+if you subtract one from that 
+
+552
+00:32:17,766 --> 00:32:21,633
+会得到二进制11111110
+you get in binary 11111110 
+
+553
+00:32:21,900 --> 00:32:23,733
+或者十六进制的0xfe
+or in hexadecimal 0xfe
+
+554
+00:32:23,800 --> 00:32:25,966
+它是-2
+that's negative two now right
+
+555
+00:32:26,400 --> 00:32:27,800
+这样做的好处是
+the advantage of this 
+
+556
+00:32:27,800 --> 00:32:30,766
+算术运算不用在意符号
+is that arithmetic operations don't have to be sign aware
+
+557
+00:32:30,866 --> 00:32:32,066
+0也只有一种表示方法了
+and we have one zero again 
+
+558
+00:32:32,600 --> 00:32:33,533
+所以
+right so
+
+559
+00:32:34,966 --> 00:32:40,300
+0xff加1也是一样的
+adding a one to 0xff is the same 
+
+560
+00:32:41,000 --> 00:32:47,233
+不管0xff代表255还是-127
+regardless of whether 0xff represents 255 or -127
+
+561
+00:32:48,300 --> 00:32:51,300
+在这个例子中是-1
+or in actually in this case -1
+
+562
+00:32:53,500 --> 00:32:55,766
+缺点是有点疯狂
+the disadvantage is it's a little crazy
+
+563
+00:32:55,766 --> 00:32:58,566
+这让你觉得有点奇怪
+it's a little bit weird to wrap your head around
+
+564
+00:32:58,566 --> 00:33:00,933
+看视频前你应该已经理解它了
+you should have already had your head wrapped around it
+
+565
+00:33:02,366 --> 00:33:08,766
+但处理负数是有点麻烦
+but it's kind of a pain dealing with the values of negative numbers
+
+566
+00:33:08,900 --> 00:33:11,533
+一直到你适应它前
+until you learn to adapt 
+
+567
+00:33:11,900 --> 00:33:13,600
+补码的好处是
+the benefit of 2's complement is
+
+568
+00:33:13,600 --> 00:33:17,866
+我们通常只要在比较时关心符号
+we usually only have to really care about signedness during conditional checks
+
+569
+00:33:17,866 --> 00:33:21,066
+它是通过标志寄存器的SF位
+and that's done if you recall using the signed bit
+
+570
+00:33:22,400 --> 00:33:27,366
+配合特定的条件跳转指令
+for and the specific conditional jump of
+
+571
+00:33:28,000 --> 00:33:30,300
+jl，而不是jb
+jump less than instead of jump below 
+
+572
+00:33:30,600 --> 00:33:31,800
+jl是有符号的
+less than is signed 
+
+573
+00:33:31,966 --> 00:33:33,300
+jb是无符号的
+below is unsigned
+
+574
+00:33:33,933 --> 00:33:35,433
+很好，看看我们还有什么
+cool see what else we got 
+
+575
+00:33:35,566 --> 00:33:36,566
+调用约定
+calling conventions
+
+576
+00:33:36,566 --> 00:33:37,866
+我们快结束了
+we're getting close to the end 
+
+577
+00:33:38,333 --> 00:33:41,066
+通话约定很重要
+calling conventions are important
+
+578
+00:33:41,133 --> 00:33:42,800
+因为当你调用一个函数
+because when you call a function 
+
+579
+00:33:43,166 --> 00:33:44,600
+传递参数
+you pass arguments
+
+580
+00:33:45,933 --> 00:33:48,466
+会按照一个约定俗成的方式
+according to some agreed upon way 
+
+581
+00:33:48,900 --> 00:33:52,300
+在x86，会把参数反序压入栈
+on x86 you push arguments in reverse order to the stack 
+
+582
+00:33:52,733 --> 00:33:53,900
+再调用函数
+and then you call
+
+583
+00:33:53,900 --> 00:33:57,333
+这会将函数返回地址压入栈
+which pushes the return address onto the stack
+
+584
+00:33:58,066 --> 00:33:59,200
+函数返回时
+and when the function returns
+
+585
+00:33:59,300 --> 00:34:01,666
+它会把返回值放在eax中
+it puts the return value in eax
+
+586
+00:34:01,866 --> 00:34:05,766
+这是x86的标准调用约定
+this is the standard calling convention of x86
+
+587
+00:34:05,766 --> 00:34:06,966
+还有其他的
+there are other ones
+
+588
+00:34:07,200 --> 00:34:14,800
+这是典型的linux x86 stdcall调用约定
+this is like the the typical Linux x86 stdcall calling convention 
+
+589
+00:34:19,566 --> 00:34:20,933
+稍等
+hold on 
+
+590
+00:34:22,533 --> 00:34:24,200
+咪咪，我录像呢
+petrie i'm trying to record here
+
+591
+00:34:27,200 --> 00:34:29,333
+我的猫相当老了
+my cat is fairly old 
+
+592
+00:34:29,600 --> 00:34:32,700
+都爬不上沙发
+and has trouble climbing onto the couch 
+
+593
+00:34:32,733 --> 00:34:34,800
+对这个插曲我很抱歉
+anyways sorry about that
+
+594
+00:34:37,300 --> 00:34:39,900
+我们不会用32位的x86
+we're not gonna be using 32 bit x86
+
+595
+00:34:39,900 --> 00:34:41,166
+它太老派了
+it's old school
+
+596
+00:34:41,166 --> 00:34:44,466
+基本没啥理由用它
+there's no reason to ever interact with it not really
+
+597
+00:34:47,133 --> 00:34:50,200
+我们会用amd64
+so we will be using amd64
+
+598
+00:34:50,300 --> 00:34:53,200
+Linux它的调用约定
+the calling convention in Linux for 
+
+599
+00:34:54,333 --> 00:34:57,100
+第一个参数放在rdi
+at least is first argument in RDI
+
+600
+00:34:57,333 --> 00:34:58,533
+第二个放在rsi
+second argument in RSI
+
+601
+00:34:58,800 --> 00:35:00,033
+第三个放在rdx
+third argument in RDX
+
+602
+00:35:00,400 --> 00:35:01,433
+第四个放在rcx
+fourth in RCX 
+
+603
+00:35:01,500 --> 00:35:02,866
+然后是r8 r9
+then r8 r9 
+
+604
+00:35:03,500 --> 00:35:05,666
+好了
+boom you go
+
+605
+00:35:07,200 --> 00:35:09,800
+返回地址放到栈上
+return address gets put on the stack
+
+606
+00:35:10,066 --> 00:35:12,000
+然后当函数返回时
+and then when the function returns
+
+607
+00:35:12,066 --> 00:35:16,033
+返回值会放入rax
+the return value is put into rax
+
+608
+00:35:18,800 --> 00:35:20,333
+arm有点区别
+arm is actually a little interesting 
+
+609
+00:35:21,133 --> 00:35:25,233
+arm有个专门的寄存器放返回地址
+arm has a register where it puts the return address 
+
+610
+00:35:25,400 --> 00:35:28,600
+不会把它放到栈上
+instead of putting it on the stack
+
+611
+00:35:30,000 --> 00:35:33,066
+重要的是他们会遵循这些约定
+but the point is there are these conventions they're followed 
+
+612
+00:35:33,766 --> 00:35:34,266
+实际上
+actually
+
+613
+00:35:34,400 --> 00:35:35,733
+返回地址放哪里
+where the return address goes 
+
+614
+00:35:35,833 --> 00:35:37,100
+不是调用约定的一部分
+is not part of a calling convention
+
+615
+00:35:37,133 --> 00:35:38,533
+它是架构的一部分
+it's part of the architecture
+
+616
+00:35:38,533 --> 00:35:40,066
+它是call指令负责的
+it's what the call instruction does
+
+617
+00:35:40,066 --> 00:35:41,733
+但返回值是
+but where the return value is 
+
+618
+00:35:42,566 --> 00:35:44,266
+它是调用约定的一部分
+is part of the calling convention
+
+619
+00:35:48,700 --> 00:35:53,233
+很重要的是，寄存器是共享于函数间的
+it's very important to understand that registers are shared between all functions
+
+620
+00:35:53,533 --> 00:35:57,200
+当然，是在同一个进程，实际上是同一个线程中
+essentially in your process in your in your thread actually
+
+621
+00:36:00,500 --> 00:36:01,166
+这意味着
+this means that
+
+622
+00:36:01,166 --> 00:36:06,866
+如果在main函数中用了一堆寄存器
+when if you're using a bunch of registers in your main function
+
+623
+00:36:06,866 --> 00:36:08,266
+然后调用到libc
+and you call into libc
+
+624
+00:36:09,966 --> 00:36:11,900
+Libc也需要使用寄存器
+libc needs to use registers too
+
+625
+00:36:12,000 --> 00:36:15,500
+它假设它可以随意地使用某些寄存器
+and it assumes that it can use certain registers haphazardly
+
+626
+00:36:15,600 --> 00:36:18,300
+有一份协议规定了
+there's a contract an agreement
+
+627
+00:36:18,300 --> 00:36:21,666
+某些寄存器是调用方负责保存的
+where certain registers are caller saved
+
+628
+00:36:21,666 --> 00:36:23,133
+某些寄存器是被调方负责保存的
+certain registers are callee saved
+
+629
+00:36:23,133 --> 00:36:24,466
+这是调用约定的一部分
+this is part of the calling convention 
+
+630
+00:36:24,533 --> 00:36:26,500
+在amd64
+on amd64 
+
+631
+00:36:27,433 --> 00:36:33,466
+RBX RBP r12 r13 r14和r15是所谓的被调方负责的
+RBX RBP r12 r13 r14 and r15 are what's called callee save
+
+632
+00:36:33,566 --> 00:36:36,833
+如果你的代码调用了一个库函数
+if your code calls into a library function
+
+633
+00:36:37,200 --> 00:36:38,466
+编译器会确保
+the compiler will make sure 
+
+634
+00:36:38,800 --> 00:36:44,100
+调用函数前，你的代码会将这些寄存器保存在栈上（口误）
+that your code saves those registers on the stack before making the call 
+
+635
+00:36:44,133 --> 00:36:45,400
+其他所有的寄存器
+all other registers
+
+636
+00:36:45,700 --> 00:36:49,266
+抱歉，说反了
+the sorry the other way around
+
+637
+00:36:53,333 --> 00:36:55,366
+这些寄存器
+all these registers are ones
+
+638
+00:36:55,366 --> 00:36:59,133
+不应该被调用的代码直接更改
+that should not be messed with by code that you call
+
+639
+00:36:59,133 --> 00:37:01,166
+所以当调用进libc时
+so when you call into libc
+
+640
+00:37:01,400 --> 00:37:03,333
+如果libc需要使用这些寄存器
+if libc needs to use these registers 
+
+641
+00:37:03,400 --> 00:37:04,933
+RBX RBP等等
+rbx rbp and so forth 
+
+642
+00:37:05,166 --> 00:37:06,500
+它会先保存它们
+it will save them 
+
+643
+00:37:06,966 --> 00:37:08,000
+再使用
+it will use them
+
+644
+00:37:08,100 --> 00:37:10,300
+再在返回前恢复它们
+and then it will restore them before returning
+
+645
+00:37:10,500 --> 00:37:12,500
+所有其它的寄存器都是可以随便用的
+all other registers are up for grabs
+
+646
+00:37:12,500 --> 00:37:13,766
+它可以随意使用
+it can clobber them at will 
+
+647
+00:37:13,866 --> 00:37:17,333
+rax肯定会被改
+rax is nearly guaranteed to be clobbered
+
+648
+00:37:17,400 --> 00:37:19,500
+因为它是用来放返回值的
+because that's the return value of the function
+
+649
+00:37:21,533 --> 00:37:25,300
+我们已经
+we've gotten to with Petri's help
+
+650
+00:37:25,300 --> 00:37:30,466
+我们已经来到了简单复习的尾声
+we've gotten to the end of this assembly refresh
+
+651
+00:37:31,366 --> 00:37:34,700
+我有一些有用的资源
+i have a couple of useful resources
+
+652
+00:37:35,066 --> 00:37:37,900
+一个有趣的是rappel
+one interesting resource is rappel 
+
+653
+00:37:38,133 --> 00:37:40,600
+这是一个干爽的
+it is a neat
+
+654
+00:37:42,200 --> 00:37:49,600
+基本呈现给用户的就是一个汇编解释器
+basically what appears to the user as an assembly interpreter 
+
+655
+00:37:50,033 --> 00:37:51,800
+我快速地展示一下
+let me show this to you real quick
+
+656
+00:37:53,666 --> 00:37:58,300
+来到终端
+here is our terminal so let's
+
+657
+00:38:00,700 --> 00:38:02,166
+我的终端怎么了
+what is going on of my terminal
+
+658
+00:38:03,300 --> 00:38:04,600
+启动rappel
+let's use rappel
+
+659
+00:38:05,466 --> 00:38:10,200
+这是我们模拟CPU的状态
+here's our state of our emulated cpu 
+
+660
+00:38:10,566 --> 00:38:12,933
+有各种标志位
+we have our various flags
+
+661
+00:38:13,566 --> 00:38:16,266
+它们组合起来是这个家伙
+and they're here combined into this guy 
+
+662
+00:38:16,833 --> 00:38:20,900
+有寄存器等等
+we have our registers and so forth
+
+663
+00:38:20,966 --> 00:38:23,366
+我可以这样
+and here i can do stuff like 
+
+664
+00:38:28,300 --> 00:38:29,066
+结果就在这
+and here it is 
+
+665
+00:38:29,233 --> 00:38:30,233
+这是有改变的地方
+this is what changed 
+
+666
+00:38:31,000 --> 00:38:34,200
+标红的是有改动的
+the red is what changed
+
+667
+00:38:34,566 --> 00:38:38,300
+我可以test rax, rax
+i can do stuff like test rax rax 
+
+668
+00:38:39,466 --> 00:38:40,066
+好的
+okay
+
+669
+00:38:40,333 --> 00:38:41,233
+什么也没变
+nothing changed 
+
+670
+00:38:41,500 --> 00:38:44,566
+如果试试test rbx, rbx
+if i test rbx rbx
+
+671
+00:38:44,666 --> 00:38:46,166
+这会执行一个按位与
+this does a bitwise and 
+
+672
+00:38:46,966 --> 00:38:48,266
+并更新标志位
+and updates flags
+
+673
+00:38:48,966 --> 00:38:51,933
+ZF标志位变了
+ i have stored the zero flag
+
+674
+00:38:52,033 --> 00:38:53,366
+因为RBX等于0
+because RBX is 0
+
+675
+00:38:53,700 --> 00:38:57,866
+能看到test导致ZF变成1了
+and we can see that test results in zf being one 
+
+676
+00:38:59,133 --> 00:39:00,766
+rappel有一些限制
+rappel has some limitations 
+
+677
+00:39:00,833 --> 00:39:03,566
+能注意到rip看起来毫无道理
+you'll notice rip doesn't seem to make sense at all
+
+678
+00:39:03,566 --> 00:39:05,133
+一开始是400000
+it started out at 400000
+
+679
+00:39:05,533 --> 00:39:06,200
+这很好
+that's fine 
+
+680
+00:39:06,233 --> 00:39:10,266
+开始可以是二进制文件模拟加载的任意地址
+it can start out wherever the binary that it's emulating is loaded 
+
+681
+00:39:10,700 --> 00:39:17,800
+但它一直保持地址为
+but it keeps basically being equal to 
+
+682
+00:39:18,533 --> 00:39:22,533
+400000加上刚执行指令的大小
+the 400 plus the size of the instruction you just executed 
+
+683
+00:39:22,600 --> 00:39:25,300
+它所做的就是，把指令汇编一下
+what it does is it assembles your instruction
+
+684
+00:39:32,100 --> 00:39:34,166
+它所做的就是，把指令汇编一下
+what it does is it assembles your instruction
+
+685
+00:39:34,866 --> 00:39:36,166
+把它放在内存中
+puts it there in memory 
+
+686
+00:39:36,233 --> 00:39:37,100
+执行它
+executes it 
+
+687
+00:39:37,233 --> 00:39:39,000
+然后停止
+and stops afterwards
+
+688
+00:39:40,466 --> 00:39:46,100
+弄清楚一条指令到底做什么是非常有用的
+it's very useful to figure out what exactly an instruction does
+
+689
+00:39:46,366 --> 00:39:47,733
+我在努力回忆怎么
+i'm trying to remember how to 
+
+690
+00:39:47,800 --> 00:39:49,700
+是的，它有个帮助命令
+yeah it has some help commands 
+
+691
+00:39:49,733 --> 00:39:55,033
+例如，你可以读写内存
+you can for example read and write memory 
+
+692
+00:39:56,500 --> 00:39:57,566
+我展示一下
+and let me show you 
+
+693
+00:39:57,666 --> 00:40:03,333
+实际上，如果我们把这个写入rax
+actually if we move this into rax
+
+694
+00:40:04,400 --> 00:40:07,900
+再将rax压入栈
+push rax onto the stack 
+
+695
+00:40:08,700 --> 00:40:10,133
+我们来读一下
+and let's read
+
+696
+00:40:12,866 --> 00:40:16,000
+由于某种原因，RSP指向33
+rsp is pointed to 33 for some reason
+
+697
+00:40:16,733 --> 00:40:19,733
+我们从这里读8字节
+let's read from this 8 bytes
+
+698
+00:40:24,300 --> 00:40:25,133
+有东西崩了
+something broke
+
+699
+00:40:41,900 --> 00:40:43,000
+也许它没有映射
+maybe it's not mapped 
+
+700
+00:40:43,866 --> 00:40:45,566
+是的，它没有映射
+yeah it is not mapped
+
+701
+00:40:45,800 --> 00:40:48,766
+事实上，由于某种原因
+in fact for some reason
+
+702
+00:40:49,200 --> 00:40:50,966
+RSP出错了
+rsp got messed up
+
+703
+00:41:07,600 --> 00:41:10,566
+rappel与这里的栈出了点状况
+something is weird with rappel and the stack possibly 
+
+704
+00:41:11,200 --> 00:41:14,666
+总之，你能在这里试试汇编指令
+anyways you can play around with assembly instructions
+
+705
+00:41:14,766 --> 00:41:17,766
+比如，可以试试mul
+you can do for example my awesome mul 
+
+706
+00:41:17,833 --> 00:41:18,900
+如果我们
+so if we 
+
+707
+00:41:18,900 --> 00:41:25,766
+我展示下，mul的结果会放到rax中
+i will show you that rax is what mul ends up going into
+
+708
+00:41:25,766 --> 00:41:28,566
+把1放到rax
+so if we do put one into rax 
+
+709
+00:41:29,000 --> 00:41:30,600
+42放到rsi
+and 42 into rsi
+
+710
+00:41:30,700 --> 00:41:32,266
+然后执行mul rsi
+and we do mul rsi 
+
+711
+00:41:32,966 --> 00:41:35,266
+你看，这是42
+you see this is 42
+
+712
+00:41:38,133 --> 00:41:40,266
+所以幻灯片上是错的
+so the slides were wrong 
+
+713
+00:41:41,000 --> 00:41:44,600
+mul只需要一个寄存器参数
+mul just takes one register cool
+
+714
+00:41:45,766 --> 00:41:50,666
+这差不多就是我要展示的全部内容
+this is more or less all that i have for you for 
+
+715
+00:41:50,833 --> 00:41:55,500
+汇编复习的全部内容
+i mean it is all that i have for you for the assembly refresher 
+
+716
+00:41:55,666 --> 00:41:56,300
+注意
+remember
+
+717
+00:41:56,400 --> 00:41:58,500
+这应该是一个复习
+this should have been a refresher
+
+718
+00:41:58,600 --> 00:42:01,366
+要学好这门课，你应该了解汇编
+you should know assembly to do well in this course
+
+719
+00:42:01,500 --> 00:42:02,700
+你将会写汇编
+you're going to have to write it
+
+720
+00:42:02,700 --> 00:42:03,800
+读汇编
+you're going to have to read it 
+
+721
+00:42:03,800 --> 00:42:08,100
+你会从头写它
+you're going to have to make it appear out of thin air
+
+722
+00:42:08,200 --> 00:42:11,100
+在其他复杂的情况下
+in otherwise complicated scenarios
+
+723
+00:42:12,066 --> 00:42:14,100
+所以请确保你会汇编
+so make sure you know assembly
+
+724
+00:42:14,800 --> 00:42:19,400
+我们将会在后续课程再见
+i will see you later in this foundation series and in the rest of the course
+
+725
+00:42:19,633 --> 00:42:20,733
+晚安
+good night
+

@@ -1,0 +1,14 @@
+01 Introduction
+    https://www.youtube.com/watch?v=El8-vMDJ1zY&list=PL-ymxv0nOtqo0fRmVHxeOoKHX6ncNWp06
+
+02 Binary Lego
+    https://www.youtube.com/watch?v=L0gzNhbnOUA&list=PL-ymxv0nOtqo0fRmVHxeOoKHX6ncNWp06&index=2
+
+03 Techniques
+    https://www.youtube.com/watch?v=OVkObKS0gOo&list=PL-ymxv0nOtqo0fRmVHxeOoKHX6ncNWp06&index=3
+    
+04 Complications
+    https://www.youtube.com/watch?v=Iq2IFCKDpKc&list=PL-ymxv0nOtqo0fRmVHxeOoKHX6ncNWp06&index=4
+
+practice here
+    https://pwn.college/software-exploitation/return-oriented-programming/

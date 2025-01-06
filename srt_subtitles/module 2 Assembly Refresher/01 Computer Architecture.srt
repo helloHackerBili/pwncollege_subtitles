@@ -1,0 +1,1325 @@
+1
+00:00:05,133 --> 00:00:06,766
+哦,你好
+oh hello
+
+2
+00:00:07,400 --> 00:00:08,300
+我是Yan
+I'm Yan 
+
+3
+00:00:08,500 --> 00:00:10,566
+今天我们要讨论的是
+and today we're going to be talking about
+
+4
+00:00:10,600 --> 00:00:13,466
+计算机架构基础
+computer architecture fundamentals
+
+5
+00:00:13,600 --> 00:00:17,333
+你可能会注意到我在右上角
+you might notice I am in the top right corner 
+
+6
+00:00:17,400 --> 00:00:21,600
+而不是一般的右下角
+as opposed to the normal lower right corner
+
+7
+00:00:23,200 --> 00:00:25,733
+是因为这样对幻灯片的干扰更少
+that's because I interfere with the slides less that way
+
+8
+00:00:25,733 --> 00:00:27,200
+抱歉，如果让你感到困惑的话
+sorry this confuses you
+
+9
+00:00:27,933 --> 00:00:30,400
+我们会尽量保持一致，但无法保证
+we'll try to be more consistent but no promises
+
+10
+00:00:30,400 --> 00:00:32,066
+也许有一天我会放在正中间
+maybe one day I'll be right in the middle
+
+11
+00:00:33,666 --> 00:00:34,200
+好吧
+all right
+
+12
+00:00:34,200 --> 00:00:36,166
+我们来谈谈计算机架构
+let's talk about computer architecture
+
+13
+00:00:36,333 --> 00:00:39,100
+这应该只是个回顾
+this should be mostly a review for you 
+
+14
+00:00:39,200 --> 00:00:42,933
+在这节课程中
+mostly I have this lecture in here 
+
+15
+00:00:42,966 --> 00:00:44,966
+我主要想介绍一个点
+to get across a philosophical point
+
+16
+00:00:45,200 --> 00:00:47,000
+就是计算机架构很酷
+that computer architecture is cool
+
+17
+00:00:49,400 --> 00:00:53,733
+希望你已经在计算机组成原理课程中学习了常规概念
+I hope you've learned the general concepts already in a computer organization course
+
+18
+00:00:54,700 --> 00:00:56,666
+还有汇编语言之类的
+along with assembly language and so forth
+
+19
+00:00:56,733 --> 00:01:00,966
+否则这门课就很难了
+cause otherwise this course will be rather difficult
+
+20
+00:01:02,500 --> 00:01:03,300
+但如果没有
+but if not
+
+21
+00:01:04,400 --> 00:01:06,333
+就启动搜索引擎吧
+get warm up Google and
+
+22
+00:01:07,200 --> 00:01:08,400
+试着跟上
+try to follow along
+
+23
+00:01:08,800 --> 00:01:15,300
+这里我想表达的是
+so the point I want to get across in this lecture in some sense is that
+
+24
+00:01:15,533 --> 00:01:17,733
+条条大路通CPU
+all roads lead to the CPU
+
+25
+00:01:17,766 --> 00:01:19,699
+你可能是一名Python开发人员
+you might be a Python developer
+
+26
+00:01:19,866 --> 00:01:22,366
+你可能喜欢写rust
+you might like to write rust 
+
+27
+00:01:22,533 --> 00:01:23,600
+因为你很时髦
+because you're very hip
+
+28
+00:01:24,400 --> 00:01:26,133
+你写的一切
+and everything you write 
+
+29
+00:01:26,800 --> 00:01:29,000
+不管它是什么
+eventually no matter what it is 
+
+30
+00:01:29,166 --> 00:01:34,466
+最终都是在CPU上执行的二进制指令
+ends up being executed as binary encoder instructions on a CPU
+
+31
+00:01:34,800 --> 00:01:36,300
+如果你写的是RUST
+right if you're writing rust 
+
+32
+00:01:36,500 --> 00:01:37,533
+会有一个编译器
+you have a compiler
+
+33
+00:01:38,333 --> 00:01:39,700
+它会编译你的代码
+that compiles your code
+
+34
+00:01:39,900 --> 00:01:43,000
+然后变成在CPU上运行的二进制代码
+and then that becomes a binary code running on the CPU
+
+35
+00:01:43,033 --> 00:01:44,233
+如果你运行的是Python
+if you're running Python 
+
+36
+00:01:44,233 --> 00:01:45,533
+会有个解释器
+you might have an interpreter
+
+37
+00:01:46,700 --> 00:01:50,900
+它是一个在CPU上执行的二进制程序
+that is a binary program executing on the CPU
+
+38
+00:01:51,700 --> 00:01:54,166
+执行你代码想要做的事情
+performing the things that your code wants to do
+
+39
+00:01:54,366 --> 00:01:55,966
+你可能会说，等等，Yan
+you might say but wait Yan
+
+40
+00:01:56,366 --> 00:01:59,900
+我用的pypy——Python的实时编译器
+I use pypy a just in time compiler for Python
+
+41
+00:01:59,900 --> 00:02:02,400
+或者我用的Javascript之类的东西
+or I use Javascript or something along those lines
+
+42
+00:02:02,400 --> 00:02:04,933
+那么你的代码就不是被解释的了
+then your code isn't interpreted
+
+43
+00:02:04,933 --> 00:02:07,800
+它会在执行时编译成二进制指令
+it is compiled on the fly into binary instructions 
+
+44
+00:02:07,966 --> 00:02:11,400
+最终在你的CPU上执行
+that end up getting executed on your CPU
+
+45
+00:02:12,166 --> 00:02:16,466
+一个例外是像Cuda这样的语言
+one potential exception to this is languages like Cuda
+
+46
+00:02:17,100 --> 00:02:22,000
+你的代码也会被编译成二进制指令
+that where you write code that ends up as binary compiled instructions 
+
+47
+00:02:22,000 --> 00:02:23,800
+但会在GPU上执行
+that get executed on a GPU
+
+48
+00:02:24,133 --> 00:02:29,100
+但在介绍计算机模型时，GPU和CPU都差不多
+but a GPU and a CPU for this purpose are basically the same thing
+
+49
+00:02:30,800 --> 00:02:33,266
+我们来深入到CPU
+let's drill down into the CPU
+
+50
+00:02:33,700 --> 00:02:35,733
+这个真的很底层
+whoa that's really far down
+
+51
+00:02:35,800 --> 00:02:40,300
+这个深度
+so this is basically as deep down into a CPU
+
+52
+00:02:40,333 --> 00:02:42,766
+对于计科人很合适了
+as is reasonable to drill for a computer scientist
+
+53
+00:02:42,766 --> 00:02:44,400
+这些是逻辑门
+right these are logic gates
+
+54
+00:02:45,200 --> 00:02:46,666
+从概念上讲
+conceptually speaking
+
+55
+00:02:47,100 --> 00:02:53,900
+你的CPU里有很多很多逻辑门在疯狂计算
+at the center of your CPU are many many many logic gates computing furiously
+
+56
+00:02:54,333 --> 00:02:55,666
+以为你呈现出这个视频
+to bring you this lecture
+
+57
+00:02:55,666 --> 00:02:57,400
+或者解决你的其它需求
+or whatever else you use your computer for
+
+58
+00:02:59,466 --> 00:03:01,333
+我个人认为
+personally I think that
+
+59
+00:03:01,600 --> 00:03:05,566
+我们应该从逻辑门开始计算机科学教育
+logic gates is where we should start computer science education
+
+60
+00:03:05,566 --> 00:03:05,966
+现在
+right now
+
+61
+00:03:05,966 --> 00:03:08,900
+我们都从表层的Python啊、Java啊开始
+we start on a high level with Python and Java
+
+62
+00:03:08,900 --> 00:03:10,733
+If语句、for循环
+if statements and for loops
+
+63
+00:03:11,166 --> 00:03:13,933
+这都是逻辑门的内容
+it's all about logic gates right
+
+64
+00:03:13,966 --> 00:03:15,966
+如果我们从逻辑门开始
+so if we started with logic gates
+
+65
+00:03:16,533 --> 00:03:18,266
+然后我们就能建立概念认知
+and then we built up the concepts 
+
+66
+00:03:18,433 --> 00:03:21,400
+我认为这能让
+I think it would make for a much more
+
+67
+00:03:24,900 --> 00:03:28,600
+计算机科学教育更循序渐进
+smooth step by step computer science education
+
+68
+00:03:28,700 --> 00:03:31,900
+因为逻辑门的概念非常简单
+because the concept of a logic gate is very simple
+
+69
+00:03:32,600 --> 00:03:35,466
+有大概四种类型的逻辑门
+there are let's say four types of logic gates
+
+70
+00:03:35,466 --> 00:03:36,666
+但你可以构造出
+but you can really build
+
+71
+00:03:40,166 --> 00:03:40,800
+相当多
+quite a lot 
+
+72
+00:03:40,800 --> 00:03:44,900
+你可以用任意三个逻辑门来构建其他逻辑门
+you can build the other logic gates using any three
+
+73
+00:03:46,000 --> 00:03:47,266
+有与门
+there's the and gate
+
+74
+00:03:47,566 --> 00:03:49,766
+与门有两个输入
+you have two inputs to your and gate
+
+75
+00:03:49,766 --> 00:03:51,166
+如果两者都为真
+if both of them are true
+
+76
+00:03:51,466 --> 00:03:52,566
+输出为真
+the output is true
+
+77
+00:03:52,800 --> 00:03:54,500
+'真' 是什么意思?
+what does true mean
+
+78
+00:03:54,600 --> 00:03:57,433
+根据物理介质的不同，“真”的含义也不同
+well true means different things depending on the physical medium
+
+79
+00:03:57,500 --> 00:04:03,300
+如果是内部用电的计算机
+if you have a computer that runs on electricity internally
+
+80
+00:04:05,933 --> 00:04:08,866
+你的输入
+then you have your inputs 
+
+81
+00:04:09,733 --> 00:04:13,166
+“真”或“不真”的界限是一个电压阈值
+true or not true is some sort of a voltage threshold 
+
+82
+00:04:13,366 --> 00:04:16,366
+如果两条线都有电压进来
+so if there's some voltage coming in on both wires 
+
+83
+00:04:16,500 --> 00:04:19,100
+那么与门会有个电压输出
+there will be a voltage coming out for an and gate
+
+84
+00:04:19,600 --> 00:04:23,566
+如果你有某种光学门
+if you have some sort of an optical gate those exist
+
+85
+00:04:23,566 --> 00:04:25,100
+介质就是光
+it can be light
+
+86
+00:04:25,266 --> 00:04:26,366
+看有光进来吗
+is light coming in
+
+87
+00:04:26,666 --> 00:04:28,266
+也可以是水
+you could have water
+
+88
+00:04:28,266 --> 00:04:30,533
+你可以用杯子造一个与门
+you can build an and gate out of a cup
+
+89
+00:04:31,000 --> 00:04:33,000
+由水和重力驱动
+powered by water and gravity
+
+90
+00:04:33,466 --> 00:04:35,566
+至少能造一个 或门
+an or gate out of a cup at least 
+
+91
+00:04:35,566 --> 00:04:38,333
+如果你在杯子底部钻一个洞
+if you drill a hole in the bottom of the cup
+
+92
+00:04:38,466 --> 00:04:39,933
+杯子上面接入两根水管
+you have two pipes going into the cup
+
+93
+00:04:39,933 --> 00:04:41,300
+如果其中一个管子有水
+if either pipe has water
+
+94
+00:04:41,533 --> 00:04:43,933
+水就会从杯子底部流出来
+there will be water pouring out of that cup
+
+95
+00:04:46,066 --> 00:04:48,966
+或门 有两个输入一个输出
+so an or gate two inputs one output
+
+96
+00:04:48,966 --> 00:04:51,066
+有一个输入为真，则输出为真
+either the inputs is true the output is true
+
+97
+00:04:51,933 --> 00:04:55,166
+你可以在电子游戏中构建这些逻辑门
+you could build these things in video games 
+
+98
+00:04:55,266 --> 00:04:55,966
+也的确有人这么做
+and people do
+
+99
+00:04:55,966 --> 00:04:57,833
+有人在游戏中构建一整个计算机
+people build whole computers in video games
+
+100
+00:04:57,933 --> 00:04:59,466
+如果你玩矮人要塞
+if you play Dwarf Fortress
+
+101
+00:04:59,866 --> 00:05:02,100
+你可能遇到过
+you've likely encountered
+
+102
+00:05:02,900 --> 00:05:05,800
+有人讨论他们用
+people talking about computers that they built
+
+103
+00:05:06,966 --> 00:05:09,666
+水做计算介质制造的计算机
+using water as the computing medium
+
+104
+00:05:09,966 --> 00:05:12,700
+他们用水或其他的构建逻辑门
+so they build logic gates on water and so forth
+
+105
+00:05:12,866 --> 00:05:14,366
+在我的世界里，你可以使用红石
+in Minecraft you can use Redstone 
+
+106
+00:05:14,533 --> 00:05:18,566
+有很多不同的方法可以做到这一点
+and there's tons and tons of different ways to do it
+
+107
+00:05:19,600 --> 00:05:24,566
+异或门有2个输入
+you have XOR gates where you have two inputs
+
+108
+00:05:24,700 --> 00:05:28,266
+只有一个输入为真，则输出为真
+and if only one of those inputs is true the output is true
+
+109
+00:05:28,266 --> 00:05:29,866
+如果2个都为真，则输出为假
+if they're both true the output is false
+
+110
+00:05:29,866 --> 00:05:31,933
+如果都为假，则输出为假
+if they're both false the output is false
+
+111
+00:05:32,866 --> 00:05:34,466
+还有 非门
+and then of course you have not gates
+
+112
+00:05:34,766 --> 00:05:36,199
+如果输入为真
+where if the input is true
+
+113
+00:05:36,300 --> 00:05:37,266
+只有一个输入
+your one input 
+
+114
+00:05:37,466 --> 00:05:40,466
+输出为假
+the output is also is false
+
+115
+00:05:40,600 --> 00:05:43,066
+如果输入为假，输出为真
+and if the input is false the output is true
+
+116
+00:05:44,266 --> 00:05:45,266
+这很简单
+this is very simple
+
+117
+00:05:45,366 --> 00:05:47,433
+这是一个非常简单的概念
+it's a trivially simple concept
+
+118
+00:05:48,000 --> 00:05:49,433
+如果你学过离散数学
+if you've taken discrete mathematics
+
+119
+00:05:49,466 --> 00:05:52,766
+你可能已经围绕这个创建了真值表
+you've probably created truth tables around this 
+
+120
+00:05:53,033 --> 00:05:55,733
+这很直观
+and it's just it's very straightforward
+
+121
+00:05:56,200 --> 00:06:01,533
+有趣的是，通过巧妙地组合这些门
+and the interesting thing is by combining these gates in clever ways
+
+122
+00:06:01,966 --> 00:06:04,766
+我们可以一步一步创建出计算器
+we can start taking small steps to a computer
+
+123
+00:06:05,066 --> 00:06:05,866
+像这样
+like this
+
+124
+00:06:05,900 --> 00:06:12,900
+这张幻灯片上有很多不同的门的组合
+all right so this slide has a bunch of different combinations of gates
+
+125
+00:06:13,300 --> 00:06:15,100
+这张幻灯片上有一个加法器
+there's an adder on this slide 
+
+126
+00:06:15,233 --> 00:06:19,799
+如果你给它两个数字
+where basically if you give it two numbers
+
+127
+00:06:20,666 --> 00:06:22,766
+以及之前计算留下的进位标志
+and a carry flag from previous computation
+
+128
+00:06:22,866 --> 00:06:25,266
+它会给你加法的结果
+and it'll give you a result of the addition 
+
+129
+00:06:25,566 --> 00:06:26,566
+当然还有一个进位标志
+and a carry flag of course
+
+130
+00:06:26,566 --> 00:06:28,133
+这里的数字还很小
+in this case the numbers are simple bits
+
+131
+00:06:28,133 --> 00:06:31,366
+但能做出支持任意大的数字的加法器
+but you can make adders that work on arbitrarily large
+
+132
+00:06:32,733 --> 00:06:35,599
+只要你有更多的门
+you know as long as you have more and more gates 
+
+133
+00:06:35,600 --> 00:06:37,700
+更多的输入
+and larger and larger inputs
+
+134
+00:06:38,966 --> 00:06:41,300
+还有个多路选择器
+there's a multiplexer there where you can
+
+135
+00:06:41,766 --> 00:06:43,533
+可以根据你的输入
+based on your input 
+
+136
+00:06:43,600 --> 00:06:48,933
+选择一个输出信号
+you can select one of the signals one output signal
+
+137
+00:06:49,500 --> 00:06:53,733
+例如，这在内存中起到了明显作用
+that for example has obvious implications for memory
+
+138
+00:06:54,100 --> 00:06:57,000
+如果你想读取计算机内存
+where if you want to read some memory in a computer
+
+139
+00:06:58,000 --> 00:07:00,133
+或者查询python数组
+or seek into your python array 
+
+140
+00:07:00,300 --> 00:07:04,800
+某些时候，类似的决策，是由这种门组合做出的
+at some point some decision like this gets made on logic gates
+
+141
+00:07:05,100 --> 00:07:06,900
+这很令人兴奋
+which is pretty exciting
+
+142
+00:07:09,100 --> 00:07:09,700
+说到内存
+speaking of memory 
+
+143
+00:07:09,900 --> 00:07:16,733
+内存也是由ppt上的这些逻辑门做出的
+there's also memory made out of logic gates on this slide
+
+144
+00:07:17,100 --> 00:07:20,166
+所以你能巧妙地组合逻辑门
+so you can use a clever combination of logic gates 
+
+145
+00:07:20,166 --> 00:07:22,866
+来存储、读取
+to be able to store read and
+
+146
+00:07:24,766 --> 00:07:26,200
+存储和读取内存
+store and read memory
+
+147
+00:07:26,666 --> 00:07:29,133
+这里是单独一位内存
+single bits of memory right here right
+
+148
+00:07:29,566 --> 00:07:37,933
+基本上这些组合以及潜力是无尽的
+basically the combinations and the potential is endless 
+
+149
+00:07:38,033 --> 00:07:41,833
+在某个神奇的临界点
+and at some point some incredibly magical point
+
+150
+00:07:42,300 --> 00:07:46,266
+我们能从简单的逻辑门组合
+we move from just some logic gates that are super simple
+
+151
+00:07:46,333 --> 00:07:47,499
+能直接写纸上
+you can write them out on the paper
+
+152
+00:07:47,500 --> 00:07:48,700
+完全没什么特殊的
+there's nothing special about them
+
+153
+00:07:48,800 --> 00:07:50,733
+从杯子上扣洞就能创建的或门
+you can drill a hole in the cup and have an or gate
+
+154
+00:07:51,700 --> 00:07:54,600
+进化到计算机
+to a computer
+
+155
+00:07:55,866 --> 00:07:58,866
+计算机有其神奇之处
+there's some magical thing to a computer 
+
+156
+00:07:58,866 --> 00:08:00,500
+计算机可以计算
+a computer can compute
+
+157
+00:08:01,300 --> 00:08:03,333
+单个逻辑门不能进行真正的计算
+a logic gate can't really compute
+
+158
+00:08:03,933 --> 00:08:06,466
+现在我们穿过这个临界点
+so now we've crossed this magical threshold 
+
+159
+00:08:06,466 --> 00:08:07,933
+到达另一边
+and then right on the other side
+
+160
+00:08:07,933 --> 00:08:12,333
+本课程大多操作的，临界点上的二进制级别
+this threshold is where much of this course will operate on the binary level
+
+161
+00:08:12,800 --> 00:08:15,600
+还有该级别上的安全问题
+and security issues and implications there
+
+162
+00:08:16,200 --> 00:08:19,400
+这也是我喜欢计算机的地方
+that's the part I love about computing 
+
+163
+00:08:19,800 --> 00:08:23,766
+这个神奇的边界就是计算开始发生的地方
+this magical boundary where computing starts to happen
+
+164
+00:08:25,966 --> 00:08:32,266
+现代计算机抽象出来，看着大概像这样
+a modern computer might look something like this at a very high level
+
+165
+00:08:32,766 --> 00:08:35,000
+有CPU
+you have your CPU
+
+166
+00:08:35,600 --> 00:08:39,233
+它通过某种硬件桥，采用某种通信协议，连接
+it communicates over some sort of a hardware bridge or whatever protocol
+
+167
+00:08:39,333 --> 00:08:40,533
+到内存
+to memory 
+
+168
+00:08:41,266 --> 00:08:42,266
+到硬盘
+to your disk 
+
+169
+00:08:42,466 --> 00:08:43,999
+到网络
+to your network
+
+170
+00:08:44,366 --> 00:08:47,966
+到你的显示器，等等
+to your monitor etc etc etc right
+
+171
+00:08:49,166 --> 00:08:54,266
+让我们把重点放在内存、磁盘、网络等方面
+so let's focus on memory disk network and so forth
+
+172
+00:08:54,566 --> 00:08:56,166
+再深入些
+and drill just a little deeper
+
+173
+00:08:56,166 --> 00:08:58,500
+CPU不是一个单独东西
+your CPU isn't just a monolithic thing 
+
+174
+00:08:58,500 --> 00:09:02,566
+它有不同的组成部分
+it has parts like different different components
+
+175
+00:09:03,166 --> 00:09:04,133
+它有寄存器
+it has registers 
+
+176
+00:09:04,166 --> 00:09:07,900
+可以与之交互的小块内存
+small bits of memory that it can interact with 
+
+177
+00:09:07,966 --> 00:09:09,400
+准确说是一些小的存储空间
+or sort of small bits of storage
+
+178
+00:09:09,400 --> 00:09:11,266
+不要和主存储器（内存）搞混了
+not to get confused with the main memory
+
+179
+00:09:11,400 --> 00:09:12,500
+它有一个控制单元
+it has a control unit
+
+180
+00:09:12,500 --> 00:09:15,066
+这个控制单元决定执行什么
+this control unit decides what to execute
+
+181
+00:09:15,733 --> 00:09:17,333
+解码指令
+decodes instructions
+
+182
+00:09:17,933 --> 00:09:22,633
+并将事情分派给CPU的其他部分
+and dispatches things due to other parts of the CPU 
+
+183
+00:09:22,700 --> 00:09:26,866
+CPU还有一个算术逻辑单元
+and the computer has an Arithmetic Logic Unit right
+
+184
+00:09:27,133 --> 00:09:32,166
+各种计算、加法之类的，发生在这里
+where the various computations adding and so forth happens
+
+185
+00:09:32,166 --> 00:09:33,100
+还有其他部分
+and there are other parts 
+
+186
+00:09:33,100 --> 00:09:36,333
+浮点处理器
+there's floating point processors 
+
+187
+00:09:36,533 --> 00:09:40,066
+计算机有各种各样的部件
+there's all sorts of parts of a computer at a high level
+
+188
+00:09:41,133 --> 00:09:42,366
+在此基础上
+let's stick with this
+
+189
+00:09:43,700 --> 00:09:44,766
+再加个东西
+and add one thing 
+
+190
+00:09:44,866 --> 00:09:46,666
+CPU缓存
+there's a caching
+
+191
+00:09:47,333 --> 00:09:48,133
+实际上
+turns out
+
+192
+00:09:48,500 --> 00:09:53,533
+现代计算机体系结构基本上是一系列缓存层
+that modern computer architecture is basically a series of caching layers
+
+193
+00:09:53,933 --> 00:09:55,333
+叠在一起
+stacked on top of each other 
+
+194
+00:09:55,766 --> 00:09:56,800
+一开始
+so you start out
+
+195
+00:09:57,133 --> 00:09:59,900
+你可以想到一个最大的
+you can think of the biggest biggest possible one 
+
+196
+00:10:00,000 --> 00:10:01,066
+就是互联网
+and it's the internet
+
+197
+00:10:01,600 --> 00:10:04,566
+互联网的存储空间大得惊人
+right the internet has insane amounts of storage
+
+198
+00:10:05,100 --> 00:10:08,100
+很大的存储空间
+storage that you could never hope to
+
+199
+00:10:11,166 --> 00:10:16,100
+如此多的数据，你没法将其全部放在一处
+so much data that you can never hope to acquire it all in one location
+
+200
+00:10:16,266 --> 00:10:19,400
+还有一层是硬盘
+and at one location that you have of course is a disk
+
+201
+00:10:19,900 --> 00:10:22,166
+这里可以存储大量数据
+where you can put a lot of data
+
+202
+00:10:22,766 --> 00:10:25,500
+超过了你电脑内存的容量
+more than could fit into your computer's memory
+
+203
+00:10:25,700 --> 00:10:32,800
+你正在使用的东西就在内存中
+which is what you want just the stuff that you are actively working on to be in 
+
+204
+00:10:32,833 --> 00:10:34,500
+如果你在玩游戏
+if you are actively playing a game
+
+205
+00:10:35,800 --> 00:10:38,833
+你想把尽可能多的游戏数据放到内存中
+you want as much of that as possible to be in memory
+
+206
+00:10:38,900 --> 00:10:40,566
+而不是一直与硬盘交换内存页
+rather than swapping in and out of disk
+
+207
+00:10:40,566 --> 00:10:42,099
+因为硬盘访问速度很慢
+because disk access is slow
+
+208
+00:10:42,200 --> 00:10:47,200
+随着我们向上走，存储空间变得越来越小
+as we move up and get smaller and smaller on these storage sizes
+
+209
+00:10:47,733 --> 00:10:49,966
+速度越来越快
+the trend is we get faster and faster
+
+210
+00:10:49,966 --> 00:10:52,533
+所以，网络访问速度慢
+so accessing network is slow 
+
+211
+00:10:53,000 --> 00:10:55,733
+你必须将数据包发到世界各地
+you have to send packets across the world
+
+212
+00:10:56,066 --> 00:11:00,066
+访问硬盘要快得多
+accessing your disk is much faster but
+
+213
+00:11:00,466 --> 00:11:02,533
+访问内存的速度比这还要快
+accessing memory is even faster than that
+
+214
+00:11:02,800 --> 00:11:04,066
+从内存读取出的数据
+when you read from memory 
+
+215
+00:11:04,100 --> 00:11:07,133
+会进入CPU的一个特殊位置
+it goes into a special place in your CPU 
+
+216
+00:11:07,366 --> 00:11:09,200
+叫CPU缓存
+that special place called the cache
+
+217
+00:11:09,533 --> 00:11:10,800
+你从里面读数据
+you read from that
+
+218
+00:11:11,400 --> 00:11:13,200
+往里面放数据
+you move it to the cache and then
+
+219
+00:11:13,333 --> 00:11:15,966
+这比访问内存快，但小得多
+that is faster than memory but much much smaller
+
+220
+00:11:16,000 --> 00:11:18,333
+然后CPU从缓存中提取数据
+and then the CPU pulls from the cache
+
+221
+00:11:19,000 --> 00:11:20,800
+存入寄存器
+to put data into registers 
+
+222
+00:11:21,266 --> 00:11:23,966
+它们的速度极快
+and those are extraordinarily fast 
+
+223
+00:11:24,100 --> 00:11:26,533
+但很小很贵
+but so small so expensive 
+
+224
+00:11:26,633 --> 00:11:29,766
+具体取决于哪种架构
+that there's very depending on the architecture
+
+225
+00:11:31,533 --> 00:11:36,466
+大概有8到40个
+anywhere from like 8 to 40 of them but you know
+
+226
+00:11:36,766 --> 00:11:45,133
+大小为2到8字节，甚至有的有16字节
+and they're anywhere from 2 to 8 bytes to maybe 16 bytes sometimes in size
+
+227
+00:11:47,000 --> 00:11:47,900
+所以它
+so it's
+
+228
+00:11:48,733 --> 00:11:51,566
+越来越快
+you're getting gradually faster and faster
+
+229
+00:11:51,666 --> 00:11:53,566
+但是越来越小
+but gradually smaller and smaller
+
+230
+00:11:53,600 --> 00:11:54,566
+然后
+and then 
+
+231
+00:11:55,266 --> 00:12:01,066
+你的CPU实际只操作缓存和寄存器
+your CPU actually acts only on your cache and your registers
+
+232
+00:12:01,300 --> 00:12:04,266
+其他的都会加载到或加载出它们
+everything else gets loaded in and out of it
+
+233
+00:12:04,666 --> 00:12:07,033
+计算机体系结构很有趣
+it's a very interesting computer architecture 
+
+234
+00:12:07,066 --> 00:12:10,133
+近年来变得更复杂了些
+in recent years has gotten complicated a little bit more
+
+235
+00:12:10,133 --> 00:12:13,000
+我们的CPU有了多核
+in that our CPUs actually have multiple cores
+
+236
+00:12:13,500 --> 00:12:15,133
+如果你有一个多核处理器
+so if you have a multi core processor 
+
+237
+00:12:15,133 --> 00:12:20,366
+基本大家都有
+which basically more or less everybody at this point does
+
+238
+00:12:20,366 --> 00:12:22,000
+你可能有多个核
+you likely have multiple cores
+
+239
+00:12:22,000 --> 00:12:25,633
+每个核都有自己的缓存，自己的寄存器，等等
+each of them has its own cache its own registers etc etc 
+
+240
+00:12:25,700 --> 00:12:28,300
+然后不同核共享一个缓存
+and then they share a common cache 
+
+241
+00:12:28,800 --> 00:12:32,066
+然后再是内存、硬盘、网络
+and then you have memory disk network and so on
+
+242
+00:12:33,533 --> 00:12:35,466
+这个计算机架构从何而来
+where did we get this computer architecture
+
+243
+00:12:35,466 --> 00:12:39,100
+它出自这3位约翰
+well we got it from these 3 Johns
+
+244
+00:12:39,166 --> 00:12:42,533
+一个物理学家，一个电气工程师和一个数学家
+a physicist an electrical engineer and a mathematician
+
+245
+00:12:42,666 --> 00:12:47,400
+创造了后来被称为
+created what ended up being called
+
+246
+00:12:48,066 --> 00:12:51,833
+因为冯诺依曼单独署名的草案（First Draft ... EDVAC）
+due to a misadventure with a draft 
+
+247
+00:12:51,833 --> 00:12:53,700
+被称为冯·诺伊曼架构
+the von Neumann Architecture
+
+248
+00:12:55,600 --> 00:13:02,366
+它是莫切利和埃克特写的论文的草案
+draft of a paper that John Mauchly and John Eckert were writing
+
+249
+00:13:04,166 --> 00:13:06,066
+所以冯·诺伊曼架构是
+so the von Neumann Architecture is 
+
+250
+00:13:06,200 --> 00:13:21,166
+一系列逐渐变小但加快的缓存层
+this series of shrinking but increasing in speed layers 
+
+251
+00:13:21,266 --> 00:13:24,333
+最终
+where in the end
+
+252
+00:13:24,533 --> 00:13:26,899
+有趣的是
+we have something very interesting in that 
+
+253
+00:13:27,000 --> 00:13:32,166
+CPU工作在缓存和寄存器等部件时
+the CPU as it works on its cache and registers and so forth
+
+254
+00:13:32,933 --> 00:13:34,133
+在很大程度上
+for the most part
+
+255
+00:13:34,133 --> 00:13:38,600
+不区分数据与代码
+doesn't differentiate between data code and etc right
+
+256
+00:13:39,966 --> 00:13:42,333
+我们以后再探索它的含义
+this has implications that we'll explore later
+
+257
+00:13:42,866 --> 00:13:43,800
+在后面的模块
+in later modules
+
+258
+00:13:43,800 --> 00:13:46,166
+但我想先介绍一下这个背景
+but I wanted to give you this background
+
+259
+00:13:47,233 --> 00:13:53,766
+为以后打下基础
+to set the stage for the future of this course
+
+260
+00:13:54,733 --> 00:13:58,600
+我希望你们和我一样喜欢这个话题
+I hope that you enjoyed this topic as much as I enjoy it
+
+261
+00:13:59,700 --> 00:14:02,100
+这是当教授的好处之一
+one of the nice perks of being a professor 
+
+262
+00:14:02,166 --> 00:14:04,600
+是能或多或少地讲你想讲的东西
+is being able to lecture more or less about whatever you want
+
+263
+00:14:04,800 --> 00:14:06,933
+这是我对这门课的补充
+so this was my addition to the course
+
+264
+00:14:09,000 --> 00:14:14,100
+我们会在以后的视频中再见
+otherwise I will see you or you will see me in future videos
+
+265
+00:14:14,900 --> 00:14:15,700
+谢谢
+thanks
+

@@ -1,0 +1,30 @@
+01 What is the Heap
+    https://www.youtube.com/watch?v=coAJ4KyrWmY&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1
+
+02 Dangers
+    https://www.youtube.com/watch?v=Cr9IeGQxFoc&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1&index=2
+
+03 tcache
+    https://www.youtube.com/watch?v=0jHtqqdVv1Y&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1&index=3
+    
+04 Chunks and Metadata
+    https://www.youtube.com/watch?v=osFevdDR0Xw&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1&index=4
+
+05 Metadata Corruption
+    https://www.youtube.com/watch?v=PtpPcGcX020&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1&index=5
+
+06 Safe-Linking in tcache
+    https://www.youtube.com/watch?v=TOQ_QtjpbnA&list=PL-ymxv0nOtqr4OchXR2rV_WNhpj4ccPq1&index=6
+
+07 Dynamic Allocator II - Beyond TCACHE
+    https://www.youtube.com/watch?v=pN99hwq8qUE&list=PL-ymxv0nOtqrJBBFw-B5cKGYoAtrw49cP
+
+08 Dynamic Allocator II - The Bins
+    https://www.youtube.com/watch?v=_dqBXYEUQXM&list=PL-ymxv0nOtqrJBBFw-B5cKGYoAtrw49cP&index=2
+
+09 Dynamic Allocator II - Exploitation
+    https://www.youtube.com/watch?v=P2__SxA1P9I&list=PL-ymxv0nOtqrJBBFw-B5cKGYoAtrw49cP&index=3
+    
+practice here
+    https://pwn.college/software-exploitation/dynamic-allocator-misuse/
+    https://pwn.college/software-exploitation/dynamic-allocator-exploitation/

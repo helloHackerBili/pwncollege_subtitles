@@ -1,0 +1,2775 @@
+1
+00:00:00,866 --> 00:00:01,933
+你好黑客
+hello hackers
+
+2
+00:00:02,266 --> 00:00:06,666
+欢迎来到PWN学院内核模块的第二个视频
+welcome to the second video in the kernel module of pwn college
+
+3
+00:00:06,666 --> 00:00:09,499
+我们将讨论环境搭建
+we're gonna be talking about environmental setup
+
+4
+00:00:09,600 --> 00:00:10,800
+为什么我们要谈这个
+why are we gonna be talking about this
+
+5
+00:00:10,800 --> 00:00:13,766
+因为内核环境更复杂
+well that's because it's more complicated for the kernel 
+
+6
+00:00:13,966 --> 00:00:20,233
+相较于我们以前攻击的程序
+than you are used to for the binaries we've been attacking so far 
+
+7
+00:00:20,833 --> 00:00:23,499
+程序相对简单
+binaries are relatively simple
+
+8
+00:00:23,500 --> 00:00:24,500
+他们就是ELF文件
+they're an elf 
+
+9
+00:00:24,500 --> 00:00:26,033
+他们有segment
+they have you know segments 
+
+10
+00:00:26,100 --> 00:00:27,500
+加载它们
+you load them 
+
+11
+00:00:27,633 --> 00:00:30,399
+就好了，简单
+boom nice and simple
+
+12
+00:00:30,766 --> 00:00:33,599
+我们要深入研究的是更复杂的
+what we're about to dive into is more complex
+
+13
+00:00:33,966 --> 00:00:37,399
+我们正在深入研究的是一个完整的环境
+we're diving into an entire environment
+
+14
+00:00:37,700 --> 00:00:40,733
+一个运行着内核的完整系统
+an entire system that running with a kernel
+
+15
+00:00:40,733 --> 00:00:42,133
+里面有用户空间程序
+with user space binaries
+
+16
+00:00:42,133 --> 00:00:43,599
+有命令解释器
+with command interpreters
+
+17
+00:00:43,966 --> 00:00:49,799
+有很多疯狂的东西
+with quite a lot of you know crazy stuff inside them
+
+18
+00:00:52,000 --> 00:00:53,566
+我们要利用它
+we're gonna be exploiting that 
+
+19
+00:00:53,866 --> 00:00:59,199
+那么如何搭建这个环境呢
+so how do we set up this environment
+
+20
+00:00:59,666 --> 00:01:02,899
+当然，你可以用你的电脑
+well of course you could use your workstation 
+
+21
+00:01:02,966 --> 00:01:05,066
+你说，我的电脑上就运行着内核
+you say okay my workstation is running a kernel 
+
+22
+00:01:05,366 --> 00:01:06,366
+没问题
+no problem 
+
+23
+00:01:06,933 --> 00:01:13,066
+我只要写一个内核模块
+i'll just write a kernel module 
+
+24
+00:01:13,066 --> 00:01:14,766
+载入它，黑掉它
+load it hack it
+
+25
+00:01:15,300 --> 00:01:16,600
+但你可能会搞砸
+but you likely mess up
+
+26
+00:01:16,600 --> 00:01:18,700
+要么你写的内核模块有bug
+you either have a bug in your kernel module
+
+27
+00:01:18,833 --> 00:01:20,166
+要么利用程序中有bug
+you have a bug in your exploit
+
+28
+00:01:20,266 --> 00:01:21,166
+你会把东西搞崩
+you will crash stuff 
+
+29
+00:01:21,200 --> 00:01:22,500
+当你在内核中把东西搞崩时
+and when you crash them inside the kernel
+
+30
+00:01:22,566 --> 00:01:24,766
+正如我在之前的视频中所说的
+as i talked about in the previous video
+
+31
+00:01:24,833 --> 00:01:26,999
+你在冒很大的风险
+you're playing in high stakes
+
+32
+00:01:27,933 --> 00:01:29,233
+你在0环
+you're in ring 0
+
+33
+00:01:30,200 --> 00:01:33,700
+这就不是一个段错误，就没事的了
+it's not just a seg fault and go on with your day
+
+34
+00:01:33,766 --> 00:01:35,466
+你的整个电脑都会崩溃
+your entire computer can crash 
+
+35
+00:01:36,766 --> 00:01:40,766
+我第一次在课堂上教内核
+my first time i taught the kernel in class
+
+36
+00:01:41,533 --> 00:01:47,933
+由于过度的信心，我用了自己的电脑
+i used due to an overabundance of confidence my own workstation
+
+37
+00:01:48,000 --> 00:01:49,766
+我自己的笔记本电脑做演示
+my own laptop for demos 
+
+38
+00:01:49,866 --> 00:01:51,766
+不得不重启好几次
+and had to reboot several times
+
+39
+00:01:52,733 --> 00:01:56,399
+所以，使用模拟环境要容易得多
+so it's much easier to use an emulated environment
+
+40
+00:01:56,533 --> 00:02:00,166
+你可以用它来调试等等
+with which you can play around debug and so on
+
+41
+00:02:01,100 --> 00:02:04,333
+为此，你需要一个编译器来编译环境
+for this you'll need a compiler to compile the environment
+
+42
+00:02:04,400 --> 00:02:07,666
+编译将在环境中编写的程序
+to compile programs that you'll write inside the environment
+
+43
+00:02:07,800 --> 00:02:10,500
+你利用漏洞进内核时
+when you are launching exploits into the kernel 
+
+44
+00:02:10,600 --> 00:02:13,000
+通常情况下，你是在用户空间启动的
+typically you're doing that from user space binaries
+
+45
+00:02:13,066 --> 00:02:13,799
+所以你需要
+so you need to 
+
+46
+00:02:13,933 --> 00:02:18,499
+你的内核漏洞利用程序是一个用户空间的c程序
+your exploits for the kernel will be user space c programs 
+
+47
+00:02:18,633 --> 00:02:21,533
+它们以特定的方式与内核交互
+that interact with the kernel in specific ways
+
+48
+00:02:22,800 --> 00:02:23,900
+当你
+when you are
+
+49
+00:02:26,733 --> 00:02:30,133
+你在模拟系统中时
+you will live inside inside your emulated system
+
+50
+00:02:30,200 --> 00:02:31,366
+会有一个用户空间
+there will be a user space
+
+51
+00:02:31,700 --> 00:02:36,400
+一个小小的命令解释器等等
+a tiny command interpreter and so on 
+
+52
+00:02:36,966 --> 00:02:38,133
+要构建这个环境
+you need to build that
+
+53
+00:02:38,300 --> 00:02:39,333
+你需要有这个
+you need to have that
+
+54
+00:02:39,433 --> 00:02:41,499
+你还需要一个模拟器来运行所有这些
+and you need to have an emulator to run all of this
+
+55
+00:02:42,366 --> 00:02:47,966
+我们在PWN学院代码仓库中，提供了一个方便的工具
+we created a nice convenient setup for you under the pwn college repository
+
+56
+00:02:51,100 --> 00:02:52,633
+在GitHub的pwncollege组织下
+under the pwn college organization at GitHub 
+
+57
+00:02:52,800 --> 00:02:54,300
+叫pwnkernel
+called pwnkernel
+
+58
+00:02:54,966 --> 00:02:57,366
+我们来看看
+so let's take a look 
+
+59
+00:02:57,366 --> 00:03:06,599
+这里，我已经用git下载了pwnkernel
+here i have already checked out the pwn kernel repository
+
+60
+00:03:07,000 --> 00:03:09,433
+你可以看到这是readme
+you can see this is the readme
+
+61
+00:03:09,600 --> 00:03:10,900
+readme很简单
+and the readme is very simple 
+
+62
+00:03:11,266 --> 00:03:13,599
+要搭建我的模拟环境
+to build my emulator environment
+
+63
+00:03:13,700 --> 00:03:15,600
+只需执行build.sh
+i just do build.sh
+
+64
+00:03:18,533 --> 00:03:22,266
+在录制这个视频之前，我已经构建过了
+this i've already actually built it before recording this video
+
+65
+00:03:22,666 --> 00:03:25,499
+所以这里它只会做些检查
+so this will just do a couple of checks
+
+66
+00:03:25,633 --> 00:03:28,066
+构建一些每次重建都要构建的东西
+build some stuff that rebuilts every time 
+
+67
+00:03:28,266 --> 00:03:29,933
+然后就好了
+and then we're good to go 
+
+68
+00:03:30,066 --> 00:03:30,966
+这里，你可以看到
+you can see here
+
+69
+00:03:32,300 --> 00:03:34,166
+它创造了
+it is creating 
+
+70
+00:03:34,533 --> 00:03:37,399
+基本上是设置一个busybox用户空间
+basically setting up a busybox user space 
+
+71
+00:03:37,433 --> 00:03:40,333
+非常类似
+very similar to the type of user space 
+
+72
+00:03:40,466 --> 00:03:45,199
+许多路由器自带的，和嵌入式设备带的用户空间
+that is shipped with a lot of routers and other embedded devices 
+
+73
+00:03:45,866 --> 00:03:46,966
+非常小
+very small 
+
+74
+00:03:47,600 --> 00:03:50,400
+一个程序提供了
+one single program that provides 
+
+75
+00:03:50,533 --> 00:03:58,033
+你每天都会用到的很多工具的功能
+the functionality of basically a lot of the normal tools you interact with on a daily basis
+
+76
+00:03:58,133 --> 00:04:00,166
+ls cp之类的
+ls cp these sort of things 
+
+77
+00:04:00,900 --> 00:04:02,033
+然后我们执行launch.sh
+and then we do launch
+
+78
+00:04:02,566 --> 00:04:06,399
+launch.sh会把用户空间捆绑到一个文件系统中
+launch will bundle up that user space into a file system
+
+79
+00:04:06,900 --> 00:04:10,766
+然后启动模拟器
+and start the emulator
+
+80
+00:04:10,900 --> 00:04:13,200
+我们使用的模拟器是Q-emu
+the emulator we're using is qemu
+
+81
+00:04:18,333 --> 00:04:24,099
+它把我们带入一个具有用户空间的模拟Linux系统
+it drops us into an emulated Linux system with a user space
+
+82
+00:04:26,333 --> 00:04:27,199
+为了方便
+for your convenience
+
+83
+00:04:27,366 --> 00:04:30,599
+我们给你提供了flag来玩
+we even have a flag for you to play around with 
+
+84
+00:04:30,966 --> 00:04:33,033
+有一些内核模块
+there are kernel modules
+
+85
+00:04:33,133 --> 00:04:35,433
+一些预编译的内核模块样例
+that are pre compiled example kernel module 
+
+86
+00:04:35,433 --> 00:04:36,933
+我们将在下个视频中讨论它们
+we'll talk about that in the next video
+
+87
+00:04:37,033 --> 00:04:39,099
+我现在不会讲到这个
+i won't actually touch on that right now 
+
+88
+00:04:39,200 --> 00:04:42,333
+基本上有你在Linux中所需要的一切
+and basically there's everything you need to survive in Linux 
+
+89
+00:04:42,433 --> 00:04:46,566
+这些都是链接到busybox的符号链接
+i mentioned all of these are symbolic links to the busybox binary
+
+90
+00:04:46,666 --> 00:04:48,999
+然后busybox会根据你调用的方式
+then busybox depending on how you invoked 
+
+91
+00:04:49,033 --> 00:04:50,366
+看argv0是多少
+what argv 0 is 
+
+92
+00:04:50,533 --> 00:04:53,466
+扮演这些工具
+will act like these different utilities
+
+93
+00:04:53,900 --> 00:05:01,900
+这是Linux中一个非常酷的系统
+this is a very cool sort of system in linux 
+
+94
+00:05:03,733 --> 00:05:06,899
+我们在这个内核中
+so we are inside this kernel
+
+95
+00:05:06,933 --> 00:05:07,699
+我们可以做到
+we can do 
+
+96
+00:05:08,000 --> 00:05:10,166
+我们在一个模拟系统中
+we are inside an emulated system
+
+97
+00:05:10,800 --> 00:05:13,000
+里面有一个模拟器
+there's an emulator inside that 
+
+98
+00:05:13,200 --> 00:05:15,633
+有一个内核在它认为是0环的地方运行
+there's a kernel running in what it thinks is ring 0
+
+99
+00:05:16,100 --> 00:05:19,800
+在模拟器中的3环中
+and then inside that or also inside emulator in ring 3 
+
+100
+00:05:19,866 --> 00:05:22,099
+有一个正在运行的用户空间
+there's a user space that's running
+
+101
+00:05:23,666 --> 00:05:25,499
+我还要提一件事
+one extra thing i'll mention 
+
+102
+00:05:26,100 --> 00:05:30,900
+对于小型漏洞利用环境非常有用
+super super useful for these little exploitation environments
+
+103
+00:05:31,866 --> 00:05:37,699
+我们把你主机的~目录挂载到/home/ctf下
+we mount your home directory from your host system in /home/ctf
+
+104
+00:05:37,866 --> 00:05:40,166
+所以当我进入/home/ctf/pwn/kernel
+so i go /home/ctf/pwn/kernel 
+
+105
+00:05:40,466 --> 00:05:43,166
+它是一样的
+this is the same environment
+
+106
+00:05:43,800 --> 00:05:48,733
+和宿主机~/pwn/kernel/目录是一样的
+the same files as in pwn/kernel in my normal machine
+
+107
+00:05:48,900 --> 00:05:49,400
+这意味着
+that means
+
+108
+00:05:49,466 --> 00:05:52,533
+我可以在宿主机开发漏洞利用程序
+i can do my exploit development on the normal machine
+
+109
+00:05:52,600 --> 00:05:55,066
+然后把这些漏洞利用程序编译出来
+and then i take those exploits i compile them
+
+110
+00:05:55,166 --> 00:05:57,233
+然后执行它们
+and i execute them 
+
+111
+00:05:57,633 --> 00:05:59,566
+我在普通机器（宿主机）上编译
+i compile them on my normal machine
+
+112
+00:05:59,933 --> 00:06:03,666
+因为模拟的机器中没有编译器
+because there is no compiler inside the box
+
+113
+00:06:04,100 --> 00:06:05,066
+模拟的内核环境机器
+the kernel box 
+
+114
+00:06:05,200 --> 00:06:06,400
+然后我执行它们
+and then i execute them 
+
+115
+00:06:08,566 --> 00:06:10,666
+或者我可以写脚本
+or for example i can write scripts
+
+116
+00:06:13,100 --> 00:06:14,033
+如果我输入/bin/sh
+if i do /bin/sh
+
+117
+00:06:14,033 --> 00:06:15,799
+容器里没有bash
+there's no bash inside the container
+
+118
+00:06:16,000 --> 00:06:18,666
+抱歉，模拟机器里没有bash
+inside the the sorry inside the emulated machine 
+
+119
+00:06:18,766 --> 00:06:20,299
+我可以执行echo hello
+i can do echo hello
+
+120
+00:06:21,466 --> 00:06:23,733
+给它可执行权限
+and i make that executable
+
+121
+00:06:25,566 --> 00:06:28,266
+好了，就这个hi.sh
+and there it is hi.sh 
+
+122
+00:06:30,400 --> 00:06:31,833
+这就很简单了
+so this makes it very easy 
+
+123
+00:06:31,933 --> 00:06:33,533
+启动一个screen会话
+you launch a screen session you have
+
+124
+00:06:33,600 --> 00:06:40,633
+你在模拟系统中
+you're inside the emulated system
+
+125
+00:06:40,866 --> 00:06:42,033
+你的实验环境
+your experimental 
+
+126
+00:06:42,033 --> 00:06:46,233
+或者做这个模块习题时的环境
+or your challenge machine when you for the practice problems of this module
+
+127
+00:06:46,366 --> 00:06:50,666
+你将在我们设备上的模拟系统中，解决习题
+you will be running those practice problems inside these emulated systems on our infrastructure
+
+128
+00:06:51,566 --> 00:06:54,633
+然后你可以在内部与它交互
+and then you just interact with it from the inside
+
+129
+00:06:55,266 --> 00:06:59,233
+同时在外面正常开发
+while being able to do your normal development from the outside 
+
+130
+00:06:59,500 --> 00:07:01,766
+非常有用
+super super useful okay
+
+131
+00:07:05,733 --> 00:07:08,399
+我们看看能用它做什么
+let's take a look at what you can do with this
+
+132
+00:07:08,500 --> 00:07:10,900
+我们已经讲过了，有一个模拟器
+so we've covered okay there is such a thing as emulation
+
+133
+00:07:11,000 --> 00:07:14,666
+你看到了我在模拟器里到处乱逛
+you saw me inside that emulator wandering around
+
+134
+00:07:15,066 --> 00:07:16,866
+我们来谈谈调试
+let's talk about debugging
+
+135
+00:07:17,000 --> 00:07:18,833
+很明显，当你启动
+obviously when you launch 
+
+136
+00:07:19,666 --> 00:07:24,733
+并开始在这个虚拟机中进行漏洞利用时
+and start doing exploitation inside this virtual machine
+
+137
+00:07:24,933 --> 00:07:28,133
+你将需要进行调试
+you will need to debug
+
+138
+00:07:29,566 --> 00:07:30,366
+幸运的是
+luckily
+
+139
+00:07:32,466 --> 00:07:34,666
+我们为你提供了一个足够新的GDB
+we have a new enough version of gdb for you
+
+140
+00:07:34,966 --> 00:07:37,599
+我们编译内核的时候开了调试选项
+and we compile the kernel with debug symbols
+
+141
+00:07:37,733 --> 00:07:42,266
+在这个模块中，我们关闭了内核的地址空间随机化
+and we have turned off address space randomization in the kernel for this module
+
+142
+00:07:42,500 --> 00:07:46,866
+至少在前几题中关了
+or at least for the first couple of challenges that you will be interacting with for now
+
+143
+00:07:48,733 --> 00:07:51,066
+这些为真的前提下
+with all of this true
+
+144
+00:07:51,400 --> 00:07:53,866
+你就可以合理地调试
+you can debug reasonably
+
+145
+00:07:54,333 --> 00:07:58,866
+这意味着GDB会告诉你一些函数名，等等
+that means that there are function names that gdb will tell you and so forth 
+
+146
+00:07:59,000 --> 00:08:05,300
+我马上演示一下如何调试内核
+so i'm going to jump into  and show you how to debug interactions with kernel
+
+147
+00:08:06,800 --> 00:08:07,500
+在我开始之前
+before i go into this 
+
+148
+00:08:07,600 --> 00:08:09,900
+回忆一下，执行syscall时
+recall that when you do a syscall
+
+149
+00:08:10,066 --> 00:08:11,766
+如同上个视频中讲的
+as i talked about in the previous module
+
+150
+00:08:12,266 --> 00:08:14,799
+会做几件事
+you will do several things
+
+151
+00:08:14,900 --> 00:08:18,200
+将特权级别更改为ring 0
+change your privilege level to ring 0
+
+152
+00:08:19,166 --> 00:08:21,433
+进入内核
+you will jump into the kernel 
+
+153
+00:08:21,600 --> 00:08:29,800
+跳转到，启动时将LSTAR指向的，syscall处理程序
+into the syscall handler instruction that the kernel earlier set into the LSTAR register
+
+154
+00:08:30,100 --> 00:08:32,800
+还有将返回地址放在RCX中
+and you will put the return address in rcx
+
+155
+00:08:33,066 --> 00:08:36,099
+我将向你们展示这一过程
+i'm going to show you that happening 
+
+156
+00:08:36,766 --> 00:08:37,899
+这三个步骤
+all three of those effects
+
+157
+00:08:37,966 --> 00:08:39,333
+或至少两个
+or at least two of them
+
+158
+00:08:39,466 --> 00:08:40,633
+第三个步骤不太好看出来
+the third one is kind of hard to look at 
+
+159
+00:08:44,600 --> 00:08:46,900
+现在我在宿主机上
+here i am on my host machine 
+
+160
+00:08:46,966 --> 00:08:48,266
+我要创建
+i'm going to create 
+
+161
+00:08:50,266 --> 00:09:01,199
+我会用一个普通的exit shellcode
+i'm going to actually use some normal exit shellcode from my exit
+
+162
+00:09:02,800 --> 00:09:07,866
+就是shellcode模块的一个示例
+just an example shellcode from the shellcode module
+
+163
+00:09:08,100 --> 00:09:11,600
+它就调用一个exit系统调用
+all this does will call the exit syscall
+
+164
+00:09:12,566 --> 00:09:13,566
+在这儿
+right here
+
+165
+00:09:13,700 --> 00:09:15,600
+我要编译它
+and i'm going to compile this
+
+166
+00:09:16,266 --> 00:09:20,499
+很重要的一点是，要静态编译它
+it's very important for these purposes to compile it statically 
+
+167
+00:09:20,600 --> 00:09:24,533
+因为模拟环境中的用户空间中
+because the user space inside the simulated kernel 
+
+168
+00:09:25,800 --> 00:09:28,100
+如果我们看一下/lib
+if we do find /lib
+
+169
+00:09:28,133 --> 00:09:28,999
+里面没有库
+there are no libraries 
+
+170
+00:09:29,100 --> 00:09:30,500
+甚至没有/lib这个目录
+there isn't even /lib
+
+171
+00:09:31,366 --> 00:09:32,466
+没有ldd
+there is no ldd 
+
+172
+00:09:32,766 --> 00:09:38,099
+因为这里没有动态链接的程序
+because there are no dynamicly linked binaries in here
+
+173
+00:09:38,500 --> 00:09:39,433
+没有文件
+there's no file 
+
+174
+00:09:39,700 --> 00:09:40,266
+但是如果我
+but if i
+
+175
+00:09:42,733 --> 00:09:43,433
+进入
+go into 
+
+176
+00:09:44,300 --> 00:09:48,166
+这是打包前的文件系统
+this is the unpacked file system before we
+
+177
+00:09:48,466 --> 00:09:49,899
+我们启动模拟器时
+when we actually run the emulation
+
+178
+00:09:50,033 --> 00:09:52,999
+我们把build.sh放到一起的文件系统
+we pack this this file system that build.sh puts together 
+
+179
+00:09:53,300 --> 00:09:55,333
+打包成一个文档
+into an archive
+
+180
+00:09:55,500 --> 00:09:57,366
+然后传给内核
+that then gets passed into the kernel 
+
+181
+00:09:57,600 --> 00:09:59,866
+模拟器启动时传给模拟器
+into the emulator when the emulator runs
+
+182
+00:10:00,433 --> 00:10:01,899
+你不用担心这些
+you don't have to worry about all this
+
+183
+00:10:02,000 --> 00:10:03,366
+这是未打包的版本
+this is the unpacked version 
+
+184
+00:10:03,466 --> 00:10:05,599
+如果你看一下busybox
+if you look at busybox
+
+185
+00:10:05,866 --> 00:10:08,833
+它是一个静态链接的二进制文件
+it is a statically linked binary
+
+186
+00:10:08,966 --> 00:10:10,833
+这里没有库
+there are no libraries inside here
+
+187
+00:10:11,000 --> 00:10:13,066
+所以其他的东西也必须是静态连接的
+so everything else has to be statically linked as well 
+
+188
+00:10:14,100 --> 00:10:16,600
+因此，我们创建了一个静态链接库
+so we create a statically linked library
+
+189
+00:10:18,566 --> 00:10:21,866
+默认情况下，这意味着它不是位置无关的
+by default this means it won't be position independent
+
+190
+00:10:22,033 --> 00:10:22,566
+这很好
+which is good 
+
+191
+00:10:22,700 --> 00:10:25,066
+因为这样调试起来更容易
+because it'll be easier for us to debug
+
+192
+00:10:27,200 --> 00:10:29,300
+我们开始吧
+and here we go
+
+193
+00:10:30,466 --> 00:10:32,833
+然后-nosdlib
+and then -nostdlib 
+
+194
+00:10:33,066 --> 00:10:33,866
+好的，当然
+okay of course
+
+195
+00:10:33,933 --> 00:10:36,466
+想用的话，这里也有assemble汇编工具
+there's also the assemble command if you use shell tools
+
+196
+00:10:36,600 --> 00:10:38,133
+但
+but that's
+
+197
+00:10:39,666 --> 00:10:40,899
+这个效果就很好
+this works great 
+
+198
+00:10:41,033 --> 00:10:45,366
+现在我们有了静态链接的exit程序
+so now we have our exit executable statically linked  
+
+199
+00:10:45,766 --> 00:10:49,466
+如果我们在模拟器外运行它
+that if we just run it outside of the emulator
+
+200
+00:10:50,066 --> 00:10:51,866
+它就是调用exit，参数为0
+it just calls exit zero
+
+201
+00:10:54,366 --> 00:10:57,199
+我们objdump它
+so actually let's objdump it 
+
+202
+00:10:57,333 --> 00:10:58,599
+这样就知道断点设置在哪里
+so we know where to break
+
+203
+00:11:01,933 --> 00:11:05,466
+请原谅，这糟糕的AT&T语法
+excuse the horrible AT&T syntax
+
+204
+00:11:05,800 --> 00:11:09,966
+我们断在这里，程序入口0x401000处
+okay we're gonna break here the entry point 401000
+
+205
+00:11:12,400 --> 00:11:13,300
+看看会发生什么
+see what happens 
+
+206
+00:11:13,633 --> 00:11:14,599
+那么我们怎么做呢
+so how can we do this 
+
+207
+00:11:14,800 --> 00:11:16,200
+首先这里没有GDB
+one there's no gdb in here
+
+208
+00:11:16,400 --> 00:11:17,833
+就算有，也帮不了我们
+and it wouldn't help us if there was 
+
+209
+00:11:17,866 --> 00:11:20,633
+因为我们想调试内核
+because we want to debug the kernel
+
+210
+00:11:20,866 --> 00:11:24,633
+这里要讲的是调试内核
+this is going to be all about debugging the kernel
+
+211
+00:11:24,966 --> 00:11:26,566
+不是用户空间
+not the user space 
+
+212
+00:11:29,000 --> 00:11:34,333
+所以我们启动它的方式，很酷
+so the way that we launch this is actually super cool
+
+213
+00:11:35,200 --> 00:11:36,000
+如果我们
+if we
+
+214
+00:11:37,800 --> 00:11:38,600
+对不起
+sorry
+
+215
+00:11:41,066 --> 00:11:42,166
+launch.sh
+launch.sh 
+
+216
+00:11:42,333 --> 00:11:43,933
+我们用qemu作为我们的模拟器
+we use qemu as our emulator
+
+217
+00:11:44,000 --> 00:11:47,033
+我们把-s参数传给qemu
+and we pass the -s argument to qemu
+
+218
+00:11:47,133 --> 00:11:54,166
+这意味着在1234端口开启一个GDB服务
+this means open up a gdb server port on port 1234
+
+219
+00:11:54,866 --> 00:11:56,699
+如果用GDB连接到该端口
+and if you connect to that port from gdb
+
+220
+00:11:57,066 --> 00:11:58,766
+你就可以调试内核
+you can debug the kernel 
+
+221
+00:11:59,666 --> 00:12:01,799
+太酷了
+that is going to be so cool
+
+222
+00:12:03,966 --> 00:12:05,199
+我们运行GDB
+we run gdb
+
+223
+00:12:05,333 --> 00:12:09,966
+要给gdb什么文件，方便gdb读取有哪些函数之类的
+and what file do we give to gdb for to read functions and stuff from
+
+224
+00:12:10,600 --> 00:12:13,966
+我们给它编译过的Linux内核
+we will give it the Linux kernel that was compiled
+
+225
+00:12:14,100 --> 00:12:15,666
+它叫做vmlinux
+it's called vmlinux
+
+226
+00:12:17,700 --> 00:12:20,133
+这也是一个ELF文件
+this is also an ELF file 
+
+227
+00:12:20,533 --> 00:12:21,633
+非常简单
+very simple
+
+228
+00:12:21,800 --> 00:12:23,066
+非常标准
+very standard actually
+
+229
+00:12:23,566 --> 00:12:25,966
+我的意思，这个简单是相对的
+i mean simple is a relative term
+
+230
+00:12:26,400 --> 00:12:28,366
+如果我们反汇编它
+so if we disassemble this
+
+231
+00:12:30,000 --> 00:12:31,633
+这是Linux内核
+this is the Linux kernel 
+
+232
+00:12:33,166 --> 00:12:35,166
+这是它的位置
+this is where it's going to be at
+
+233
+00:12:35,500 --> 00:12:38,500
+这全是Linux内核
+and then this is all of the Linux kernel 
+
+234
+00:12:38,633 --> 00:12:39,866
+这太疯狂了
+it's insane all right
+
+235
+00:12:39,966 --> 00:12:41,266
+这会很大
+this is gonna be very large
+
+236
+00:12:41,400 --> 00:12:43,466
+看看反汇编结果有多少行
+let's see how many lines of disassembly
+
+237
+00:12:44,000 --> 00:12:45,333
+这可能需要几分钟
+this might take minutes
+
+238
+00:12:45,500 --> 00:12:47,333
+所以我可能一会就关了它
+so i might kill it soonish
+
+239
+00:12:47,666 --> 00:12:48,466
+不用了
+nope
+
+240
+00:12:48,733 --> 00:12:50,433
+Linux内核有
+the Linux kernel has 
+
+241
+00:12:50,833 --> 00:12:55,833
+6,682,034 行
+six million, six hundred and eighty two thousand, and thirty four 
+
+242
+00:12:56,000 --> 00:12:59,900
+反汇编结果，和objdump输出的空行之类的
+lines of disassembly and white space and stuff from objdump 
+
+243
+00:13:00,033 --> 00:13:01,333
+这太疯狂了
+that's insane all right
+
+244
+00:13:01,666 --> 00:13:13,933
+我们可以用GDB加载它
+so using gdb we can load it
+
+245
+00:13:14,200 --> 00:13:16,200
+这载入了Linux内核
+so this loads the Linux kernel 
+
+246
+00:13:16,600 --> 00:13:24,566
+现在我们要连接到1234端口
+now we are going to attach to the port
+
+247
+00:13:25,100 --> 00:13:28,233
+这个模拟系统开的端口
+that this running system has opened
+
+248
+00:13:28,400 --> 00:13:30,400
+qemu为我们打开的
+that qemu has opened for us 
+
+249
+00:13:31,000 --> 00:13:32,066
+我们执行remote
+so we do remote
+
+250
+00:13:32,166 --> 00:13:33,166
+这只是一个网络端口
+and this just a network port
+
+251
+00:13:33,300 --> 00:13:34,500
+TCP端口1234
+TCP port 1234 
+
+252
+00:13:35,300 --> 00:13:36,733
+好的，连上了
+boom and we've attached
+
+253
+00:13:36,866 --> 00:13:37,399
+我们是
+and we are 
+
+254
+00:13:37,600 --> 00:13:39,533
+能看到，一切正常
+so you can see everything is working
+
+255
+00:13:39,666 --> 00:13:41,366
+能正常显示函数名
+because we have function names
+
+256
+00:13:41,500 --> 00:13:43,900
+我们在default_idle函数
+we are at the default idle function
+
+257
+00:13:44,066 --> 00:13:45,299
+这意味着什么也没发生
+that means nothing is happening 
+
+258
+00:13:45,433 --> 00:13:46,466
+内核是空闲的
+the kernel is idle
+
+259
+00:13:46,666 --> 00:13:48,499
+当然我们可以执行常规的命令
+we can of course do the standard stuff
+
+260
+00:13:48,633 --> 00:13:51,633
+看看rip，等等
+look at the instruction pointer etc etc 
+
+261
+00:13:52,600 --> 00:13:55,000
+这就是内核空间
+so this is kernel space 
+
+262
+00:13:55,166 --> 00:13:56,599
+看看这个疯狂的地址
+look at this crazy address
+
+263
+00:13:58,800 --> 00:13:59,933
+我们现在在内核地址空间
+we're in kernel space now
+
+264
+00:13:59,966 --> 00:14:03,133
+我们已经不在用户空间了
+we are not in user space anymore 
+
+265
+00:14:05,400 --> 00:14:06,400
+当然
+now of course
+
+266
+00:14:06,400 --> 00:14:07,300
+我们
+we are 
+
+267
+00:14:08,033 --> 00:14:10,999
+GDB暂停了系统
+gdb has paused execution 
+
+268
+00:14:11,166 --> 00:14:13,366
+我们查看一下
+we are looking around
+
+269
+00:14:13,533 --> 00:14:15,433
+可以看到，如果我在这里输入
+and as you can see if i start typing here 
+
+270
+00:14:15,466 --> 00:14:16,366
+没反应
+nothing's happening 
+
+271
+00:14:16,633 --> 00:14:18,566
+continue后
+if you continue execution boom
+
+272
+00:14:18,566 --> 00:14:20,033
+突然有反应了
+something has happened all of a sudden 
+
+273
+00:14:20,266 --> 00:14:21,266
+系统运行起来了
+we're running again
+
+274
+00:14:21,366 --> 00:14:24,099
+我可以在这里按Ctrl c，再次中断执行
+i can hit Ctrl c here to interrupt execution again
+
+275
+00:14:24,266 --> 00:14:25,466
+continue等等
+continue and so forth 
+
+276
+00:14:26,200 --> 00:14:28,133
+我们去到/home/ctf/pwn
+let's go to /home/ctf/pwn 
+
+277
+00:14:28,633 --> 00:14:30,533
+我们的exit在这里
+and here's our exit right
+
+278
+00:14:30,633 --> 00:14:32,333
+不幸的是，我们这里没有strace
+we don't have strace in here unfortunately
+
+279
+00:14:32,400 --> 00:14:34,000
+但如果你编译一个静态链接版本的strace
+but if you compile strace statically linked
+
+280
+00:14:34,200 --> 00:14:36,200
+我们就可以在这里运行strace
+we could run strace in here
+
+281
+00:14:36,400 --> 00:14:39,766
+但我们得相信exit调用了exit系统调用
+but we'll have to trust that exit is calling the exit syscall
+
+282
+00:14:39,866 --> 00:14:40,499
+当然，是这样的
+of course it is 
+
+283
+00:14:40,766 --> 00:14:43,666
+可以看到返回值0
+you can see the return value is 0
+
+284
+00:14:43,966 --> 00:14:45,033
+一切似乎都很好
+all seems to be good 
+
+285
+00:14:45,833 --> 00:14:48,599
+我们该如何调试它
+now how do we debug this
+
+286
+00:14:48,666 --> 00:14:49,799
+我们如何调试内核
+how do we debug the kernel
+
+287
+00:14:49,966 --> 00:14:51,799
+这个视频中，我想向你们展示
+i want to show you for the purpose of this video
+
+288
+00:14:52,566 --> 00:14:57,933
+调用系统调用时，从用户空间到内核空间的过程
+the transition from user space into kernel space when syscall is called
+
+289
+00:14:59,666 --> 00:15:02,366
+我们来看看
+so let's take a look
+
+290
+00:15:05,766 --> 00:15:06,966
+提醒一下
+just to remind ourselves 
+
+291
+00:15:08,000 --> 00:15:10,266
+入口地址是401000
+the entry point is 401000
+
+292
+00:15:12,000 --> 00:15:13,533
+停在这里
+pause execution here
+
+293
+00:15:13,666 --> 00:15:15,033
+就像往常一样
+and just like normal 
+
+294
+00:15:15,300 --> 00:15:18,933
+在401000处创建一个断点
+create a break point at 401000 
+
+295
+00:15:19,700 --> 00:15:21,433
+这个不是内核地址
+that's not a kernel address 
+
+296
+00:15:21,466 --> 00:15:22,299
+不过没关系
+but that's okay
+
+297
+00:15:22,333 --> 00:15:24,199
+我们能管理整个系统
+we're in charge of the whole system
+
+298
+00:15:24,266 --> 00:15:26,266
+我们正在调试电脑
+we're debugging the computer 
+
+299
+00:15:26,366 --> 00:15:28,666
+qemu提供给我们的模拟电脑
+the emulated computer that qemu is providing to us
+
+300
+00:15:28,800 --> 00:15:29,933
+这太不可思议了
+this is incredible
+
+301
+00:15:30,566 --> 00:15:31,799
+哦，我不小心
+oops i accidentally
+
+302
+00:15:32,666 --> 00:15:34,766
+创建了第二个断点，但是
+it made a second breakpoint but 
+
+303
+00:15:35,166 --> 00:15:36,399
+如果我执行info break
+so if i do info break
+
+304
+00:15:36,500 --> 00:15:39,500
+这个是我们在入口地址处的断点
+here's my break point at the entry point 
+
+305
+00:15:39,733 --> 00:15:40,599
+我继续
+i continue 
+
+306
+00:15:41,533 --> 00:15:42,966
+然后我运行exit
+and i run exit 
+
+307
+00:15:43,633 --> 00:15:44,699
+它停住了
+and it hangs 
+
+308
+00:15:44,933 --> 00:15:45,866
+为什么会停
+why does it hang
+
+309
+00:15:45,900 --> 00:15:47,566
+因为它触发了断点
+because it dropped into my break point
+
+310
+00:15:47,700 --> 00:15:48,666
+这太酷了
+how cool is that 
+
+311
+00:15:49,133 --> 00:15:52,833
+我连入到
+i am inside connected to 
+
+312
+00:15:53,233 --> 00:15:54,733
+我在GDB中
+i am in gdb
+
+313
+00:15:54,866 --> 00:15:57,466
+连入到正在模拟Linux系统的qemu
+connected to qemu that is emulating a Linux system 
+
+314
+00:15:57,533 --> 00:16:01,166
+我的exit程序在模拟系统里面运行
+inside which my exit program is running 
+
+315
+00:16:02,200 --> 00:16:06,666
+我在断点处打断了它
+and i have interrupted it in a break point 
+
+316
+00:16:06,766 --> 00:16:09,433
+所以我可以执行一个disp命令
+so i can add a display
+
+317
+00:16:09,533 --> 00:16:10,633
+这是接下来要执行的指令
+here's what's going to happen
+
+318
+00:16:10,733 --> 00:16:11,833
+它会xor eax,eax
+it's going to xor eax 
+
+319
+00:16:11,933 --> 00:16:14,966
+它会载入exit系统调用
+it's going to load the exit call
+
+320
+00:16:15,766 --> 00:16:16,566
+然后它会
+then it'll do 
+
+321
+00:16:16,733 --> 00:16:18,466
+哦，exit系统调用码
+oh the exit syscall number
+
+322
+00:16:18,600 --> 00:16:19,900
+然后它会运行syscall
+and then it'll run syscall
+
+323
+00:16:20,366 --> 00:16:21,599
+当然，在上个视频中
+of course in the last video
+
+324
+00:16:21,600 --> 00:16:23,733
+你还记得syscall的实质吧
+you remember what the fact syscall has
+
+325
+00:16:23,766 --> 00:16:24,699
+我们马上看一下
+we're going to observe them
+
+326
+00:16:24,800 --> 00:16:26,266
+我们si、si
+so let's step step
+
+327
+00:16:26,833 --> 00:16:30,333
+这很可能是你以前从未见过的
+this is something that you will never have seen before most likely 
+
+328
+00:16:30,433 --> 00:16:31,766
+除非你以前见过
+unless you've seen it before 
+
+329
+00:16:32,833 --> 00:16:35,066
+通常如果你在这里si
+normally if you do step instruction here
+
+330
+00:16:35,300 --> 00:16:37,266
+会直接执行完syscall
+you'll just step past the syscall
+
+331
+00:16:37,366 --> 00:16:40,766
+现在系统调用将不再执行
+the syscall will be executed no longer
+
+332
+00:16:41,366 --> 00:16:43,699
+我正在掀开面纱
+i am peeling back the curtain
+
+333
+00:16:44,600 --> 00:16:48,866
+现在你能看到被调用的syscall
+and you can see the syscall being called 
+
+334
+00:16:50,733 --> 00:16:51,999
+这太酷了
+this is super cool
+
+335
+00:16:52,000 --> 00:16:53,633
+我们在内核里面
+we're inside the kernel 
+
+336
+00:16:53,966 --> 00:16:54,999
+我们在内核里
+we're inside the kernel
+
+337
+00:16:55,000 --> 00:16:59,300
+并且我们在这个entry_SYSCALL_64里
+and we're inside this entry syscall 64 
+
+338
+00:16:59,333 --> 00:17:03,366
+64代表64位系统调用
+64 for of course 64 bits entry syscall
+
+339
+00:17:07,100 --> 00:17:12,333
+我们在做各种各样不认识的疯狂的事情
+we are doing all sorts of crazy stuff that we don't recognize
+
+340
+00:17:12,733 --> 00:17:14,766
+这些指令有一半很奇怪
+half of these instructions are weird
+
+341
+00:17:14,966 --> 00:17:19,099
+这里有一些奇怪的段偏移
+there's some some weird segment offset here
+
+342
+00:17:20,066 --> 00:17:23,199
+这基本上是内存中的一个指针
+this is basically a pointer somewhere in memory essentially
+
+343
+00:17:23,300 --> 00:17:25,066
+这是从它开始的偏移量
+and this is an offset off of it 
+
+344
+00:17:26,033 --> 00:17:28,333
+有一个
+there is a you know
+
+345
+00:17:29,033 --> 00:17:30,266
+这很复杂
+it's complicated 
+
+346
+00:17:30,433 --> 00:17:35,633
+我们刚刚进入了syscall指令内部
+we've just walked into a syscall instruction 
+
+347
+00:17:35,666 --> 00:17:36,666
+这太棒了
+this is awesome
+
+348
+00:17:36,966 --> 00:17:38,199
+如果你还记得的话
+if you recall 
+
+349
+00:17:38,200 --> 00:17:40,400
+syscall不只是控制流的跳转
+syscall not only transfer control flow here
+
+350
+00:17:40,466 --> 00:17:43,366
+它还会把返回地址放到rcx中
+but it puts the return address into rcx 
+
+351
+00:17:43,466 --> 00:17:46,466
+我们可以看到，RCX是41006
+and as we can see rcx here is 41006 
+
+352
+00:17:46,766 --> 00:17:47,833
+在这里
+that is here 
+
+353
+00:17:47,966 --> 00:17:50,066
+当然exit系统调用不会返回
+of course the exit syscall doesn't return 
+
+354
+00:17:50,166 --> 00:17:51,466
+进程终止了
+the process is terminated
+
+355
+00:17:51,533 --> 00:17:53,966
+但我们就在这里
+but there we are 
+
+356
+00:17:55,200 --> 00:17:56,600
+有几件事
+a couple of things
+
+357
+00:17:56,966 --> 00:18:00,133
+你可能习惯了用ni跳过call
+you're probably used to doing next instruction to step over calls
+
+358
+00:18:00,266 --> 00:18:02,033
+这样你就不会陷得很深
+so you don't go deep deep deep 
+
+359
+00:18:02,200 --> 00:18:03,366
+这里ni似乎不好使
+that seems to be broken 
+
+360
+00:18:03,566 --> 00:18:06,733
+要么是ubuntu2004中我这个版本的gdb的问题
+either in my version of gdb on 2004
+
+361
+00:18:06,766 --> 00:18:09,199
+要么是qemu中gdb的问题
+or in some interactively gdb in Qemu
+
+362
+00:18:09,300 --> 00:18:10,100
+但能用的是
+what does work
+
+363
+00:18:10,100 --> 00:18:11,700
+你可以用si
+is you can do step instruction
+
+364
+00:18:12,566 --> 00:18:14,933
+我们这里要si多次
+and we're gonna step instruction for a while here
+
+365
+00:18:14,933 --> 00:18:15,533
+最终
+and eventually
+
+366
+00:18:15,533 --> 00:18:20,299
+我们会看到它保存了很多状态
+we'll see it saving off a whole bunch of state
+
+367
+00:18:20,700 --> 00:18:23,466
+然后初始化一堆东西
+and then initializing a bunch of stuff
+
+368
+00:18:23,633 --> 00:18:25,599
+保存了一堆东西
+so saving a bunch of things 
+
+369
+00:18:26,000 --> 00:18:27,966
+清零了一堆东西
+and zeroing stuff out
+
+370
+00:18:28,333 --> 00:18:30,933
+它在执行这个push
+and it's doing this push right
+
+371
+00:18:31,466 --> 00:18:33,499
+你可能会说
+you might say oh you know
+
+372
+00:18:33,600 --> 00:18:35,966
+它把东西压入了栈
+it's pushing stuff onto our stack
+
+373
+00:18:36,100 --> 00:18:38,500
+而我们在用户空间的栈似乎不太安全
+and our stacks in userspace that doesn't seem very safe
+
+374
+00:18:38,666 --> 00:18:40,133
+一些内核秘密可能被泄露
+some kernel secrets could be leaked
+
+375
+00:18:40,233 --> 00:18:41,299
+事实并非如此
+that's not the case 
+
+376
+00:18:41,733 --> 00:18:43,333
+如果我们向上看
+it if we scroll up
+
+377
+00:18:43,500 --> 00:18:49,433
+会看到它将栈切换到了内核栈
+we'll see it actually changing the stack to be our kernel stack 
+
+378
+00:18:49,866 --> 00:18:50,399
+总之
+anyways
+
+379
+00:18:50,566 --> 00:18:51,999
+我们进入
+let's walk in 
+
+380
+00:18:52,300 --> 00:18:54,800
+这个do_syscall函数
+this is the do syscall function
+
+381
+00:18:54,800 --> 00:18:58,000
+它会找出要执行哪个系统调用
+which will actually figure out which syscall to do
+
+382
+00:18:58,066 --> 00:18:58,799
+然后执行
+and then do it
+
+383
+00:18:58,800 --> 00:19:01,100
+这个入口点保存了所有的状态
+this entry point just saves all the state 
+
+384
+00:19:01,400 --> 00:19:02,166
+执行系统调用
+does the syscall
+
+385
+00:19:02,400 --> 00:19:05,533
+然后当系统调用返回时
+and then when the syscall returns
+
+386
+00:19:05,666 --> 00:19:08,433
+它会恢复状态
+it'll restore the state
+
+387
+00:19:08,533 --> 00:19:10,933
+然后返回，一会儿会si到
+and return will step through that in a sec
+
+388
+00:19:11,200 --> 00:19:12,533
+我不能ni
+i can't do ni 
+
+389
+00:19:12,666 --> 00:19:13,533
+它会崩溃
+it's gonna break
+
+390
+00:19:13,566 --> 00:19:14,766
+所以我执行si
+so i'm gonna do si 
+
+391
+00:19:14,966 --> 00:19:16,766
+我现在在do_syscall
+i'm now inside do syscall
+
+392
+00:19:16,933 --> 00:19:18,266
+在这里，我执行finish
+and in here i just do finish 
+
+393
+00:19:19,433 --> 00:19:24,566
+它会一直运行到该syscall退出
+and it'll run until exit from that syscall 
+
+394
+00:19:24,633 --> 00:19:25,333
+当然
+and of course
+
+395
+00:19:26,000 --> 00:19:30,433
+我猜那个syscall一直不会退出
+i'm guessing that that syscall never returns 
+
+396
+00:19:30,566 --> 00:19:31,733
+因为它是exit
+because it's exit
+
+397
+00:19:32,866 --> 00:19:34,866
+我换个syscall试一下
+let me do a different syscall real quick
+
+398
+00:19:36,366 --> 00:19:37,533
+试一下read
+let's just do read
+
+399
+00:19:40,933 --> 00:19:42,166
+还是试一下sendfile
+let's do sendfile
+
+400
+00:19:56,000 --> 00:19:57,333
+Sendfile是40
+sendfile is 40
+
+401
+00:20:02,366 --> 00:20:05,299
+所以我们改成40
+so we do 40 
+
+402
+00:20:05,400 --> 00:20:11,166
+我们mov rax, 1 抱歉，不是rax
+we'll mov rax 1 sorry not rax
+
+403
+00:20:13,200 --> 00:20:16,600
+mov rdi 1
+mov rdi 1
+
+404
+00:20:17,100 --> 00:20:19,966
+所以我们的第一个参数out是标准输出
+so our first argument the out is our standard out
+
+405
+00:20:20,133 --> 00:20:22,133
+in是标准输入
+the in is our standard in
+
+406
+00:20:23,900 --> 00:20:29,133
+我们mov RDX 0
+we will move rdx 0 
+
+407
+00:20:29,233 --> 00:20:31,466
+第三个参数是偏移量
+the third argument is the offset
+
+408
+00:20:31,733 --> 00:20:36,266
+然后是r10
+and then r10 
+
+409
+00:20:37,233 --> 00:20:38,766
+是r10还是r8
+is that r10 or 8
+
+410
+00:20:39,033 --> 00:20:40,099
+我懵了
+i just went blank
+
+411
+00:20:41,566 --> 00:20:42,766
+我需要更多的睡眠
+i need more sleep
+
+412
+00:20:46,533 --> 00:20:47,566
+是r10
+it is r10 
+
+413
+00:20:48,033 --> 00:20:48,966
+我刚查了一下
+i just looked it up 
+
+414
+00:20:49,233 --> 00:20:50,899
+真不敢相信我脑子一片空白
+i can't believe i went blank
+
+415
+00:20:51,100 --> 00:20:52,233
+好的，然后r10赋值为128
+okay and then 128 
+
+416
+00:20:52,366 --> 00:20:55,433
+这会执行一次sendfile
+so this will just do a sendfile once 
+
+417
+00:20:56,333 --> 00:20:57,733
+我们重新
+let's do the same 
+
+418
+00:20:58,300 --> 00:21:00,200
+不对，错了
+nope wrong one
+
+419
+00:21:04,333 --> 00:21:07,033
+用assemble汇编sendfile.s
+just assemble using this sendfile.s 
+
+420
+00:21:07,966 --> 00:21:09,399
+好的sendfile
+okay sendfile
+
+421
+00:21:12,000 --> 00:21:13,200
+为什么段错误
+why segfault
+
+422
+00:21:21,666 --> 00:21:22,666
+我搞砸了什么
+what am i screwing up
+
+423
+00:21:24,600 --> 00:21:25,400
+哦
+oh
+
+424
+00:21:28,500 --> 00:21:30,366
+sendfile可能不能
+sendfile probably can't
+
+425
+00:21:33,000 --> 00:21:34,433
+不管它是什么
+it doesn't matter what it is 
+
+426
+00:21:34,566 --> 00:21:35,633
+执行一个系统调用就行
+it'll just do a system call 
+
+427
+00:21:35,833 --> 00:21:38,266
+我们看一下它调用系统调用
+and we're going to watch it doing a system call 
+
+428
+00:21:50,133 --> 00:21:53,466
+入口点的偏移量保持不变
+the offset of the entry point remains the same
+
+429
+00:21:53,800 --> 00:21:58,800
+所以断点仍然有效
+so our break point is still valid 
+
+430
+00:21:58,933 --> 00:22:00,699
+我们运行sendfile
+so let's run sendfile
+
+431
+00:22:02,100 --> 00:22:03,966
+好了，我们在断点了
+okay here we're at the break point 
+
+432
+00:22:04,566 --> 00:22:05,699
+设置调用条件中
+set up everything 
+
+433
+00:22:06,500 --> 00:22:06,966
+执行syscall
+syscall 
+
+434
+00:22:07,966 --> 00:22:09,633
+我们到内核了
+boom we're in the kernel 
+
+435
+00:22:10,233 --> 00:22:13,766
+步过这些初始化
+step step step step through all of this initialization
+
+436
+00:22:16,933 --> 00:22:18,166
+好了，进入到do_syscall_64
+okay step into the call 
+
+437
+00:22:18,433 --> 00:22:20,133
+finish好了
+finish okay
+
+438
+00:22:20,300 --> 00:22:21,066
+函数返回了
+that one returned 
+
+439
+00:22:21,466 --> 00:22:22,733
+接着步过
+now you can step step step
+
+440
+00:22:22,733 --> 00:22:27,766
+我想展示一下回到用户空间的sysret指令
+and i want to show you the sysret instruction where we go back into user space
+
+441
+00:22:28,666 --> 00:22:30,933
+现在我们开始恢复保存的状态
+here we go we're restoring the saved states
+
+442
+00:22:31,166 --> 00:22:34,266
+开头使用了一堆push保存状态
+use all those push in the beginning that saves the state
+
+443
+00:22:34,366 --> 00:22:35,733
+现在我们恢复这些状态
+and now we're restoring it
+
+444
+00:22:37,566 --> 00:22:42,566
+这里甚至还恢复了用户空间栈指针
+and here is even restoring the user space stack pointer 
+
+445
+00:22:42,733 --> 00:22:45,766
+之前是内核栈
+before it's our stack pointer is in the kernel 
+
+446
+00:22:46,333 --> 00:22:47,599
+现在的栈指针rsp
+now our stack pointer
+
+447
+00:22:48,200 --> 00:22:49,233
+仍然在内核中
+it is still in the kernel 
+
+448
+00:22:49,866 --> 00:22:50,633
+还没有恢复
+hasn't restored yet 
+
+449
+00:22:50,800 --> 00:22:51,366
+哦
+ooh
+
+450
+00:22:51,566 --> 00:22:56,266
+这里在动CR3寄存器
+the cr3 register we're messing around with it
+
+451
+00:22:59,000 --> 00:23:00,666
+好的，pop RSP
+here we go pop rsp
+
+452
+00:23:00,966 --> 00:23:03,866
+之后我们用sysret返回用户空间
+and then we'll do a sysret to go back to user space
+
+453
+00:23:04,266 --> 00:23:06,733
+这里跟我们的内核栈说再见了
+so here is say goodbye to our kernel stack 
+
+454
+00:23:07,600 --> 00:23:09,466
+回到用户空间栈
+back to user space stack
+
+455
+00:23:10,300 --> 00:23:12,666
+执行sysret
+and sysret
+
+456
+00:23:13,733 --> 00:23:15,533
+我们回到了用户空间
+and we're back in user space of course
+
+457
+00:23:16,366 --> 00:23:19,566
+这些是syscall返回后，的垃圾数据
+and the garbage that is after our syscall 
+
+458
+00:23:19,866 --> 00:23:21,033
+这太酷了
+how cool is that
+
+459
+00:23:21,200 --> 00:23:23,800
+当然，syscall返回到了rcx
+and of course that returned back to rcx 
+
+460
+00:23:26,366 --> 00:23:30,233
+这就是调试一个运行中内核的过程
+that was us debugging a running kernel 
+
+461
+00:23:30,500 --> 00:23:31,766
+非常令人兴奋的东西
+very exciting stuff
+
+462
+00:23:31,933 --> 00:23:36,399
+我们也可以设置一个断点
+we can also put a break point actually
+
+463
+00:23:37,300 --> 00:23:41,033
+我们禁用第一个断点
+let's disable the first break point
+
+464
+00:23:41,100 --> 00:23:47,100
+可以在entry_syscall或do_syscall函数本身上设置断点
+you can put a break point on the entry_syscall or the do_syscall function itself 
+
+465
+00:23:47,166 --> 00:23:49,066
+我们怎么才能找到它
+how do we find where that is
+
+466
+00:23:49,200 --> 00:23:50,266
+有两种方法
+there are two ways 
+
+467
+00:23:50,600 --> 00:23:52,666
+一是,如果我们有内核镜像
+one if we have the kernel image
+
+468
+00:23:52,966 --> 00:23:57,099
+我们就可以用objdump
+we can use objdump of course
+
+469
+00:23:59,600 --> 00:24:05,300
+所以我们可以执行objdump -d Linux vmlinux
+so we can do objdump -d Linux vmlinux
+
+470
+00:24:06,766 --> 00:24:14,099
+实际上最好使用nm -a Linux vmlinux
+actually better use nm -a Linux vmlinux
+
+471
+00:24:15,100 --> 00:24:17,800
+grep查找do_sycall
+and grep for do_syscall 
+
+472
+00:24:18,566 --> 00:24:19,466
+就是这个
+here it is 
+
+473
+00:24:19,633 --> 00:24:20,499
+太好了
+that's great
+
+474
+00:24:20,633 --> 00:24:22,099
+现在我们知道该断在哪里了
+so now we know where to break
+
+475
+00:24:22,800 --> 00:24:27,933
+内核本身也提供了一个很棒的功能
+there's also an awesome functionality provided by the kernel itself
+
+476
+00:24:30,066 --> 00:24:32,899
+我快速过一遍
+actually let me go real quick over
+
+477
+00:24:37,900 --> 00:24:39,333
+看幻灯片
+to the slides
+
+478
+00:24:41,800 --> 00:24:47,133
+内核本身在/proc/kallsyms中提供了
+functionality provided by the kernel itself in /proc/k all syms
+
+479
+00:24:47,300 --> 00:24:51,933
+它会打印出一个符号列表
+which will print out basically a list of symbols
+
+480
+00:24:52,133 --> 00:24:54,866
+如果我们回到这里
+so if we go back to the to here
+
+481
+00:24:55,200 --> 00:24:56,533
+/proc/kallsyms
+/proc/kallsyms 
+
+482
+00:24:56,766 --> 00:24:57,933
+哦，该死，我关了我的系统
+oh shit i killed my system 
+
+483
+00:24:58,066 --> 00:24:58,933
+要非常小心
+be very careful
+
+484
+00:24:58,933 --> 00:24:59,766
+如果你按了ctrl c
+if you do control 
+
+485
+00:25:00,200 --> 00:25:01,933
+我们这里启动Qemu的方式
+the way that we launch Qemu here
+
+486
+00:25:02,733 --> 00:25:07,899
+qemu不拦截特殊键
+so that it's not trivially escapable through special key presses that Qemu interprets
+
+487
+00:25:08,066 --> 00:25:09,266
+它不会拦截ctrl c
+it won't catch control c 
+
+488
+00:25:09,366 --> 00:25:10,066
+如果你ctrl c
+if you control c
+
+489
+00:25:10,066 --> 00:25:11,733
+整个模拟器都关了
+that whole emulator is dead
+
+490
+00:25:12,666 --> 00:25:16,033
+幸运的是，/home/ctf下的文件是持久的（挂载的~）
+luckily again files and home ctf are persistent 
+
+491
+00:25:21,300 --> 00:25:24,333
+这些是内核所有符号的地址
+these are all of the symbol addresses of the kernel
+
+492
+00:25:24,533 --> 00:25:26,699
+搞砸了，这要很长时间
+i screwed up because this is gonna take forever
+
+493
+00:25:28,100 --> 00:25:30,500
+我们可以grep do_sycall
+okay and we can grep do_syscall
+
+494
+00:25:32,400 --> 00:25:34,800
+显然有很多处理函数
+obviously there are many handlers 
+
+495
+00:25:35,433 --> 00:25:38,799
+这里和这里的地址是一样的
+and here this is the same address as this
+
+496
+00:25:38,933 --> 00:25:42,233
+有个叫内核地址空间随机化的东西
+now there is such a thing as kernel address space randomization
+
+497
+00:25:42,300 --> 00:25:43,800
+现在是禁用的
+for now is disabled
+
+498
+00:25:43,800 --> 00:25:45,133
+我们以后再谈
+we'll talk about it later
+
+499
+00:25:46,300 --> 00:25:48,233
+所以现在这些都是可以预测的
+so for now these are always predictable
+
+500
+00:25:48,400 --> 00:25:51,366
+该方法只适用于拥有root权限的情况
+this only works if you have root access inside your machine
+
+501
+00:25:51,533 --> 00:25:52,933
+如果你没有root权限
+if you don't have root access
+
+502
+00:25:53,000 --> 00:25:57,966
+也没有这些地址的信息源
+and you don't have a source of those addresses
+
+503
+00:25:58,333 --> 00:26:00,066
+比如内核映像
+such as the kernel image
+
+504
+00:26:00,700 --> 00:26:01,400
+你就有麻烦了
+you're in trouble 
+
+505
+00:26:01,700 --> 00:26:03,866
+你必须要像绕过aslr一样，泄露地址
+you have to have a leak similar to ASLR
+
+506
+00:26:04,566 --> 00:26:05,299
+但有了root权限
+but with root access 
+
+507
+00:26:05,300 --> 00:26:06,200
+你可以直接查找
+you can look all this up
+
+508
+00:26:06,333 --> 00:26:07,833
+现在我们有了这个地址
+so now we have this address
+
+509
+00:26:08,166 --> 00:26:10,666
+我们当然可以在这里设一个断点
+we can of course put a break point here
+
+510
+00:26:11,766 --> 00:26:12,566
+哦
+oops
+
+511
+00:26:13,333 --> 00:26:14,533
+我们需要重新连接
+we need to reconnect 
+
+512
+00:26:14,766 --> 00:26:21,733
+因为我不小心关了内核
+because i killed the kernel accidently okay
+
+513
+00:26:21,966 --> 00:26:24,033
+我们附加上了
+so we we've attached 
+
+514
+00:26:24,133 --> 00:26:27,099
+我们可以在do_sycall设置一个断点
+we can put a break point at do_syscall
+
+515
+00:26:27,300 --> 00:26:28,400
+我们继续
+we continue 
+
+516
+00:26:28,733 --> 00:26:32,166
+现在不管我们要干什么
+and then now anything we run
+
+517
+00:26:32,566 --> 00:26:35,433
+就算只是在shell中打字
+including just typing into my shell 
+
+518
+00:26:35,566 --> 00:26:37,499
+都会触发这个断点
+will trigger this break point 
+
+519
+00:26:38,233 --> 00:26:39,866
+很酷吧
+very cool huh
+
+520
+00:26:41,333 --> 00:26:42,799
+当然我们可以
+and we can of course
+
+521
+00:26:45,066 --> 00:26:48,699
+看看会发生什么
+see what's going to happen 
+
+522
+00:26:49,200 --> 00:26:50,466
+继续
+continue and of course
+
+523
+00:26:50,666 --> 00:26:53,466
+有大量，不同的系统调用号
+there are tons and tons of syscalls of different numbers
+
+524
+00:26:53,900 --> 00:26:54,966
+read系统调用
+read syscall 
+
+525
+00:26:55,066 --> 00:26:56,199
+任何系统调用
+whatever syscall 
+
+526
+00:26:56,366 --> 00:26:57,266
+7是
+seven is 
+
+527
+00:26:57,266 --> 00:26:59,699
+我们看看syscall 7是什么
+let's see what syscall seven is 
+
+528
+00:27:00,666 --> 00:27:01,499
+是poll
+poll 
+
+529
+00:27:01,733 --> 00:27:02,699
+等等
+and so forth yeah
+
+530
+00:27:02,766 --> 00:27:06,433
+shell的一个普通操作涉及了许多系统调用
+a lot of syscalls going on in the normal operation of my shell
+
+531
+00:27:06,666 --> 00:27:10,899
+如果你像这样调试
+so if you do your debugging like this
+
+532
+00:27:11,133 --> 00:27:15,499
+你可能需要更具体的断点
+you might want to be a little more specific about where you break
+
+533
+00:27:16,533 --> 00:27:19,666
+一个好方法就是像我之前那样
+but a good way to debug is actually like i did 
+
+534
+00:27:20,200 --> 00:27:26,066
+断在一个你知道的用户空间地址
+you break at inside a userspace binary an address you know
+
+535
+00:27:26,200 --> 00:27:27,566
+然后从那里开始
+and then you follow from there
+
+536
+00:27:28,533 --> 00:27:29,466
+另外
+alternatively
+
+537
+00:27:29,666 --> 00:27:31,133
+如果你正在调试内核模块
+if you're debugging kernel module 
+
+538
+00:27:31,300 --> 00:27:34,033
+那就在正在调试的内核模块内部进行中断
+then break specifically inside the kernel module you're debugging
+
+539
+00:27:34,166 --> 00:27:36,799
+我们下个视频再讲内核模块
+we'll talk about that next video 
+
+540
+00:27:37,666 --> 00:27:39,366
+如果你真的对这些感兴趣的话
+if you're really interested in all of this 
+
+541
+00:27:39,500 --> 00:27:40,766
+这有些阅读材料
+some further reading
+
+542
+00:27:41,200 --> 00:27:45,933
+这里描述了如何搭建内核漏洞利用环境
+here's a description of how we set up a kernel exploit environment
+
+543
+00:27:46,166 --> 00:27:50,533
+当然，你也可以阅读pwnkernel的源代码
+or you can of course read the source code of pwn kernel
+
+544
+00:27:52,533 --> 00:27:55,666
+有一个关于内核调试的完整文档
+there's an entire document on kernel debugging 
+
+545
+00:27:56,266 --> 00:27:58,466
+从在qemu中运行内核
+from running the kernel in qemu
+
+546
+00:27:58,733 --> 00:27:59,966
+到在GDB进行调试
+and debugging from gdb 
+
+547
+00:28:00,066 --> 00:28:01,999
+就是我刚刚快速展示的
+what i just showed off real quick
+
+548
+00:28:02,600 --> 00:28:05,600
+还有一个功能更丰富
+and a much more feature-rich 
+
+549
+00:28:06,566 --> 00:28:09,566
+类似于pwnkernel的环境配置
+kind of analog to pwnkernel
+
+550
+00:28:10,300 --> 00:28:12,300
+在那里你可以探索
+where you can explore
+
+551
+00:28:14,466 --> 00:28:18,199
+你可以尝试不同的架构
+you can experiment with different architectures
+
+552
+00:28:18,666 --> 00:28:20,399
+arm上的Linux内核，等等
+Linux kernel on arm etc etc 
+
+553
+00:28:20,633 --> 00:28:21,966
+不同的内核版本
+different kernel versions 
+
+554
+00:28:22,033 --> 00:28:23,799
+功能更丰富
+much more feature rich
+
+555
+00:28:26,066 --> 00:28:30,133
+下一个视频将讨论内核模块
+next video talk about kernel modules
+

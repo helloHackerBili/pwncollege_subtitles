@@ -1,0 +1,880 @@
+1
+00:00:01,266 --> 00:00:02,399
+你好黑客
+hello hackers
+
+2
+00:00:02,800 --> 00:00:06,700
+欢迎继续参加pwn学院的沙盒课程
+welcome to the continuation of the sandboxing module of pwn College
+
+3
+00:00:06,733 --> 00:00:07,466
+我是Yan
+I'm Yan
+
+4
+00:00:07,466 --> 00:00:10,333
+今天我们要讲的是seccomp
+and today we're going to be talking about seccomp
+
+5
+00:00:10,800 --> 00:00:11,900
+什么是seccomp
+what is seccomp
+
+6
+00:00:12,100 --> 00:00:17,700
+seccomp本质上是Linux的系统调用防火墙
+seccomp is essentially a system call firewall for Linux
+
+7
+00:00:19,100 --> 00:00:27,766
+Seccomp是一组相当复杂的功能
+seccomp is a fairly complicated set of functionality
+
+8
+00:00:28,100 --> 00:00:30,966
+可以让有安全意识的开发人员
+ that can allow a developer that is security conscious
+
+9
+00:00:31,733 --> 00:00:33,899
+试图将应用程序用沙盒隔离
+ and is attempting to sandbox  application
+
+10
+00:00:34,000 --> 00:00:36,900
+防止应用被黑后做坏事
+to keep it from doing bad things in the case that it gets hacked
+
+11
+00:00:37,300 --> 00:00:39,466
+写复杂的规则
+um to write complex rules
+
+12
+00:00:39,500 --> 00:00:41,266
+禁用某些系统调用
+to disable certain system calls
+
+13
+00:00:41,266 --> 00:00:43,666
+允许某些系统调用
+to allow certain system calls um
+
+14
+00:00:43,600 --> 00:00:48,100
+甚至是基于它们的参数来过滤系统调用
+to filter um system calls even based on their argument variables
+
+15
+00:00:48,133 --> 00:00:50,599
+调整系统调用
+um to tweak system calls
+
+16
+00:00:50,800 --> 00:00:57,000
+比如这个系统调用应该在这个条件直接返回这个值
+uh to say that you know this call under this condition should just return this value
+
+17
+00:00:57,333 --> 00:00:57,899
+这些类似的
+ something along these lines
+
+18
+00:00:58,066 --> 00:00:59,166
+这些都是系统调用
+again these are system calls
+
+19
+00:00:59,166 --> 00:01:00,533
+而不是程序中的一般函数调用
+not general function calls in the program
+
+20
+00:01:00,600 --> 00:01:03,600
+系统调用是与系统交互
+ but system calls interacting with the environment
+
+21
+00:01:04,366 --> 00:01:05,999
+Seccomp很强大
+seccomp is powerful
+
+22
+00:01:06,400 --> 00:01:09,133
+它能遗传给子进程
+it is inherited by children
+
+23
+00:01:09,133 --> 00:01:13,899
+它甚至能限制root用户运行的进程
+it is able to restrict processes even run by root
+
+24
+00:01:13,900 --> 00:01:17,200
+还有很多其他的能力
+um with a lot of other capabilities and so forth
+
+25
+00:01:17,400 --> 00:01:23,300
+这基本是现代沙盒中最大的部分
+um it is the uh kind of biggest part of a modern sandbox
+
+26
+00:01:23,333 --> 00:01:24,166
+嗯
+um
+
+27
+00:01:24,900 --> 00:01:29,600
+比如Chrome沙盒等等
+something like the Chrome sandbox and and uh so forth um
+
+28
+00:01:30,300 --> 00:01:33,200
+如果你感兴趣，你可以看看seccomp的文档
+if you're interested you can look at the documentation for seccomp
+
+29
+00:01:33,266 --> 00:01:35,599
+规则可以写得非常非常复杂
+the rules can get very very complex
+
+30
+00:01:35,666 --> 00:01:37,966
+这是一项很牛的技术
+it's a very cool piece of technology
+
+31
+00:01:37,900 --> 00:01:41,600
+让我们快速看一个例子
+and let's take a quick look at an example
+
+32
+00:01:44,200 --> 00:01:49,100
+这有一个程序，一会会使用seccomp
+so we have a program that will be seccomp soon
+
+33
+00:01:49,100 --> 00:01:52,700
+执行系统调用的程序
+a program that does an execve system Call
+
+34
+00:01:52,700 --> 00:01:58,600
+execl是一个C包装器，它设置execve系统调用并调用它
+precisely execl is a C wrapper that sets up the execve system call and calls it
+
+35
+00:01:59,066 --> 00:02:01,566
+我们会用参数调用/bin/cat
+and we're gonna call /bin/cat with the arguments
+
+36
+00:02:01,566 --> 00:02:04,766
+Arg[0]是cat Arg[1]是/flag
+arg[0] is cat arg[1] is /flag
+
+37
+00:02:04,766 --> 00:02:06,066
+参数0
+of course argue zero is
+
+38
+00:02:06,100 --> 00:02:12,100
+通常是你输入到shell里要启动的程序
+you know typically the the the what you enter as to invoke the process into your shell
+
+39
+00:02:12,200 --> 00:02:14,000
+参数一是第一个参数
+argue one is the first argument
+
+40
+00:02:14,000 --> 00:02:18,700
+如果我手动运行这个，它就是cat会输出的东西
+and that's what cat will cat out if I run this manually
+
+41
+00:02:18,800 --> 00:02:23,200
+这是我在系统上放的一个用于演示的flag
+here's a flag I put on my system for demonstration
+
+42
+00:02:23,300 --> 00:02:25,800
+当然，如果我编译它
+and of course if I compile this
+
+43
+00:02:27,466 --> 00:02:28,466
+运行它
+and I run it
+
+44
+00:02:29,366 --> 00:02:31,366
+效果很好
+it works great
+
+45
+00:02:32,366 --> 00:02:33,866
+成功接收到了flag
+flag received
+
+46
+00:02:33,866 --> 00:02:34,666
+好吧
+alright
+
+47
+00:02:35,300 --> 00:02:38,333
+现在为了让它更安全，引入了一个沙盒
+now let's make this more secure so I have a sandbox
+
+48
+00:02:38,800 --> 00:02:42,900
+我插入这4行，这就行了
+and I inserted these 4 lines this is all it takes
+
+49
+00:02:43,000 --> 00:02:43,700
+非常简单
+it's very simple
+
+50
+00:02:43,700 --> 00:02:47,700
+这就是使用一个沙盒需要的全部了
+this is all it takes to build in a sandbox into your process
+
+51
+00:02:47,766 --> 00:02:49,799
+让我们一行一行的过一下
+let's go through the lines one by one
+
+52
+00:02:49,800 --> 00:02:55,700
+1我们创建一个seccomp filter
+one we created a seccomp filter data structure
+
+53
+00:02:56,533 --> 00:02:58,899
+2我们用默认策略初始化它
+2 we initialized it with a default policy
+
+54
+00:02:58,900 --> 00:03:03,500
+这里写着SCMP_ACT_ALLOW，就这么简单
+this says seccomp action allows that simple
+
+55
+00:03:03,600 --> 00:03:07,800
+它允许在默认情况下调用每个系统，除非我们另有说明
+it just allows every system called by default unless we say otherwise
+
+56
+00:03:07,866 --> 00:03:10,966
+下一行我们就说了，
+and here the next line we say otherwise we say okay
+
+57
+00:03:14,100 --> 00:03:18,300
+添加到这个我们正在建立的seccomp过滤器
+add to this seccomp filter that we're building
+
+58
+00:03:18,766 --> 00:03:20,399
+一个kill动作
+with an action of kill
+
+59
+00:03:21,733 --> 00:03:23,333
+系统调用execve
+the system call execve
+
+60
+00:03:23,866 --> 00:03:24,799
+所以任何时候
+so anytime
+
+61
+00:03:24,800 --> 00:03:31,200
+当然，之后你可以给值添加额外的检查，等等，但是这里说
+and then of course later on you can add additional checks onto the values and so forth but this says
+
+62
+00:03:31,566 --> 00:03:33,266
+任何时候调用execve就
+anytime execve is called
+
+63
+00:03:34,166 --> 00:03:35,366
+终止程序
+kill the program
+
+64
+00:03:35,900 --> 00:03:38,766
+所以这样就将execve隔离开了
+so this sandboxes execve away
+
+65
+00:03:40,400 --> 00:03:41,200
+酷
+cool
+
+66
+00:03:41,400 --> 00:03:42,533
+所以,嗯
+so um
+
+67
+00:03:43,933 --> 00:03:46,166
+第四行使用这个过滤器
+the 4th line of course applies this filter
+
+68
+00:03:46,166 --> 00:03:47,466
+它将其加载到内核中
+it loads this into the kernel
+
+69
+00:03:47,466 --> 00:03:48,799
+做一大堆事情
+does a whole bunch of stuff
+
+70
+00:03:49,300 --> 00:03:53,700
+这些库调用在底层执行很多其他的系统调用
+these are library calls that do other crazy system calls underneath
+
+71
+00:03:54,400 --> 00:04:00,100
+确保我们的沙盒安全
+and secure our sandbox
+
+72
+00:04:00,166 --> 00:04:00,966
+好的
+alright
+
+73
+00:04:01,666 --> 00:04:04,066
+现在让我们编译这个新文件
+let's now compile this new one
+
+74
+00:04:04,000 --> 00:04:08,800
+这不会成功，因为我们需要链接在一个seccomp库
+this won't work because we need to link in a the seccomp library
+
+75
+00:04:09,366 --> 00:04:11,666
+这样就行了，顺便说一下
+and this work by the by the way and
+
+76
+00:04:12,700 --> 00:04:17,000
+为了安装seccomp库，您需要这样做
+in order to install the seccomp library you need to do something like this
+
+77
+00:04:17,666 --> 00:04:18,666
+这个我已经做过了
+which I really did
+
+78
+00:04:18,700 --> 00:04:20,666
+否则你将无法编译它
+otherwise you won't be able to compile this alright
+
+79
+00:04:21,400 --> 00:04:24,533
+现在我们有了新的和改进的
+now we have our new and improved
+
+80
+00:04:24,866 --> 00:04:26,133
+作为提醒
+just as reminder
+
+81
+00:04:26,400 --> 00:04:28,966
+这是我们要运行的程序
+this is the program we're about to run
+
+82
+00:04:29,300 --> 00:04:33,300
+它会seccomp掉execve然后运行execve
+and it's gonna seccomp away execve and then run execve 
+
+83
+00:04:33,766 --> 00:04:36,766
+如果我们现在运行这个程序
+and if we run this program now
+
+84
+00:04:38,266 --> 00:04:39,699
+它报系统调用错误
+it says bad system call
+
+85
+00:04:39,900 --> 00:04:41,333
+运气不好
+no luck right
+
+86
+00:04:42,266 --> 00:04:44,166
+我们用strace看看发生了什么
+let's see what happens with an strace
+
+87
+00:04:44,400 --> 00:04:46,100
+不管strace输出什么
+whatever the strace is
+
+88
+00:04:46,700 --> 00:04:49,466
+如果我们在这里找找
+if we scroll up in our program
+
+89
+00:04:49,900 --> 00:04:59,000
+我们看到程序调用了多个系统调用来设置seccomp
+we see that the program calls several different system calls to set up the seccomp
+
+90
+00:05:00,800 --> 00:05:02,566
+重要的一个是
+the important one
+
+91
+00:05:02,566 --> 00:05:03,699
+所有这些都很重要
+all of these are important
+
+92
+00:05:03,700 --> 00:05:06,466
+所以我建议查资料看看，比如这个
+and I recommend you read up on what this does for example
+
+93
+00:05:06,400 --> 00:05:12,100
+这将停止已隔离的程序
+ this specifically stops a program that has been seccomped
+
+94
+00:05:12,300 --> 00:05:13,933
+或
+from or
+
+95
+00:05:13,900 --> 00:05:16,100
+它使得当一个程序被seccomp
+it makes it so that when a program that has been seccomp
+
+96
+00:05:16,133 --> 00:05:18,499
+例如，执行一个SUID程序
+executes for example a set UID program
+
+97
+00:05:19,300 --> 00:05:28,200
+由于与LD_PRELOAD相似的原因，SUID特权不会生效
+the set UID privileges don't apply for reasons  that are very very similar to LD_PRELOAD with set UID programs
+
+98
+00:05:29,866 --> 00:05:33,966
+seccomp的功能主要看过滤器配置了什么
+this seccomp ah is what applies the filter right and
+
+99
+00:05:33,900 --> 00:05:39,100
+这是创建的过滤器的内存地址
+and ah this is the location of our filter that we created in memory and so forth
+
+100
+00:05:39,133 --> 00:05:42,599
+接下来是当我们执行execve时
+and the further thing is when we do the execve
+
+101
+00:05:43,466 --> 00:05:47,266
+我们马上就会被SIGSYS干掉
+we immediately get killed by SIGSYS
+
+102
+00:05:47,366 --> 00:05:51,799
+SIGSYS是一种信号
+SIGSYS is um a signal specifically
+
+103
+00:05:53,966 --> 00:05:55,199
+是31号信号
+it is signal 31
+
+104
+00:05:55,600 --> 00:06:01,900
+我们当然可以创建一个信号处理器来处理信号31
+we could of course create a signal handler to handle signal 31 and do stuff
+
+105
+00:06:02,600 --> 00:06:08,700
+但是你也可以设置seccomp，这样它就会杀死你的进程
+but you can also set up seccomp so that it just kill dash 9 your process 
+
+106
+00:06:09,300 --> 00:06:12,300
+当您触发一个不应该触发的系统调用时
+when you trigger a system call that you're not supposed to
+
+107
+00:06:14,200 --> 00:06:18,166
+这就是seccomp的基本原理
+and that is basically how seccomp works
+
+108
+00:06:18,700 --> 00:06:24,500
+还有一件事要讲，seccomp将由子进程继承
+one more thing let me show you that seccomp will be inherited by the child
+
+109
+00:06:24,566 --> 00:06:26,333
+如果我们执行strace cat /flag
+so if we strace cat /flag 
+
+110
+00:06:27,300 --> 00:06:32,100
+我们能看到它从文件中读入了flag
+we see that it reads in the flag from the file
+
+111
+00:06:32,500 --> 00:06:38,300
+我们可以对read系统调用进行seccomp
+we can actually seccomp with  read
+
+112
+00:06:38,333 --> 00:06:41,066
+这个程序实际上不会调用read，但是cat会
+so this program doesn't actually get read but cat does
+
+113
+00:06:41,066 --> 00:06:44,466
+因为cat是这个程序的子程序
+and since cat is a child of this program
+
+114
+00:06:45,600 --> 00:06:47,100
+我们会打断cat的执行
+ we will break cat
+
+115
+00:06:48,500 --> 00:06:51,466
+让我们编译它，运行它
+let's compile this let's run it
+
+116
+00:06:53,566 --> 00:06:56,266
+没输出flag，错误的系统调用。用strace看一下
+no cat, bad system call. let's strace it
+
+117
+00:06:56,800 --> 00:07:00,466
+如果你向上滚动，可以看到cat运行了
+and here this is cat now running right if you scroll up
+
+118
+00:07:01,800 --> 00:07:04,866
+这里的是seccomp的执行痕迹
+somewhere here's the seccomp
+
+119
+00:07:05,366 --> 00:07:07,499
+这里是execve cat，它执行成功了
+here's the execve cat and it worked
+
+120
+00:07:08,800 --> 00:07:10,566
+cat进程启动了
+this is cat running now
+
+121
+00:07:11,000 --> 00:07:13,333
+这里cat尝试调用read
+and this is cat trying to read
+
+122
+00:07:13,766 --> 00:07:15,466
+和被
+and being
+
+123
+00:07:15,466 --> 00:07:17,533
+哦，它还在初始化
+oh it's cat still initializing
+
+124
+00:07:17,533 --> 00:07:19,366
+尝试读入libc库
+trying to read in libc
+
+125
+00:07:19,366 --> 00:07:21,099
+加载器在读入libc
+the loader reading libc
+
+126
+00:07:21,200 --> 00:07:23,700
+然后这里进程就被kill掉了
+and that kills the process
+
+127
+00:07:24,666 --> 00:07:26,333
+非常令人兴奋的东西
+pretty exciting stuff
+
+128
+00:07:26,300 --> 00:07:30,500
+让我们来看看其中的含义
+let's move on to the implications
+
+129
+00:07:31,266 --> 00:07:33,966
+实际上，首先让我们看看seccomp的原理
+actually first let's move on to how the seccomp work
+
+130
+00:07:33,900 --> 00:07:45,100
+这是一个很有趣的功能，可以在内核中实现很多很酷的东西
+that's a very interesting piece of a functionality that enables a lot of cool stuff in the kernel and so forth
+
+131
+00:07:46,133 --> 00:07:48,299
+或者说很酷的安全功能
+or rather cool stuff in terms of security
+
+132
+00:07:48,300 --> 00:07:53,300
+seccomp使用了名为扩展伯克利包过滤器的内核功能
+seccomp works through a kernel functionality called Extended Berkeley Packet Filters
+
+133
+00:07:53,800 --> 00:08:01,100
+bpf实际上是一个架构，它是一个虚拟架构
+B P F is actually an architecture it is a virtual architecture
+
+134
+00:08:01,100 --> 00:08:06,200
+不像我了解的硬件BPF执行程序，还没被广泛运用
+that aren't like hardware BPF executors that I know over that aren't wide scale use
+
+135
+00:08:06,700 --> 00:08:13,300
+但在内核内有一个虚拟机，可以说是BPF的模拟器
+but inside the kernel there's a virtual machine like an emulator for BPF
+
+136
+00:08:13,866 --> 00:08:17,299
+它会执行这些过滤器
+that executes these filters
+
+137
+00:08:17,500 --> 00:08:20,000
+这些过滤器是由，比如seccomp库，建立的
+that are built up by for example those seccomp library calls 
+
+138
+00:08:20,100 --> 00:08:25,300
+我们调用这些库调用，他们建立了这个EBPF过滤器程序
+that we call those those library calls that built up this EBPF filter program 
+
+139
+00:08:25,300 --> 00:08:28,000
+它被加载到内核中
+that is loaded into the kernel
+
+140
+00:08:28,100 --> 00:08:34,600
+当内核接收到用户进程的调用时，它会过滤系统调用的参数
+and runs to filter system call arguments when the kernel receives a system call from user process
+
+141
+00:08:34,700 --> 00:08:36,966
+它们也被用在其他地方
+they're also used in other places
+
+142
+00:08:36,900 --> 00:08:45,500
+它们最初是被iptables用来过滤网络流量的
+they're originally created to filter um net traffic with iptables
+
+143
+00:08:46,466 --> 00:08:47,299
+而且
+and
+
+144
+00:08:48,333 --> 00:08:49,199
+从那时起
+since then
+
+145
+00:08:49,466 --> 00:08:52,299
+它们被用来过滤参数
+they've been obviously used to filter arguments
+
+146
+00:08:52,300 --> 00:08:53,466
+系统调用参数
+system call arguments
+
+147
+00:08:53,600 --> 00:08:58,500
+它们也被用来实现一些非常不可思议的事情
+they've also been um used to enable some pretty incredible
+
+148
+00:08:58,666 --> 00:09:00,999
+比如对操作系统执行过程的深度追踪
+in depths tracing of a of a system
+
+149
+00:09:01,000 --> 00:09:04,600
+如果你喜欢捣鼓操作系统
+if you're interested in playing around with your os
+
+150
+00:09:04,766 --> 00:09:06,199
+看看这个链接
+um check out this link
+
+151
+00:09:06,200 --> 00:09:14,900
+里面有一大堆使用eBPF的非常棒的实用程序
+it's a whole bunch of really awesome utilities that use extended Berkeley Packet Filters
+
+152
+00:09:15,366 --> 00:09:18,599
+以及一个叫做K探针的内核功能
+along with a kernel functionality called K Probe
+
+153
+00:09:18,900 --> 00:09:25,700
+它能hook到内核里和一些非常有趣的地方
+to basically hook into the kernel and a bunch of uh really interesting places
+
+154
+00:09:25,866 --> 00:09:27,666
+得到很多有趣的数据
+to get a lot of interesting data out
+
+155
+00:09:27,600 --> 00:09:33,100
+你可以做到，比如跟踪机器上每个进程的每个系统调用
+you can do stuff like trace every system call made by every single process on your machine
+
+156
+00:09:33,366 --> 00:09:37,933
+并告诉进程什么时候打开某些文件
+and tell when uh processes are opening certain files
+
+157
+00:09:38,000 --> 00:09:43,800
+你可以用这个来发现
+uh you can um use this to profile and
+
+158
+00:09:43,800 --> 00:09:48,200
+理解何时函数运行效率低，还能用来探索各种深奥的东西
+understand when functions are running slowly when you know all sorts of awesome stuff
+
+159
+00:09:48,366 --> 00:09:49,466
+看看那个链接
+check out that link
+
+160
+00:09:49,566 --> 00:09:51,099
+它和这门课完全无关
+it's completely irrelevant to this class
+
+161
+00:09:51,100 --> 00:09:55,200
+但是一套很有趣的工具
+but it is a very interesting set of tools
+
+162
+00:09:57,200 --> 00:10:00,866
+Secomp只是EBPF的另一种应用
+and Secomp is another application of EBPF
+
+163
+00:10:00,966 --> 00:10:01,733
+好了
+all right
+
+164
+00:10:01,733 --> 00:10:05,299
+这就是Secomp的入门速成课程
+that is the intro to Secomp a crash course
+
+165
+00:10:08,500 --> 00:10:12,900
+当然，如果你对更多的关于seccomp的东西感兴趣
+if you are interested in more seccomp stuff of course
+
+166
+00:10:13,066 --> 00:10:16,599
+这里我有最简单的seccomp程序
+here I had the minimum seccomp program
+
+167
+00:10:17,666 --> 00:10:20,499
+所有这些您都可以在手册页中查找
+all of this you can look up man pages for
+
+168
+00:10:20,500 --> 00:10:22,533
+如果你对添加什么规则感兴趣
+if you're interested in what rules you can add
+
+169
+00:10:22,966 --> 00:10:23,766
+哦
+oops
+
+170
+00:10:24,300 --> 00:10:29,366
+使用man，你就能读到所有的东西
+do man this and you can read all about it
+
+171
+00:10:29,366 --> 00:10:30,733
+你可以添加一大堆东西
+you can add a lot of stuff
+
+172
+00:10:31,300 --> 00:10:33,100
+一大堆setcomp功能
+a lot of functionality setcomp
+
+173
+00:10:34,266 --> 00:10:35,566
+在下一模块中
+in the next module
+
+174
+00:10:35,933 --> 00:10:37,566
+抱歉，在下一个视频中
+sorry in the next video
+
+175
+00:10:37,600 --> 00:10:42,300
+我们将讨论如何逃离这样的沙盒隔离
+we're going to talk about how we can escape from such jails
+
+176
+00:10:43,766 --> 00:10:44,566
+到时见
+see you then
+

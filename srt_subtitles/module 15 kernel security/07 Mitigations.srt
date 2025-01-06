@@ -1,0 +1,1025 @@
+1
+00:00:00,766 --> 00:00:02,333
+你好黑客
+hello hackers
+
+2
+00:00:02,700 --> 00:00:07,200
+我们来谈谈Linux内核中的保护机制
+let's talk about mitigations in the Linux kernel
+
+3
+00:00:07,500 --> 00:00:09,966
+当然，你已经在行动了
+of course you have already hit the ground running
+
+4
+00:00:09,966 --> 00:00:11,699
+你已经在利用内核了
+you are exploiting the kernel
+
+5
+00:00:12,100 --> 00:00:14,500
+但你会遇到这样的情况
+but you're running into situations where
+
+6
+00:00:15,333 --> 00:00:18,466
+该死，shellcode执行不了之类的
+shit you can't execute shellcode or etc etc etc
+
+7
+00:00:18,566 --> 00:00:18,999
+为什么
+why 
+
+8
+00:00:19,200 --> 00:00:20,166
+因为保护机制
+because mitigations 
+
+9
+00:00:20,233 --> 00:00:21,266
+我们为什么需要保护机制
+why do we need them
+
+10
+00:00:21,466 --> 00:00:27,466
+内核是一个非常受欢迎且价值很高的目标
+well the kernel is a very popular and very high value target
+
+11
+00:00:27,533 --> 00:00:29,233
+内核漏洞十分重要
+kernel exploits are truly important 
+
+12
+00:00:29,266 --> 00:00:32,499
+因为它们在某些时候依旧可用
+because they are usable in situations 
+
+13
+00:00:32,600 --> 00:00:36,300
+那时候，你可能只有有限的控制权
+where you might otherwise have limited control
+
+14
+00:00:36,333 --> 00:00:37,566
+举个例子
+so for example
+
+15
+00:00:37,800 --> 00:00:44,433
+内核漏洞通常作为漏洞利用链的一部分出现
+kernel exploits are very typically present as part of a typical exploit chain
+
+16
+00:00:44,700 --> 00:00:48,333
+例如，要获取手机的控制权
+to take over a mobile phone for example
+
+17
+00:00:48,700 --> 00:00:51,366
+以一种更通用的方式
+and in a kind of more pedestrian way 
+
+18
+00:00:51,466 --> 00:00:55,533
+这种方式存在于许多通用的计算设备中
+they're present in a lot of general purpose computing device 
+
+19
+00:00:55,800 --> 00:01:01,500
+利用漏洞来提升特权，还有所有你一直在做的事
+exploits to elevate privileges and all the stuff that you've been doing so far
+
+20
+00:01:02,766 --> 00:01:04,066
+所以这是一个很受欢迎的目标
+so it's a popular target 
+
+21
+00:01:04,166 --> 00:01:06,166
+而且它经常受到攻击
+and it gets attacked often
+
+22
+00:01:06,300 --> 00:01:11,066
+在Linux内核和其他内核中发现了许多bug
+a lot of bugs get found in the Linux kernel and other kernels
+
+23
+00:01:12,566 --> 00:01:16,099
+由于各种原因，甚至没全记录在CVE
+they don't all even get tracked at CVEs for various reasons
+
+24
+00:01:18,266 --> 00:01:20,099
+公开、不公开的，都有
+from shady to non shady
+
+25
+00:01:20,533 --> 00:01:24,133
+光CVE记录的，仅在2021年
+but even just as track by CVEs in 2021 alone
+
+26
+00:01:24,200 --> 00:01:26,633
+Linux内核就有149个漏洞
+there have been 149 vulnerabilities in the Linux kernel
+
+27
+00:01:26,666 --> 00:01:29,099
+所以当然内核会受到攻击
+so of course the kernel will get attacked
+
+28
+00:01:29,166 --> 00:01:31,266
+那么我们该怎么做呢
+so what do we do about that 
+
+29
+00:01:31,466 --> 00:01:32,266
+显然
+obviously
+
+30
+00:01:32,466 --> 00:01:35,999
+理想情况下，我们能有一个无懈可击的内核
+ideally we could have a non attackable kernel 
+
+31
+00:01:36,033 --> 00:01:36,799
+但事实并非如此
+but that's not the case
+
+32
+00:01:36,866 --> 00:01:37,466
+我们还没到那一步
+we're not there yet
+
+33
+00:01:37,533 --> 00:01:39,299
+很久都到不了
+we're not going to be there for a very long time
+
+34
+00:01:39,566 --> 00:01:42,666
+所以我们的选择是
+so what we do do is
+
+35
+00:01:43,766 --> 00:01:44,999
+保护机制
+mitigations
+
+36
+00:01:45,400 --> 00:01:49,000
+与你探索过的用户空间类似
+similar to the user space case where you have now explored 
+
+37
+00:01:49,166 --> 00:01:52,599
+有很多很多不同风格的保护机制
+tons and tons and tons and tons of different styles and mitigations
+
+38
+00:01:54,000 --> 00:01:57,066
+内核世界中也有同样的东西
+we have the same thing in the kernel world
+
+39
+00:01:57,300 --> 00:01:59,900
+差不多是这样，内核开发人员说，好吧
+basically kernel developers say okay
+
+40
+00:02:00,100 --> 00:02:02,766
+我们不可能杜绝所有的漏洞
+we're not going to be able to prevent all the vulnerabilities
+
+41
+00:02:02,866 --> 00:02:05,499
+这是不可能的
+it's just not possible
+
+42
+00:02:06,266 --> 00:02:07,833
+所以我们要让攻击者难以下手
+so let's make it hard for attackers 
+
+43
+00:02:07,900 --> 00:02:09,533
+难以获取控制权
+to actually achieve control 
+
+44
+00:02:09,800 --> 00:02:16,300
+即使他们发现了一个bug，也难以造成重大损害
+to actually do significant damage even if they find a bug
+
+45
+00:02:17,200 --> 00:02:19,666
+大多数保护机制都很熟悉
+and most of these mitigations look very familiar
+
+46
+00:02:20,366 --> 00:02:21,833
+内核有栈金丝雀
+the kernel has stack canaries
+
+47
+00:02:22,166 --> 00:02:23,599
+内核有ASLR
+the kernel has ASLR
+
+48
+00:02:23,866 --> 00:02:26,399
+启动时，会把内核放在一个随机的位置
+where at boot it will place the kernel at a random location
+
+49
+00:02:26,566 --> 00:02:30,833
+内核有NX
+the kernel has NX 
+
+50
+00:02:31,500 --> 00:02:38,566
+与在用户空间遇到这些保护机制的体验类似
+in a similar way to your user space experience of running into these mitigations as well
+
+51
+00:02:38,633 --> 00:02:42,966
+如果你对内核的安全态势哲学感兴趣的话
+if you're interested in kind of the kernel's security posture philosophy
+
+52
+00:02:43,200 --> 00:02:44,566
+看看这个链接
+take a look at this link
+
+53
+00:02:45,266 --> 00:02:46,733
+它是一个有趣的阅读材料
+it's an interesting read
+
+54
+00:02:46,866 --> 00:02:47,599
+实际上
+and actually 
+
+55
+00:02:47,733 --> 00:02:52,266
+若对内核安全感兴趣，内核文档是个很好的选择
+the kernel documentation in general is pretty good if you're interested in kernel security 
+
+56
+00:02:52,566 --> 00:02:56,166
+总之
+but the TLDR is that
+
+57
+00:02:56,600 --> 00:02:59,266
+内核有很多不同的保护机制
+the kernel has a lot of various mitigations
+
+58
+00:02:59,400 --> 00:03:00,200
+当然
+but of course
+
+59
+00:03:00,466 --> 00:03:04,166
+在本课程中，你已经花了很多时间来绕过保护机制
+you have spent much of this class bypassing mitigations
+
+60
+00:03:04,233 --> 00:03:05,733
+你绕过过
+so you've bypassed
+
+61
+00:03:05,900 --> 00:03:08,700
+栈金丝雀，通过泄露它，或跳过它
+stack canaries by leaking them or jumping over them 
+
+62
+00:03:08,966 --> 00:03:11,866
+或做一些其他奇特的事情
+or doing a number of other exotic things
+
+63
+00:03:11,966 --> 00:03:14,199
+你在用户空间，绕过过ASLR
+you've bypassed ASLR in user space 
+
+64
+00:03:14,400 --> 00:03:19,266
+通过泄漏库基地址
+by leaking library based addresses 
+
+65
+00:03:19,433 --> 00:03:21,633
+程序基地址等等
+program based addresses etc etc etc 
+
+66
+00:03:21,800 --> 00:03:22,666
+你泄露一个指针
+you leak a pointer 
+
+67
+00:03:22,733 --> 00:03:24,499
+就绕过了ASLR
+you bypass ASLR
+
+68
+00:03:26,200 --> 00:03:27,300
+在内核中也是一样的
+and it's the same in the kernel
+
+69
+00:03:27,400 --> 00:03:28,833
+你泄漏一个内核指针
+you leak a kernel pointer 
+
+70
+00:03:28,900 --> 00:03:31,000
+就能找出内核的基址
+you can figure out where the kernel is based
+
+71
+00:03:31,400 --> 00:03:32,100
+基于此
+and from there 
+
+72
+00:03:32,200 --> 00:03:33,166
+你可以算出来
+you can figure out 
+
+73
+00:03:33,166 --> 00:03:35,066
+你想调用的函数在哪里
+where whatever functions you want to call
+
+74
+00:03:35,166 --> 00:03:37,999
+你想要调用的gadget在哪里
+whatever gadgets you want to call exist 
+
+75
+00:03:38,166 --> 00:03:39,799
+当然，说到gadget
+speaking of gadgets of course
+
+76
+00:03:40,600 --> 00:03:45,800
+在内核中执行shellcode总会遇到麻烦
+you have trouble executing shellcode in the kernel most of the time
+
+77
+00:03:45,933 --> 00:03:49,466
+因为大多数数据区在内核中是不可执行的
+because most data regions are non executed in the kernel
+
+78
+00:03:49,566 --> 00:03:51,999
+当然你知道如何绕过它
+but of course you'll also know how to bypass that
+
+79
+00:03:52,200 --> 00:03:54,533
+例如用ROP
+for example with return oriented programming
+
+80
+00:03:54,966 --> 00:03:55,766
+所以
+so
+
+81
+00:03:56,900 --> 00:03:59,933
+内核里这个猫鼠游戏一直在进行
+the kernel of course has this cat and mouse game etc etc 
+
+82
+00:03:59,966 --> 00:04:02,833
+一个疯狂的解决方案即将到来
+one crazy solution that's upcoming 
+
+83
+00:04:02,900 --> 00:04:05,366
+目前还没有得到广泛应用
+not really widely deployed right now
+
+84
+00:04:05,733 --> 00:04:09,499
+是基于函数颗粒度的KASLR
+is this concept of function granular KASLR
+
+85
+00:04:09,933 --> 00:04:13,999
+思路是，不光是加载内核到一个特定的地址了
+the idea is aside from just loading the kernel at a specific address 
+
+86
+00:04:14,066 --> 00:04:18,966
+会把内核中所有函数洗个牌
+you also have all of the functions in the kernel shuffled around
+
+87
+00:04:20,700 --> 00:04:23,700
+这是一个有趣的即将到来的保护机制
+it's an interesting upcoming mitigation
+
+88
+00:04:25,400 --> 00:04:30,733
+这将防止你通过泄露地址来绕过KASLR
+that will prevent you bypassing KASLR just by leaking an address
+
+89
+00:04:30,800 --> 00:04:35,000
+但你还是能从泄露的地址中发现很多东西
+but there's still a lot of things you find out from leaking an address
+
+90
+00:04:35,333 --> 00:04:39,933
+在实践中，函数粒度KASLR并不是完整的解决方案
+in practice function granular KASLR is not the full solution 
+
+91
+00:04:40,000 --> 00:04:48,400
+你可以在这篇文章中阅读更多关于这个概念的内容
+you can read more about the concept in this article that's linked here of the 
+
+92
+00:04:49,600 --> 00:04:50,600
+如果我没记错的话
+if I remember correctly
+
+93
+00:04:50,666 --> 00:04:53,733
+我在这里链接了建议的补丁
+i linked here the proposed patch for example 
+
+94
+00:04:53,866 --> 00:04:59,333
+但这是一个部分解决方案
+but it's kind of a this partial solution
+
+95
+00:04:59,366 --> 00:05:05,099
+会有FGKASLR的绕过方法出现
+there will be FGKASLR bypasses 
+
+96
+00:05:05,533 --> 00:05:08,066
+这只是战争中防守方的一轮齐射
+it's just another volley in this war
+
+97
+00:05:08,766 --> 00:05:11,999
+还有一些内核专属的保护机制
+there is also some very very kernel specific mitigation
+
+98
+00:05:12,100 --> 00:05:14,033
+因为内核具有非常特殊的安全态势
+because the kernel has a very special security posture
+
+99
+00:05:14,133 --> 00:05:18,733
+因为它在所有用户空间下面
+because it lives kind of under all the user land and so forth
+
+100
+00:05:20,900 --> 00:05:22,300
+坐落在0环
+nestled in ring 0
+
+101
+00:05:23,466 --> 00:05:25,999
+许多漏洞利用攻击内核的方式
+the way that many exploits work when they're attacking the kernel 
+
+102
+00:05:26,100 --> 00:05:33,933
+是骗内核，去访问或执行，用户空间的内存数据
+is they trick the kernel into accessing or executing memory that's actually in user space
+
+103
+00:05:34,400 --> 00:05:39,200
+对此有两种保护机制
+and there are two mitigations that were created to prevent this from happening
+
+104
+00:05:39,300 --> 00:05:40,966
+其中一个被称为SMEP
+one of them is called SMEP
+
+105
+00:05:41,066 --> 00:05:43,666
+管理模式执行保护（Intel文档上M是Mode）
+Supervisor Memory Execution Protection
+
+106
+00:05:43,800 --> 00:05:48,266
+它可以防止内核代码跳转到用户空间代码
+it prevents kernel code from jumping to user space code
+
+107
+00:05:48,433 --> 00:05:49,766
+你在内核漏洞利用时
+as you've been exploiting the kernel 
+
+108
+00:05:49,800 --> 00:05:53,400
+你可能会想，如果我在这里溢出，修改返回地址
+you might think oh if I overflowed the return address here
+
+109
+00:05:53,400 --> 00:05:59,600
+就能返回到用户空间的shellcode中
+I can just have it return into my shellcode in my user space application
+
+110
+00:05:59,733 --> 00:06:01,399
+现在这样不行了
+that is no longer the case
+
+111
+00:06:01,466 --> 00:06:03,899
+以前，很长一段时间，可以这样
+it used to be the case for a long time
+
+112
+00:06:04,100 --> 00:06:05,300
+但是SMEP出来了
+but SMEP came out
+
+113
+00:06:06,533 --> 00:06:07,399
+在过去的
+in the last
+
+114
+00:06:09,566 --> 00:06:10,899
+我应该查一下
+I should have looked this up
+
+115
+00:06:11,100 --> 00:06:12,066
+SMEP是什么时候出来
+when SMEP came out 
+
+116
+00:06:12,166 --> 00:06:15,033
+假设过去5年里，直接跳到用户空间很流行
+but let's say in the last 5 years it got very popular 
+
+117
+00:06:15,133 --> 00:06:16,399
+也许是8年
+maybe 8 years 
+
+118
+00:06:16,666 --> 00:06:17,766
+SMEP出来了
+SMEP came out
+
+119
+00:06:17,900 --> 00:06:21,900
+它防止了内核代码跳转到用户空间
+and it prevents kernel code from jumping to user space
+
+120
+00:06:22,500 --> 00:06:27,600
+前提，它不是通过syscall对应的sysret等正常途径
+without going through the correct return from a syscall etc
+
+121
+00:06:30,366 --> 00:06:40,033
+这关闭了一个Linux内核的攻击向量
+so that closed one exploitation vector let's say of the Linux kernel
+
+122
+00:06:40,333 --> 00:06:43,199
+还有第二个问题
+then there's a second problem of
+
+123
+00:06:43,466 --> 00:06:47,933
+骗内核，不正确地访问用户空间内存
+exploits fooling the kernel into accessing user space memory improperly
+
+124
+00:06:48,933 --> 00:06:52,499
+有人提出了另一种技术来保护它
+and another technique was proposed to protect that
+
+125
+00:06:52,966 --> 00:06:59,999
+管理模式访问保护（Intel上M是Mode）
+Supervisor Memory Access Prevention
+
+126
+00:07:01,066 --> 00:07:07,999
+总之，SMAP防止内核空间访问用户空间中的内存
+anyways SMAP prevents kernel space from accessing memory that's in user space 
+
+127
+00:07:08,100 --> 00:07:10,800
+除非在rflags寄存器中设置了某个标志
+unless a flag in the rflags register is set
+
+128
+00:07:10,866 --> 00:07:14,133
+当然，你可以设置rflags寄存器
+now of course you can set the rflags register
+
+129
+00:07:14,300 --> 00:07:20,233
+在漏洞利用程序中使用stac命令
+using the STAC command in your exploit
+
+130
+00:07:20,333 --> 00:07:22,699
+但这时你已经有代码执行了
+but at that point you already have execution
+
+131
+00:07:22,766 --> 00:07:24,766
+大概率不需要访问用户空间内存
+you probably don't need to access user space memory
+
+132
+00:07:27,133 --> 00:07:29,133
+但它能预防的是
+but what it does prevent is 
+
+133
+00:07:29,400 --> 00:07:30,000
+假设
+let's say 
+
+134
+00:07:30,233 --> 00:07:35,999
+处理ioctl传过来的对象时，不注意
+an uncareful handling of a structure that's passed through an ioctl
+
+135
+00:07:36,300 --> 00:07:38,633
+它包含了用户空间的指针
+containing a user space pointer 
+
+136
+00:07:38,766 --> 00:07:42,533
+导致直接从内核进入用户空间
+causing the kernel to go directly into that into user space
+
+137
+00:07:42,666 --> 00:07:45,166
+为什么要用SMAP和SMEP去分开它
+now why is SMEP and SMAP separated it
+
+138
+00:07:45,200 --> 00:07:46,666
+为什么不直接，
+why can't I just say you know what screw it 
+
+139
+00:07:46,766 --> 00:07:47,166
+直接
+you just 
+
+140
+00:07:47,266 --> 00:07:49,133
+当你在内核时，用户空间直接当作不存在
+user space doesn't exist when you're in the kernel
+
+141
+00:07:49,233 --> 00:07:50,099
+这是不现实的
+well that's not realistic
+
+142
+00:07:50,100 --> 00:07:53,333
+你需要系统调用传入的参数
+you need to be able to pass in arguments through system calls
+
+143
+00:07:54,133 --> 00:07:56,566
+例如要open的路径参数
+for example the path arguments to open
+
+144
+00:07:57,700 --> 00:08:02,200
+或其他系统调用的各种小结构体参数
+or the various you know small structs to other system calls
+
+145
+00:08:03,400 --> 00:08:06,800
+所以内核需要能够访问用户空间中的内存
+and so the kernel needs to be able to access memory in user space
+
+146
+00:08:06,900 --> 00:08:13,900
+但它是通过使用特定的api来实现的
+but it does that by using specific APIs to do that 
+
+147
+00:08:14,033 --> 00:08:16,666
+例如copy_from_user和copy_to_user
+such as copy_from_user and copy_to_user
+
+148
+00:08:17,066 --> 00:08:18,666
+它们会设置正确的标志
+which sets the right flag
+
+149
+00:08:19,000 --> 00:08:21,733
+rflags寄存器中的AC标志
+the AC flag in the rflags register
+
+150
+00:08:21,933 --> 00:08:22,733
+访问内存
+does the access 
+
+151
+00:08:22,733 --> 00:08:24,499
+然后清除AC标志
+and then clears it again
+
+152
+00:08:24,900 --> 00:08:29,200
+简单高效
+simple mitigation big big Protection 
+
+153
+00:08:29,300 --> 00:08:29,700
+现在
+now
+
+154
+00:08:30,733 --> 00:08:32,833
+在该模块的所有题目中
+in all of the challenges in these modules
+
+155
+00:08:32,866 --> 00:08:34,199
+SMEP和SMAP都打开了
+SMEP and SMAP are both on
+
+156
+00:08:34,333 --> 00:08:35,133
+为什么
+why
+
+157
+00:08:35,900 --> 00:08:36,966
+因为现在是2021年
+because it's 2021
+
+158
+00:08:36,966 --> 00:08:39,566
+我们不会浪费你的智商
+we're not going to insult your intelligence
+
+159
+00:08:39,800 --> 00:08:47,266
+让你去利用现实中没有的漏洞
+by having you exploit things that do not exist as problems in real modern deployments anymore
+
+160
+00:08:47,400 --> 00:08:50,400
+当然，有老的系统没有这些保护机制
+of course there're legacy systems that don't have these protections
+
+161
+00:08:50,533 --> 00:08:52,299
+但在这个模块中
+but in this module
+
+162
+00:08:52,566 --> 00:08:54,999
+我们假设至少这些保护是存在的
+we're assuming that at least these protections exist
+
+163
+00:08:55,366 --> 00:08:57,666
+在这个模块中，KASLR时有时无
+KASLR kind of hit and miss in this module
+
+164
+00:08:57,766 --> 00:08:59,366
+有的题开了
+some of our challenges have it on
+
+165
+00:08:59,466 --> 00:09:00,566
+有的题关了
+some of them have it off
+
+166
+00:09:00,966 --> 00:09:03,499
+但SMEP和SMAP都开了
+but SMEP and SMAP are all on
+
+167
+00:09:04,733 --> 00:09:05,533
+当然
+but of course
+
+168
+00:09:05,766 --> 00:09:07,199
+所有这些保护机制
+all of these mitigations
+
+169
+00:09:07,500 --> 00:09:10,200
+内核漏洞利用，和所有漏洞利用一样，是一门武术
+kernel exploitation like all exploitation is a martial art
+
+170
+00:09:10,300 --> 00:09:12,800
+是攻击者和防御者之间的一场战斗
+it's a slow battle between attackers and defenders
+
+171
+00:09:12,866 --> 00:09:14,599
+有格挡，有击打
+there's blocking there's striking
+
+172
+00:09:14,733 --> 00:09:16,499
+这一切都非常令人兴奋
+it's all very exciting
+
+173
+00:09:16,733 --> 00:09:19,399
+有新技术一直出现
+and new techniques are developed all the time
+
+174
+00:09:19,466 --> 00:09:21,799
+无论是在进攻端还是防守端
+both on the offensive and the defensive side
+
+175
+00:09:22,000 --> 00:09:26,100
+进攻方，针对SMEP的一个回应是
+on the offensive side one response to SMEP
+
+176
+00:09:26,466 --> 00:09:31,399
+例如，在Linux内核中使用run_cmd函数
+for example is the use of the run_cmd function in the Linux kernel
+
+177
+00:09:31,766 --> 00:09:34,133
+Linux内核中的run_cmd只接受一个字符串参数
+run_cmd in the Linux kernel just takes a string
+
+178
+00:09:34,666 --> 00:09:35,933
+用空格分隔
+splits it by spaces 
+
+179
+00:09:36,200 --> 00:09:38,766
+它以root身份在用户空间执行给定程序
+and runs it as root in user space
+
+180
+00:09:39,500 --> 00:09:41,566
+显然这是一个非常强大的手段
+obviously that's a very powerful primitive
+
+181
+00:09:41,800 --> 00:09:42,833
+它是一个内核函数
+it's a kernel function
+
+182
+00:09:43,100 --> 00:09:45,033
+如果你有内核中的代码执行
+so if you have kernel code execution
+
+183
+00:09:46,366 --> 00:09:48,599
+并且你能用可控参数调用一个函数
+and you can call a function with a controlled argument
+
+184
+00:09:48,933 --> 00:09:51,733
+那run_cmd就是你的朋友
+boom run_cmd is your friend
+
+185
+00:09:51,866 --> 00:09:53,866
+你不必主动返回到用户空间
+you don't have to return to userspace
+
+186
+00:09:54,566 --> 00:09:56,299
+你不需要做很多事情
+you don't have to do a lot of things
+
+187
+00:09:56,366 --> 00:09:58,633
+你可以直接以root身份运行命令
+you can just run a command as root 
+
+188
+00:09:58,733 --> 00:10:01,799
+如果你对它的工作原理感兴趣的话
+if you're interested in how that actually works under the hood
+
+189
+00:10:03,466 --> 00:10:05,733
+你可以在Bootlin上阅读源代码
+you can look up the source code on Bootlin
+
+190
+00:10:05,733 --> 00:10:10,099
+它是了解内核概念的极好的资源
+it's an awesome resource for looking up kernel concepts
+
+191
+00:10:10,500 --> 00:10:13,166
+这是最新版本源码的链接
+that's a link to the latest version 
+
+192
+00:10:13,566 --> 00:10:17,299
+我记得pwncollege现在用的版本是5.4
+I think the version that we're running in pwn College right now is 5.4
+
+193
+00:10:17,500 --> 00:10:19,366
+但这是非常相似的
+but it's very analogous 
+
+194
+00:10:19,533 --> 00:10:23,666
+感兴趣的话，你可以在bootlin上查找对应的版本
+and you can actually change Bootlin to look at the correct version that you're interested in 
+
+195
+00:10:23,800 --> 00:10:29,333
+这只是一种绕过方法
+so this is just one kind of bypass 
+
+196
+00:10:29,433 --> 00:10:31,399
+这是一个很简单的绕过方法
+I mean it's very cheap as a bypass
+
+197
+00:10:31,566 --> 00:10:33,266
+它就是运行命令
+it just you know runs commands 
+
+198
+00:10:33,400 --> 00:10:35,066
+但它是可行的
+but it's quite viable
+
+199
+00:10:35,133 --> 00:10:41,499
+所有要先跳回用户空间，再做复杂的ROP的利用手段
+so all of these exploits that used to have to jump back into user space code or do complex ROP
+
+200
+00:10:41,700 --> 00:10:45,966
+大概率都可直接调用run_cmd
+could just potentially call run_cmd
+
+201
+00:10:46,933 --> 00:10:48,099
+显然还有其他的
+obviously there are other
+
+202
+00:10:48,133 --> 00:10:50,299
+高级的内核漏洞利用技术
+advanced kernel exploitation techniques
+
+203
+00:10:51,300 --> 00:10:52,400
+但在大多数情况下
+but for the most part
+
+204
+00:10:53,666 --> 00:10:57,566
+对于这个模块，你只要了解掌握基础知识
+for this module you are really mastering the basics
+
+205
+00:10:57,733 --> 00:11:01,166
+能在内核中成功地进行操作。就行
+to be able to operate in the kernel successfully
+

@@ -1,0 +1,1850 @@
+1
+00:00:00,900 --> 00:00:01,666
+在这个模块中
+in this module
+
+2
+00:00:01,800 --> 00:00:04,100
+我们再看一下动态分配器
+we're going to take another look at the dynamic allocator
+
+3
+00:00:04,100 --> 00:00:07,400
+特别是 tcache 以外的事情
+specifically everything that happens outside of tcache
+
+4
+00:00:07,733 --> 00:00:09,433
+现在我们已经花了相当多的时间
+now we've spent a decent amount of time 
+
+5
+00:00:09,600 --> 00:00:11,600
+谈论 tcache 和它的工作原理
+talking about tcache and how it works
+
+6
+00:00:11,700 --> 00:00:17,100
+tcache 由许多 bin 组成，bin中chunk大小固定
+we've said that tcache consists of a number of fixed size bins
+
+7
+00:00:17,700 --> 00:00:23,400
+这些 bin 里能容纳的最大chunk， 大小为1032B
+and these bins accommodate chunks up to a size about 1032 bytes
+
+8
+00:00:24,700 --> 00:00:30,700
+每个 bin 最多能装 7 个 chunk
+each of these bins can hold up to 7 chunks of its specific size
+
+9
+00:00:31,333 --> 00:00:34,933
+这些 chunk 存储在一个单链表中 
+and these chunks are stored in a singly linked list
+
+10
+00:00:35,300 --> 00:00:40,866
+单链表中next指针被safe-linking机制保护着
+the singly linked list's next pointers are protected via a mechanism referred to as safe linking 
+
+11
+00:00:41,033 --> 00:00:44,566
+ safe-linking 将其与随机数异或
+and safe linking uses XOR with some random bytes
+
+12
+00:00:44,733 --> 00:00:48,299
+使攻击者看不出next指针
+ to obscure the next pointer from an attacker
+
+13
+00:00:49,700 --> 00:00:52,466
+在谈论 tcache chunk 元数据时
+when talking about the tcache chunk metadata
+
+14
+00:00:52,466 --> 00:00:54,866
+我们看到了一个类似这个的结构体
+we saw a struct that looked similar to this
+
+15
+00:00:54,866 --> 00:00:55,999
+chunk 空闲时
+when the chunk was free
+
+16
+00:00:56,500 --> 00:00:58,200
+它由若干值组成，分别是
+it consisted of a number of values of 
+
+17
+00:00:58,400 --> 00:01:01,700
+内存中前一个chunk的大小，当前chunk的大小
+previous size, the current chunk size
+
+18
+00:01:01,933 --> 00:01:07,366
+注意size的最后3位
+note that the least significant bits of the size value
+
+19
+00:01:07,500 --> 00:01:11,000
+是三个标志位，A M和P
+have three flag values A M and P
+
+20
+00:01:11,700 --> 00:01:16,200
+A表示 chunk 是否是从主 arena 外分配
+A indicates whether or not the chunk was allocating from outside of the main arena
+
+21
+00:01:17,100 --> 00:01:20,766
+M表示 chunk 是否是用mmap申请的
+M indicates whether or not the chunk was mmapped
+
+22
+00:01:20,966 --> 00:01:23,699
+如果是1，表示是一个非常大的内存块
+this would occur for very large allocations
+
+23
+00:01:23,700 --> 00:01:26,700
+这种情况标准堆机制没有意义
+where kind of the standard heap mechanisms don't make sense
+
+24
+00:01:27,300 --> 00:01:31,700
+P表示前一个 chunk 此时是否在使用
+P indicates whether or not the previous chunk is currently free or in use
+
+25
+00:01:31,800 --> 00:01:36,333
+它被成为 prev_in_use 标志
+it is referred to as the previous in use flag
+
+26
+00:01:37,100 --> 00:01:40,000
+在利用 tcache 时
+now when we are doing tcache exploitation
+
+27
+00:01:40,300 --> 00:01:44,300
+我们主要是利用后两个值
+the primary metadata values that we messed around with were the next two
+
+28
+00:01:44,700 --> 00:01:49,500
+next指针，它正好在分配地址（分配地址：malloc返回值）
+the next pointer which is located at the address of the allocation
+
+29
+00:01:50,100 --> 00:01:52,100
+和 key 
+and the key value
+
+30
+00:01:52,300 --> 00:01:56,200
+key 本身并不是很有用
+now the key value itself was not very useful
+
+31
+00:01:56,300 --> 00:01:58,466
+但是，当没有启用 safe-linking 时
+however when safelinking is not enabled
+
+32
+00:01:58,600 --> 00:02:03,100
+这个 key 是一个指向tcache_perthread_struct的指针
+this key value is a pointer to the tcache_perthread_struct
+
+33
+00:02:03,200 --> 00:02:05,066
+通过它能提取一些信息
+and that has some implications
+
+34
+00:02:05,100 --> 00:02:07,066
+然而，现在的libc中
+however on a modern libc
+
+35
+00:02:07,400 --> 00:02:11,200
+key 是一些随机的字节
+we have the key value which is just some randomized bytes
+
+36
+00:02:11,800 --> 00:02:14,700
+不能为攻击提供太多信息
+and that doesn't provide an attack with very much information
+
+37
+00:02:15,000 --> 00:02:19,000
+所以我们主要用的是被加密的next指针
+so what we primarily interacted with was this obscured next pointer
+
+38
+00:02:20,900 --> 00:02:26,300
+tcache 使用单链表来管理空闲 chunk 
+so we've said that the tcache uses a singly linked list to manage free chunks
+
+39
+00:02:26,500 --> 00:02:29,000
+它通过两个数组来完成
+and it does this via two arrays
+
+40
+00:02:29,533 --> 00:02:30,666
+在计数数组中
+in array of counts
+
+41
+00:02:30,833 --> 00:02:34,699
+每个整数表示对应 bin 中有多少 chunk
+which is just an integer for how many entries are in a particular bin's size
+
+42
+00:02:35,400 --> 00:02:37,800
+在头指针数组中
+and in array of head pointers
+
+43
+00:02:37,800 --> 00:02:43,800
+这些头指针指向空闲chunk的分配地址（malloc返回值）
+and these head pointers point to the allocation address of the free chunk
+
+44
+00:02:44,200 --> 00:02:48,100
+空闲chunk 的分配地址处是next指针
+at the allocation address of a free chunk is a next pointer
+
+45
+00:02:48,100 --> 00:02:55,900
+next指向先前释放的，对应bin大小的，chunk的分配地址
+and that next pointer points to the allocation address of the previously freed chunk of that bin size
+
+46
+00:02:56,400 --> 00:03:03,300
+tcache_perthread_struct有固定个bin（不同bin，chunk大小不同）
+now the tcache_perthread_struct only accommodates a certain number of bin sizes
+
+47
+00:03:04,300 --> 00:03:05,400
+类似的
+similarly
+
+48
+00:03:05,800 --> 00:03:11,300
+bin链表长度有最大值
+the list for a particular bin size has a maximum size
+
+49
+00:03:11,300 --> 00:03:18,200
+对于 tcache ，每个链表最多有7个 chunk 
+for tcache each of these lists can only be up to 7 chunks in length
+
+50
+00:03:18,566 --> 00:03:21,566
+那么当我释放第8个 chunk 会发生什么呢
+so what happens when I free the 8th chunk
+
+51
+00:03:22,333 --> 00:03:24,133
+堆会怎么做
+what is the heap going to do
+
+52
+00:03:25,266 --> 00:03:27,333
+我们看一下这个流程图
+let's going to follow this flow chart here
+
+53
+00:03:27,733 --> 00:03:28,466
+所以
+and so
+
+54
+00:03:28,600 --> 00:03:32,300
+如果能放到 tcache，我们就把它放到 tcache
+if we can put it in tcache we put it in tcache
+
+55
+00:03:33,000 --> 00:03:34,733
+如果不能放到 tcache 
+if it can't go in tcache
+
+56
+00:03:34,733 --> 00:03:37,599
+就把它放到 fast bin 中
+it's going to go into something called fast bins
+
+57
+00:03:38,000 --> 00:03:41,600
+下节课我们会更详细地讨论 fast bin
+and we'll talk about fast bins in greater detail in the next lecture
+
+58
+00:03:43,200 --> 00:03:44,800
+如果放不进 fast bin
+if it can't go into fast bins
+
+59
+00:03:44,800 --> 00:03:50,900
+那么动态分配器将检查M位是否设置
+then the dynamic allocator is going to check and see if the M bit is set
+
+60
+00:03:50,900 --> 00:03:57,000
+M标志位是 chunk size倒数第二最低有效位
+remember the M bit is a flag value in the chunk's size least significant bits
+
+61
+00:03:58,066 --> 00:03:59,466
+如果M标志位是1
+if the M bit is set
+
+62
+00:03:59,466 --> 00:04:01,933
+表示它是通过mmap创建的
+then the allocation was created via mmap
+
+63
+00:04:02,100 --> 00:04:06,600
+所以要释放它，就要调用munmap
+and so to clean this up it would call munmap 
+
+64
+00:04:06,700 --> 00:04:10,466
+如果它不能进入 tcache 
+now if it's something that is not able to go into tcache 
+
+65
+00:04:10,633 --> 00:04:12,799
+也不能进入fast bin
+and it's not able to go into this fast bins
+
+66
+00:04:13,000 --> 00:04:16,000
+那么就会放到 unsorted bin 中
+then it's going to end up in this unsorted bin
+
+67
+00:04:16,266 --> 00:04:18,966
+ unsorted bin，正如它的名字
+the unsorted bin is exactly what it sounds like
+
+68
+00:04:19,000 --> 00:04:21,733
+它就是一个未排序列表
+it is just an unsorted list 
+
+69
+00:04:22,033 --> 00:04:26,866
+所有无法放入tcache或fast bin的，都会放到这里
+where all chunks go if they don't fit into tcache or fast bins
+
+70
+00:04:27,100 --> 00:04:30,100
+流程图中，还有一个值得注意的是
+the only other thing worth noting here in this flowchart 
+
+71
+00:04:30,166 --> 00:04:33,099
+要是释放的 chunk 特别大呢
+is that if the freed chunk is exceptionally large
+
+72
+00:04:33,133 --> 00:04:36,499
+在这种情况下，要是大于65KB
+in this case larger than 65 kilobytes
+
+73
+00:04:37,700 --> 00:04:41,533
+动态分配器就会做一些清理和维护工作
+then the dynamic allocator will do some like clean up and maintenance
+
+74
+00:04:41,766 --> 00:04:45,399
+它会清理、合并在fast bin中的 chunk
+ where it's going to clear and consolidate the fast bins
+
+75
+00:04:45,700 --> 00:04:50,200
+下节课我们会更详细地探讨fast bin
+again we'll explore fast bins in greater detail in the next lecture
+
+76
+00:04:50,300 --> 00:04:52,200
+但值得在这张幻灯片上提一提
+but it's worth mentioning on this slide
+
+77
+00:04:52,200 --> 00:04:53,866
+这样才会有一个完整的全局视图
+so that you have a complete picture
+
+78
+00:04:55,700 --> 00:04:57,166
+那么malloc又是什么样呢
+so what about malloc
+
+79
+00:04:57,466 --> 00:04:57,766
+好吧
+well
+
+80
+00:04:57,766 --> 00:05:00,933
+malloc遵循着和此处非常相似的操作顺序
+malloc follows a very similar order of operations here
+
+81
+00:05:01,600 --> 00:05:05,800
+只不过不是把chunk放到这些 bin 里
+except instead of trying to put the chunk into one of these bins
+
+82
+00:05:05,866 --> 00:05:07,799
+而是从bin里取出chunk
+it's going to try and retrieve them
+
+83
+00:05:08,700 --> 00:05:10,666
+既然是要从里面取
+and since we're trying to retrieve something
+
+84
+00:05:11,000 --> 00:05:14,000
+我们可能不得不做一些排序
+we may end up having to do some sorting or figuring stuff out
+
+85
+00:05:14,400 --> 00:05:16,466
+我们来看看这个流程图
+so let's follow this flow chart here
+
+86
+00:05:17,200 --> 00:05:18,766
+首先
+well first
+
+87
+00:05:19,700 --> 00:05:20,633
+当调用malloc
+if we malloc
+
+88
+00:05:20,766 --> 00:05:22,366
+先尝试能否从 tcache 中取
+can we get it from the tcache
+
+89
+00:05:22,366 --> 00:05:24,366
+如果可以，那非常好
+if we can,  that's great
+
+90
+00:05:24,366 --> 00:05:25,233
+我们就得偿所愿了
+we got it
+
+91
+00:05:25,800 --> 00:05:28,100
+但要是不行
+but if we can't get it from the tcache
+
+92
+00:05:28,100 --> 00:05:30,600
+我们就去查看 fast bin
+then we're going to check this thing called fast bins
+
+93
+00:05:32,200 --> 00:05:35,100
+如果从 fast bin里也取不出，且请求大小很小
+if it can't come from fast bins and it's small
+
+94
+00:05:35,666 --> 00:05:39,333
+那我们就去查看 small bin
+then we're going to look in the small bins category
+
+95
+00:05:39,800 --> 00:05:43,300
+small bin 将在下一讲中更详细地讨论
+small bins will be discussed in greater detail in the next lecture
+
+96
+00:05:44,100 --> 00:05:47,166
+但如果申请大小不在small bin的范围
+but what if it's too big for small bins
+
+97
+00:05:47,166 --> 00:05:48,599
+（口误）
+it can't go in tcache
+
+98
+00:05:48,800 --> 00:05:50,366
+在 tcache 中找不到想要的chunk
+we can't find what we want in tcache
+
+99
+00:05:50,366 --> 00:05:52,299
+在 fast bin 里也找不到
+we can't find what we want in fast bins
+
+100
+00:05:52,300 --> 00:05:55,600
+而且想要的chunk太大了，肯定不在small bin里
+and it's too big to possibly be in small bins
+
+101
+00:05:56,400 --> 00:05:57,466
+如果是这样的话
+well if that's the case
+
+102
+00:05:57,466 --> 00:05:59,666
+那么就要清理 fast bin 了
+then we're going to clean up fast bins
+
+103
+00:06:00,100 --> 00:06:03,966
+之后要查看整理 unsorted bin
+and then we're going to start going through that unsorted bin pile
+
+104
+00:06:04,166 --> 00:06:08,799
+记住，free的时候 unsorted bin 是
+ right remember the unsorted bin is what happened here when we free
+
+105
+00:06:09,000 --> 00:06:12,500
+所有不能被缓存进 tcache 和 fast bin的chunk
+everything that couldn't be cached in tcache or fast bins
+
+106
+00:06:12,566 --> 00:06:14,566
+的去处
+went into this unsorted bin
+
+107
+00:06:15,766 --> 00:06:16,566
+现在
+now
+
+108
+00:06:16,933 --> 00:06:17,966
+当malloc时
+when we malloc
+
+109
+00:06:18,700 --> 00:06:23,000
+如果请求大小超过 small bin 的处理范围
+if it's larger than the small bins can handle
+
+110
+00:06:23,666 --> 00:06:26,266
+就开始处理 unsorted bin
+then we start going through the unsorted bin 
+
+111
+00:06:26,366 --> 00:06:29,733
+查看里面的chunk
+and we look at the chunks that are in there and
+
+112
+00:06:29,900 --> 00:06:36,300
+如果看到的chunk够大，可以满足malloc的要求
+if the chunk that we are looking at is large enough to satisfy this malloc requirement
+
+113
+00:06:36,400 --> 00:06:38,100
+就返回它
+then that's what will return
+
+114
+00:06:38,500 --> 00:06:41,366
+如果chunk不够大
+if the chunk is not large enough 
+
+115
+00:06:41,466 --> 00:06:44,766
+无法满足malloc的要求
+to satisfy the malloc requirement as we're going through them
+
+116
+00:06:45,366 --> 00:06:47,399
+那么先整理一下
+then we will sort it 
+
+117
+00:06:47,566 --> 00:06:51,866
+也就是说，要把遇到的chunk放在small bin 或 large bin里
+which means that we will place it in either the small bins or the large bins
+
+118
+00:06:52,166 --> 00:06:53,699
+根据它的大小
+based upon its size
+
+119
+00:06:55,300 --> 00:06:59,100
+如果遍历完 unsorted bin
+now if we've gone through all of the unsorted chunks
+
+120
+00:06:59,200 --> 00:07:02,700
+仍不能满足malloc的要求
+and we still haven't been able to satisfy this malloc requirement
+
+121
+00:07:02,800 --> 00:07:06,500
+那请求的一定是一个大的chunk
+then it must be something large that they're asking for
+
+122
+00:07:06,566 --> 00:07:09,533
+所以我们查看一下large bin
+and so we'll take a look at the large bins
+
+123
+00:07:09,800 --> 00:07:14,300
+large bin ，正如名字所示
+and the large bins as it the name indicates here
+
+124
+00:07:14,900 --> 00:07:17,133
+它保存大的 chunk 
+holds large chunks
+
+125
+00:07:18,066 --> 00:07:20,233
+但如果还没有任何 大 chunk 呢
+but what if there haven't been any large chunks
+
+126
+00:07:20,366 --> 00:07:25,699
+或者 在large bin里没有找到足够大的chunk呢
+ and we can't find something large enough for this request in the large bins
+
+127
+00:07:26,700 --> 00:07:28,600
+如果它特别大
+well if it's exceptionally large
+
+128
+00:07:28,866 --> 00:07:34,533
+那么分配器将调用mmap并设置那个M位
+then the allocator will call mmap and set that M bit
+
+129
+00:07:34,600 --> 00:07:38,600
+但这是针对特别大的请求
+but this is for exceptionally large requests
+
+130
+00:07:39,266 --> 00:07:42,666
+如果它只是一般大，且我们还没有free过大 chunk 
+if it's just large and we haven't made large chunks yet
+
+131
+00:07:42,666 --> 00:07:46,566
+比如，large bin还没有东西
+right so like the large bins haven't been filled
+
+132
+00:07:46,566 --> 00:07:48,133
+我们还没开始往里放chunk
+we haven't started putting stuff in there
+
+133
+00:07:48,300 --> 00:07:52,300
+进程可能还处在早期
+because we're early in a processes you know lifetime
+
+134
+00:07:52,600 --> 00:07:56,266
+那我们就从 wilderness 里创建chunk
+then we're going to create the chunk from the wilderness
+
+135
+00:07:56,433 --> 00:07:59,633
+还记得吗?wilderness是一个大 chunk 
+remember? the wilderness is kind of this giant chunk
+
+136
+00:07:59,766 --> 00:08:05,499
+它由堆中所有未转成chunk（未使用过）的内存组成
+ that consists of everything in the heap that hasn't been turned into a chunk
+
+137
+00:08:05,600 --> 00:08:10,200
+可以说是所有非chunk内存组成的一个巨大chunk
+there's just like this giant chunk that is everything that isn't a chunk
+
+138
+00:08:10,266 --> 00:08:12,399
+我们称之为wilderness
+and we refer to that as the wilderness
+
+139
+00:08:14,700 --> 00:08:19,500
+目光放在 tcache 之外，会发现更多的缓存机制
+there's a lot more mechanisms going on once we look past tcache
+
+140
+00:08:20,400 --> 00:08:23,166
+除了刚刚说的这些 bin 
+in addition to all of these additional bins
+
+141
+00:08:23,266 --> 00:08:25,966
+空闲chunk中还有更多元数据
+there's more metadata in the free chunks
+
+142
+00:08:26,166 --> 00:08:30,133
+在这里可以看到非tcache的chunk的结构
+we see here that in free chunks that are not in tcache
+
+143
+00:08:30,366 --> 00:08:31,899
+还是有prev_size
+we still have a previous size
+
+144
+00:08:31,900 --> 00:08:33,400
+和 size
+we still have a size
+
+145
+00:08:33,400 --> 00:08:39,100
+size的最低3位还是A、M、P标志
+we still have the A M and P flag values in the least significant bits of the size
+
+146
+00:08:39,566 --> 00:08:42,099
+但这里不再是 next 和 key 了
+but instead of having a next pointer and a key
+
+147
+00:08:42,200 --> 00:08:44,866
+现在这里是前向指针（fd）和后向指针（bk）
+we now have a forward pointer and a backward pointer
+
+148
+00:08:44,900 --> 00:08:48,300
+至于大 chunk 中
+and in the case of large free chunks
+
+149
+00:08:48,300 --> 00:08:52,800
+还有一个 fd_nextsize 和 bk_nextsize
+we also have a forward next size and a backward next size
+
+150
+00:08:53,066 --> 00:08:54,633
+所以在一个单独的空闲chunk中
+so in a single free chunk
+
+151
+00:08:54,833 --> 00:08:57,133
+最多有四个指针
+there could be up to four pointers
+
+152
+00:08:57,300 --> 00:09:01,800
+他们以不同方式导引向其它chunk
+that navigate all of these chunks in different ways
+
+153
+00:09:02,933 --> 00:09:05,799
+为什么我们需要这么多指针
+so why do we need all of these additional pointers
+
+154
+00:09:06,500 --> 00:09:09,566
+因为有了更多链表
+well we need these pointers because there's more lists
+
+155
+00:09:09,700 --> 00:09:12,400
+tcache是一个单链表
+so tcache is a singly linked list
+
+156
+00:09:12,900 --> 00:09:15,666
+Fast Bins也是一个单链表
+Fast Bins is also a singly linked list
+
+157
+00:09:15,800 --> 00:09:19,500
+Fast Bins的工作原理和 tcache 非常相似
+so Fast Bins is going to work pretty similar to tcache when we talk about it
+
+158
+00:09:20,200 --> 00:09:24,366
+然而，至于 unsorted bin ，small bins 和 large bins 
+however for unsorted bin small bins and large bins
+
+159
+00:09:24,500 --> 00:09:26,800
+它们是双链表
+ these are doubly linked lists
+
+160
+00:09:26,900 --> 00:09:31,400
+前向和后向指针会参与到
+and so the forward and backward pointer are going to be involved 
+
+161
+00:09:31,533 --> 00:09:36,566
+这3种bin里随意一个bin的任意3个节点的联系
+for any three chunks that are in these three bins
+
+162
+00:09:38,800 --> 00:09:43,000
+我们看一下双链表的样子
+so let's take a look at what the doubly linked list kind of looks like
+
+163
+00:09:43,500 --> 00:09:47,800
+双链表意味着有一个前向指针和一个后向指针
+so a doubly linked list means that we have a forward pointer and a backward pointer
+
+164
+00:09:47,900 --> 00:09:51,200
+现在它仍然和 tcache 相似
+now it's going to still be similar to tcache 
+
+165
+00:09:51,466 --> 00:09:55,866
+或者说与单链表机制相似
+or kind of our singly linked list mechanism in the sense that 
+
+166
+00:09:55,966 --> 00:09:58,199
+以 small bin 为例
+for the small bins for example
+
+167
+00:09:58,200 --> 00:10:00,200
+还是会有一个头指针
+there is going to be a head pointer
+
+168
+00:10:00,200 --> 00:10:02,466
+它是进入链表的入口点
+that's the entry point into the list
+
+169
+00:10:03,066 --> 00:10:06,699
+头指针指向链表中的一个chunk
+and that head pointer is going to point to one of the chunks
+
+170
+00:10:06,933 --> 00:10:08,499
+区别在于
+the difference is
+
+171
+00:10:08,600 --> 00:10:14,500
+既能通过每个chunk的forward指针，在一个方向前进
+every one of these chunks can be navigated in one direction via the forward pointer 
+
+172
+00:10:14,933 --> 00:10:17,866
+直到它遍历回到第一 chunk 
+ until it loops back around to chunk one
+
+173
+00:10:18,400 --> 00:10:24,500
+也能通过后向指针反方向后退
+or they can be navigated in the reverse order by repeatedly calling the back pointer
+
+174
+00:10:26,400 --> 00:10:27,733
+直到它绕回来
+until it loops back around
+
+175
+00:10:27,733 --> 00:10:32,399
+所以你可以看到这两个链表都是循环的
+and so you see how both of these lists are cyclic
+
+176
+00:10:33,500 --> 00:10:37,000
+无论我是前进还是后退
+whether I navigate the forward direction or the backwards direction
+
+177
+00:10:37,066 --> 00:10:38,999
+我都可以回到第一个chunk
+I can come back to chunk1
+
+178
+00:10:39,300 --> 00:10:43,000
+所以这个头指针并没有实际方向
+and so the head pointer is not really directional
+
+179
+00:10:43,366 --> 00:10:45,499
+它只是简单地指向一个 chunk 
+it simply points to a chunk
+
+180
+00:10:48,100 --> 00:10:51,000
+那么为什么要用双链表而不是
+so why use a doubly linked list instead of a
+
+181
+00:10:51,000 --> 00:10:53,733
+像tcache一样，用单链表
+single linked list like what we've seen with tcache
+
+182
+00:10:54,300 --> 00:10:54,733
+好吧
+well
+
+183
+00:10:54,733 --> 00:10:55,399
+答案是
+the answer is
+
+184
+00:10:55,400 --> 00:11:00,166
+双链表能更有效地删除节点
+a doubly linked list allows for a lot more efficient removal of items
+
+185
+00:11:00,333 --> 00:11:03,999
+因为更新它不需要遍历整个链表
+because we don't have to traverse the entire list to update it
+
+186
+00:11:05,200 --> 00:11:06,766
+至于为什么会
+and the reason that we're going to be 
+
+187
+00:11:06,900 --> 00:11:12,766
+相比tcache，要更频繁地从链表中，更新或删除节点
+updating removing items from these lists more frequent basis than we do with tcache
+
+188
+00:11:12,933 --> 00:11:15,666
+是因为要合并
+is because of something that's known as consolidation
+
+189
+00:11:16,000 --> 00:11:19,900
+当两个相邻的空闲 chunk 
+consolidation occurs when two neighboring chunks 
+
+190
+00:11:19,900 --> 00:11:24,200
+我说的相邻 chunk 是指，在虚拟内存中紧挨着的两个 chunk 
+and when I say neighboring chunks I mean two chunks that are right next to each other in virtual memory 
+
+191
+00:11:24,366 --> 00:11:27,699
+会合并，生成一个更大的 chunk 
+are merged to create one larger chunk
+
+192
+00:11:28,000 --> 00:11:31,900
+这个合并，可能会发生在free的过程中
+now this consolidation step can occur when a chunk is freed
+
+193
+00:11:32,133 --> 00:11:33,133
+这可以理解
+and that makes some sense
+
+194
+00:11:33,133 --> 00:11:34,166
+释放一个 chunk 
+I free the chunk 
+
+195
+00:11:34,166 --> 00:11:35,599
+我们会把它传递给堆
+we're passing it into the heap
+
+196
+00:11:35,600 --> 00:11:37,100
+相邻chunk可能也是空闲的
+the neighbor may be free
+
+197
+00:11:37,166 --> 00:11:38,933
+所以我们把它们合并成一个
+we merge them together into one
+
+198
+00:11:39,166 --> 00:11:41,899
+但是malloc时也会发生合并
+but it can also occur when a chunk is mallocd
+
+199
+00:11:41,900 --> 00:11:44,433
+乍一看，这是没有道理的
+and at face value it doesn't make sense 
+
+200
+00:11:44,500 --> 00:11:48,000
+为什么调用malloc会导致合并发生
+why calling malloc would cause consolidation to occur
+
+201
+00:11:48,133 --> 00:11:49,933
+因为当程序调用malloc时
+because when a program calls malloc
+
+202
+00:11:49,933 --> 00:11:51,599
+它在请求一个 chunk 
+it's requesting a chunk
+
+203
+00:11:51,900 --> 00:11:55,000
+但因为 一些堆的内部机制
+but based upon kind of some of the internal mechanisms of the heap
+
+204
+00:11:55,100 --> 00:11:57,666
+和缓存层的工作原理
+and how some of these caching layers in bins work
+
+205
+00:11:57,800 --> 00:12:01,566
+调用malloc确实会导致堆
+the active calling malloc can cause the heap 
+
+206
+00:12:02,933 --> 00:12:06,799
+去合并它在内部跟踪的 chunk 
+to consolidate chunks that it is tracking internally
+
+207
+00:12:07,800 --> 00:12:10,333
+这种主动整合需要
+and this active consolidation requires 
+
+208
+00:12:10,433 --> 00:12:16,799
+在合并发生时，从这些bin中删除被合并的chunk的记录
+the removal of chunk entries from these bin lists when that merging occurs
+
+209
+00:12:17,500 --> 00:12:20,466
+这在内存中是什么样子的呢
+so what does this look like physically in memory
+
+210
+00:12:20,500 --> 00:12:23,133
+注意：不在链表中，而是在内存中
+not in the lists but in memory
+
+211
+00:12:23,500 --> 00:12:27,400
+合并能发生在向前和向后2个方向
+well consolidation can occur both in the forward and backward direction
+
+212
+00:12:27,700 --> 00:12:29,400
+要合并
+and in order for it to occur
+
+213
+00:12:29,500 --> 00:12:33,500
+chunk 的P位就得是0
+the P bit must be cleared for a chunk to consolidate
+
+214
+00:12:33,866 --> 00:12:35,233
+如果你还记得的话
+if you recall 
+
+215
+00:12:35,300 --> 00:12:39,500
+P位表示先前的 chunk 正在被使用
+the P bit indicates that the prior chunk is in use 
+
+216
+00:12:39,766 --> 00:12:45,299
+这里有在内存中挨着的chunk1和chunk2
+so right here we have chunk1 and chunk2 right next to each other contiguous in memory
+
+217
+00:12:46,000 --> 00:12:50,866
+chunk2的P位显示chunk1在使用中
+chunk2's P bit indicates that chunk1 is allocated
+
+218
+00:12:51,000 --> 00:12:57,500
+chunk1的P位显示它前面的chunk在使用中
+chunk1's P bit indicates that the chunk before chunk1 is allocated
+
+219
+00:12:57,966 --> 00:13:01,333
+chunk2怎么知道chunk1在哪里
+now how does chunk2 know where chunk1 is 
+
+220
+00:13:01,533 --> 00:13:04,799
+它不是通过前向和后向指针来获知
+it's not from the forward and backward pointer
+
+221
+00:13:04,900 --> 00:13:11,800
+这些指针是用来定位bin中chunk节点的位置的
+these forward and backward pointers have to do with tracking chunks in lists or bins
+
+222
+00:13:12,400 --> 00:13:18,700
+如果要识别内存中相邻chunk的位置
+as far as identifying chunks as far as where they are in memory contiguously
+
+223
+00:13:19,733 --> 00:13:23,499
+chunk2会用它的prev_size来计算
+chunk2 would look at its previous size to calculate
+
+224
+00:13:23,500 --> 00:13:25,966
+内存中的前一个chunk 的地址
+where is the prior chunk in memory
+
+225
+00:13:26,400 --> 00:13:32,100
+记住，合并时的前后（内存前后）
+so remember there is a difference between moving through memory contiguously for merging
+
+226
+00:13:32,200 --> 00:13:36,500
+和更新链表指针时的前后（节点前后）是不同的
+and updating the forward and backward pointers of the lists
+
+227
+00:13:38,533 --> 00:13:40,799
+举个例子
+so let's take this as an example here 
+
+228
+00:13:40,933 --> 00:13:43,499
+初始状态有三个 chunk
+I have three chunks as an initial state
+
+229
+00:13:43,700 --> 00:13:45,133
+Chunk1 2和3
+chunk1 2 and 3
+
+230
+00:13:45,500 --> 00:13:47,666
+这三个 chunk 都在使用中
+all three of these chunks are allocated
+
+231
+00:13:47,900 --> 00:13:52,100
+chunk3 P位为1，表示chunk2在使用
+now chunk 3 has its P bit set.  because chunk2 is allocated
+
+232
+00:13:52,266 --> 00:13:56,266
+chunk2 P位为1，表示chunk1在使用
+chunk2 has its p bit set because chunk1 is allocated
+
+233
+00:13:56,533 --> 00:13:58,533
+chunk1 P位为1
+chunk1 has its P bit set
+
+234
+00:13:58,566 --> 00:14:00,599
+虽然这里没展示
+because I don't have it in this example
+
+235
+00:14:00,600 --> 00:14:06,300
+但在chunk1前，有一个在使用的chunk0
+but there would be some chunk 0 behind chunk1 which is currently allocated
+
+236
+00:14:06,900 --> 00:14:13,100
+当free chunk1时会发生什么
+what happens when we call free on chunk1
+
+237
+00:14:14,100 --> 00:14:17,300
+首先chunk1被释放了
+well chunk1 is freed
+
+238
+00:14:17,600 --> 00:14:22,000
+这意味着它将被插入到某个链表或者说bin中
+this means that it's going to get inserted into some list or bin
+
+239
+00:14:22,166 --> 00:14:24,366
+不管被插入到哪个bin
+it doesn't matter what bin it is
+
+240
+00:14:24,666 --> 00:14:26,399
+当发生时
+and when that occurs
+
+241
+00:14:27,500 --> 00:14:32,900
+会写入 chunk1 的 fd 和 bk 指针
+the chunk1 is going to get a forward pointer written and a backward pointer written 
+
+242
+00:14:33,100 --> 00:14:38,100
+如果插入的是large bin ，还会写入额外2个指针
+it may get two additional pointers after that  if it is a large bin chunk
+
+243
+00:14:38,233 --> 00:14:40,799
+但我们稍后会讲到这点
+but we'll cover that a little bit later
+
+244
+00:14:41,100 --> 00:14:44,100
+可以确定的是，会写入 fd 和 bk 指针
+one thing that will occur though is the forward and backward pointer
+
+245
+00:14:44,100 --> 00:14:47,800
+它们会作为元数据加入，因为这是一个空闲 chunk 
+well it will get added as metadata because it's a free chunk
+
+246
+00:14:48,000 --> 00:14:51,500
+现在我们看到 chunk2 这里也有一些变化
+now chunk2 we see that there were some changes there as well
+
+247
+00:14:52,100 --> 00:14:55,500
+尽管我们释放的是chunk1
+even though what we freed was chunk1
+
+248
+00:14:55,900 --> 00:14:57,566
+在释放chunk1时
+by freeing chunk1
+
+249
+00:14:57,766 --> 00:15:00,933
+会去更新chunk2 的元数据
+we are updating the metadata in chunk2
+
+250
+00:15:01,766 --> 00:15:05,466
+chunk2现在有一个有效的 prev_size 值
+chunk2 now has a previous size value
+
+251
+00:15:05,666 --> 00:15:09,066
+之前这里的值是无效的
+where before it wasn't necessarily going to be there
+
+252
+00:15:09,700 --> 00:15:15,066
+能看到 chunk2 的 prev_size 被改为 0x120
+we see that the previous size for chunk2  is updated to hex 120 
+
+253
+00:15:15,333 --> 00:15:21,699
+还能看到，chunk2 size中的P位，被清掉了
+we also see that the P bit is recleared from chunk2's size
+
+254
+00:15:22,200 --> 00:15:28,000
+原来 size 是 0x101，因为 P位是1
+so it would have been hex 101 because the p bit would be set
+
+255
+00:15:28,100 --> 00:15:31,166
+现在清除了P位，就变成了0x100
+and by clearing that, it becomes hex 100
+
+256
+00:15:31,600 --> 00:15:35,166
+当然 chunk2 的实际大小一直是 0x100
+but the actual size of chunk2 is hex 100
+
+257
+00:15:35,500 --> 00:15:41,300
+最低3个有效位只是用于跟踪A M和P标志
+the least significant bits there are just tracking the A M and P flags
+
+258
+00:15:43,533 --> 00:15:46,266
+到目前为止，还没有什么特别的事情发生
+so far nothing fancy has really occurred
+
+259
+00:15:46,266 --> 00:15:48,099
+我们只是更新了一些元数据
+we've just updated some metadata
+
+260
+00:15:48,200 --> 00:15:52,833
+但如果我们释放chunk2，会怎样
+but what happens if we were to free the allocation that corresponds to chunk2
+
+261
+00:15:53,533 --> 00:15:53,966
+好吧
+well
+
+262
+00:15:53,966 --> 00:15:55,599
+当我们释放chunk2时
+when we free chunk2
+
+263
+00:15:55,600 --> 00:16:00,700
+先更新 chunk2 的前向和后向指针
+we would need to update the metadata of chunk2 with a forward and backward pointer
+
+264
+00:16:01,100 --> 00:16:08,300
+然后 清除 chunk3 的P位
+we would then clear the prior in use bit that is in chunk 3
+
+265
+00:16:08,700 --> 00:16:10,100
+我们可以在这里看到发生了
+which we see occurs
+
+266
+00:16:10,100 --> 00:16:17,000
+然后用 chunk2的size 更新了 chunk3的 prev_size
+and in the previous size for chunk3 gets updated to show the size of chunk2
+
+267
+00:16:17,600 --> 00:16:22,500
+但如果chunk1和chunk2发生合并，会怎样
+but what happens if these two chunks chunk1 and chunk2 get consolidated
+
+268
+00:16:23,000 --> 00:16:27,300
+这两个chunk被合并成一个更大的chunk
+well the active consolidation combines these chunks into one larger chunk
+
+269
+00:16:27,600 --> 00:16:33,200
+在释放chunk2时，它知道自己要被合并
+now chunk2 when it's freed can know that it's a candidate for consolidation
+
+270
+00:16:33,400 --> 00:16:35,933
+它能知道自己要被合并
+and it knows it's a candidate for consolidation
+
+271
+00:16:36,133 --> 00:16:40,799
+是因为 chunk2 的P位为0
+because chunk2's previous in use bit is not set
+
+272
+00:16:41,166 --> 00:16:44,566
+通过 chunk2 的P位为0
+because chunk2's previous in use bit is not set
+
+273
+00:16:44,733 --> 00:16:50,866
+它知道了 在内存中它前一个chunk 也是空闲的
+it knows that the chunk behind it in memory is also free
+
+274
+00:16:51,066 --> 00:16:56,499
+所以要把他俩合并成一个更大的
+so it makes sense to combine these two chunks into one larger allocation
+
+275
+00:16:56,900 --> 00:16:59,333
+能在这里看到它发生
+and we can see that happen right here
+
+276
+00:16:59,400 --> 00:17:05,900
+能看到 chunk1 的大小被更新成 chunk1的大小 + chunk2的大小
+we see that the size of chunk1 gets updated to be the size of chunk1+ the size of chunk2
+
+277
+00:17:06,400 --> 00:17:13,800
+也能看到 chunk3 的 P位 还是0
+we also see that chunk3's previous in use bit still clear
+
+278
+00:17:14,000 --> 00:17:19,100
+因为合并后的 chunk 仍然是空闲的
+because the combined chunk after consolidation is still free
+
+279
+00:17:19,733 --> 00:17:23,866
+但改变了chunk3 的 prev_size
+but what does change is chunk 3's previous size
+
+280
+00:17:24,066 --> 00:17:26,999
+chunk3 的prev_size 之前是 0x100
+chunk 3's previous size was hex 100
+
+281
+00:17:27,066 --> 00:17:30,166
+这没问题，因为之前是 chunk2的大小
+and that was correct because that's the size of chunk2
+
+282
+00:17:30,533 --> 00:17:32,966
+但合并后
+but when consolidation occurs the
+
+283
+00:17:33,000 --> 00:17:39,000
+chunk3 前面的是 chunk1
+next immediate chunk behind chunk 3 is now chunk1
+
+284
+00:17:39,200 --> 00:17:41,000
+一个更大的 chunk1
+and it's a larger chunk1
+
+285
+00:17:41,200 --> 00:17:45,566
+所以 chunk3 的 prev_size 现在是 0x220
+so the previous size of chunk 3 gets updated to Hex 220
+
+286
+00:17:47,100 --> 00:17:48,166
+这很好
+so that's great and all
+
+287
+00:17:48,166 --> 00:17:50,733
+这就是（虚拟）内存中发生的
+and that's what occurs in physical memory
+
+288
+00:17:50,733 --> 00:17:52,666
+记住，这是发生在虚拟内存中
+because remember this is in physical memory
+
+289
+00:17:52,666 --> 00:17:55,199
+是在一个连续的内存中
+so we're in a contiguous memory region here
+
+290
+00:17:55,300 --> 00:18:00,366
+从 0xa010 到 0xa650
+from Hex a010 to Hex a650 in this example
+
+291
+00:18:00,500 --> 00:18:01,900
+但 从这些链表中看呢
+but what about these lists
+
+292
+00:18:01,900 --> 00:18:03,333
+还是没解释
+that still doesn't explain
+
+293
+00:18:03,366 --> 00:18:05,666
+为什么我们需要一个双链表
+why we need a doubly linked list
+
+294
+00:18:06,100 --> 00:18:08,066
+在我们的例子中
+well in our example here 
+
+295
+00:18:08,200 --> 00:18:10,966
+我们释放的是chunk2
+what we freed was chunk2
+
+296
+00:18:11,233 --> 00:18:13,733
+这样一来，chunk2就消失了
+ and by doing that chunk2 disappeared 
+
+297
+00:18:14,033 --> 00:18:16,166
+因为它和chunk1合并了
+because it consolidated with chunk1
+
+298
+00:18:16,566 --> 00:18:18,766
+所以有一个列表
+so if I have a list
+
+299
+00:18:19,100 --> 00:18:20,833
+不管是哪种bin
+in any of these bins here 
+
+300
+00:18:21,133 --> 00:18:22,933
+它记录着chunk
+that is tracking chunks
+
+301
+00:18:23,333 --> 00:18:25,799
+chunk2曾经在这个列表中
+chunk2 used to be in this list
+
+302
+00:18:25,866 --> 00:18:27,566
+但是当合并发生时
+but when consolidation occurs
+
+303
+00:18:27,566 --> 00:18:30,599
+我们需要从列表中删除chunk2
+we need to remove chunk2 from the list
+
+304
+00:18:31,366 --> 00:18:33,366
+现在我知道chunk2在哪里
+now I know where chunk2 is
+
+305
+00:18:33,366 --> 00:18:35,933
+但我不一定知道它在哪个链表
+but I don't necessarily know what list it's in
+
+306
+00:18:36,100 --> 00:18:38,366
+我不清楚堆的状态
+because I don't know the state of the heap
+
+307
+00:18:38,800 --> 00:18:43,000
+所以有没有办法可以直接更新chunk2所在的列表
+so is there a way that I can update the list that chunk2 is in
+
+308
+00:18:43,200 --> 00:18:48,200
+而不需要遍历所有的链表
+without having to traverse all of these lists and try and figure out where is chunk2
+
+309
+00:18:48,600 --> 00:18:50,000
+答案是肯定的
+the answer is yes
+
+310
+00:18:50,000 --> 00:18:53,300
+这就是用双链表的原因
+and that's why we have this doubly linked list
+
+311
+00:18:53,566 --> 00:18:56,533
+不管chunk2在哪个列表中
+no matter what list chunk2 is in
+
+312
+00:18:57,500 --> 00:19:01,833
+先取出 chunk2前面chunk的后向指针
+we can take the forward backward pointer 
+
+313
+00:19:02,100 --> 00:19:05,100
+并将其设置为chunk2的后向指针
+and set it to chunk2's backward pointer
+
+314
+00:19:05,100 --> 00:19:09,300
+再取出chunk2后面chunk的前向指针
+and we can take chunk2's backward forward pointer
+
+315
+00:19:09,400 --> 00:19:12,966
+并将其设置为chunk2的前向指针
+and set it to chunk2's forward pointer
+
+316
+00:19:13,000 --> 00:19:23,200
+这将把chunk2从它所在的列表中移除，不管它在哪里
+and this will remove chunk2 from whatever list it is in regardless of where it is
+
+317
+00:19:24,466 --> 00:19:25,099
+这就是为什么
+and this is why
+
+318
+00:19:25,300 --> 00:19:31,300
+使用双链表可以非常快速地删除链表中chunk
+having a doubly linked list allows for very rapid removal of chunks from the list
+
+319
+00:19:32,100 --> 00:19:34,133
+这个有点拗口
+now that was a little bit of a mouthful
+
+320
+00:19:34,300 --> 00:19:38,300
+最终的结果就是，我们可以删掉chunk2
+but the end result is we can remove chunk2
+
+321
+00:19:38,500 --> 00:19:44,100
+且只需要查看chunk2元数据中的指针
+while only looking at the pointers that exist in the metadata of chunk2
+
+322
+00:19:44,300 --> 00:19:48,300
+不管这是一个large bin ，small bin 还是unsorted bin 
+and so it doesn't matter whether this was a large bin a small bin an unsorted bin
+
+323
+00:19:48,566 --> 00:19:50,533
+我们不用担心这个
+we don't have to worry about that
+
+324
+00:19:50,766 --> 00:19:53,966
+只要我们遵循这个算法
+as long as we follow the lb unlinking algorithm
+
+325
+00:19:54,100 --> 00:19:57,400
+就能从对应链表中删除chunk
+we'll be removing the chunk from whatever list it happens to be in
+
+326
+00:19:58,400 --> 00:20:00,900
+这在代码中是什么样子的呢
+now what does this unlinking look like in code
+
+327
+00:20:01,200 --> 00:20:06,900
+这是libc中unlink_chunk函数的开始
+well this is the beginning of the unlink_chunk function in libc
+
+328
+00:20:07,500 --> 00:20:10,900
+如果你想深入了解，可以点击幻灯片上的链接
+you can click the link in the slide here if you want to take a deeper look at it
+
+329
+00:20:11,500 --> 00:20:16,100
+现在我们看到的是，当chunk被解除链接时
+now what we see here is that when a chunk is unlinked
+
+330
+00:20:16,100 --> 00:20:19,200
+这里在删除 chunk p
+so we're trying to unlink a chunk p
+
+331
+00:20:20,100 --> 00:20:25,100
+先保存 p 的 fd
+well we save the forward value of the chunk we're unlinking
+
+332
+00:20:25,200 --> 00:20:29,000
+保存 p 的 bk
+we save the backward value of the chunk that we're unlinking
+
+333
+00:20:29,900 --> 00:20:33,400
+然后开始删除或者说解除链接
+then to perform the removal or the unlinking
+
+334
+00:20:33,466 --> 00:20:36,399
+做法和之前的描述完全相同
+we do exactly what I had just described
+
+335
+00:20:36,800 --> 00:20:38,933
+这里的 fd->bk
+the forward backward pointer
+
+336
+00:20:39,233 --> 00:20:43,633
+是 p 在链表中前一个chunk 的后向指针
+which is the chunk that is next in the list its previous entry
+
+337
+00:20:43,900 --> 00:20:48,500
+它将被改成当前在删除的 p 的 bk
+ is going to be whatever is previous to us to the chunk that's being unlinked
+
+338
+00:20:49,100 --> 00:20:52,900
+这里的 bk 的 fd，也是如此
+similarly the backwards forwards pointer
+
+339
+00:20:53,300 --> 00:20:57,700
+p的fd
+so the next entry of whatever is behind us in the list
+
+340
+00:20:57,900 --> 00:21:01,400
+会被设置到 bk 的 fd 中
+gets set to whatever is in front of us in the list
+
+341
+00:21:01,866 --> 00:21:05,299
+我们不用管我们在哪个列表中
+and we don't have to worry about what list we're in
+
+342
+00:21:05,700 --> 00:21:13,300
+这能非常快速有效地从bin中移除 chunk 
+and this provides very rapid and efficient removal of chunks from these bin lists
+
+343
+00:21:14,400 --> 00:21:17,400
+我们之后会更深入地研究一下这些检查
+now we'll take a deeper look at this little bit later
+
+344
+00:21:17,666 --> 00:21:20,133
+但现在绝对值得一提
+but it's definitely worth mentioning right now
+
+345
+00:21:20,400 --> 00:21:25,900
+能看到有一些检查，用于确保这些值的正确性
+that we see there are checks here to make sure that these values are correct
+
+346
+00:21:26,500 --> 00:21:29,333
+先快速看一下这第一个检查
+we take a quick look at this first check up here
+
+347
+00:21:29,900 --> 00:21:33,600
+这个检查确保
+there is a check that ensures the chunk size
+
+348
+00:21:34,100 --> 00:21:37,400
+正在被删除的chunk的大小
+that of the chunk that is being removed or unlinked
+
+349
+00:21:37,400 --> 00:21:38,200
+也就是p的大小
+which is p
+
+350
+00:21:39,100 --> 00:21:45,000
+如果它不等于下一个chunk的prev_size
+this if this does not equal the previous size of the next chunk
+
+351
+00:21:45,566 --> 00:21:48,299
+那就有问题了，说明 size 被破坏了
+then there's a problem we've corrupted the size
+
+352
+00:21:48,400 --> 00:21:50,100
+这是有道理的
+and that makes some sense
+
+353
+00:21:50,400 --> 00:21:52,466
+当前 chunk 的 size
+the size of the current chunk
+
+354
+00:21:52,666 --> 00:21:57,799
+应该等于内存中下一个 chunk 的prev_size
+should equal the previous size of the next chunk in contiguous memory
+
+355
+00:21:59,933 --> 00:22:02,066
+下面这里还有一个检查
+now there's another check down here
+
+356
+00:22:02,666 --> 00:22:04,466
+是
+and this check says
+
+357
+00:22:05,300 --> 00:22:10,700
+链表中下一个chunk的后向指针
+the backward entry of the next chunk in the list
+
+358
+00:22:10,800 --> 00:22:13,400
+应该指向当前 chunk
+should equal the current chunk
+
+359
+00:22:13,800 --> 00:22:20,233
+链表中上一个 chunk 的前向指针
+and the forward at forward entry of the prior chunk in a list
+
+360
+00:22:20,400 --> 00:22:22,466
+应该指向当前 chunk
+should equal the current chunk
+
+361
+00:22:22,733 --> 00:22:25,133
+其实就是 往前走一步，在退一步
+and all this is doing is jumping forward and back
+
+362
+00:22:25,300 --> 00:22:27,300
+确保还在原来的位置
+ and making sure we end up in the same spot
+
+363
+00:22:27,400 --> 00:22:29,933
+回退一步，再前进一步
+and then jumping backwards and forwards on these pointers
+
+364
+00:22:30,133 --> 00:22:32,333
+确保还在原地
+and making sure we end up in the same spot
+
+365
+00:22:33,000 --> 00:22:36,900
+对于一个正常运行的堆
+so for a correctly functioning heap
+
+366
+00:22:37,500 --> 00:22:39,300
+这些检查不会出问题
+these are assumed correct
+
+367
+00:22:39,600 --> 00:22:43,700
+但在漏洞利用的情景下，这些值可能被操纵
+but in an exploitation scenario where these values may be manipulated
+
+368
+00:22:44,100 --> 00:22:49,800
+这些检查将导致许多问题和错误消息
+these checks will be the cause of a lot of problems and error messages
+
+369
+00:22:50,566 --> 00:22:52,266
+现在绝对值得一提
+definitely worth mentioning now
+
+370
+00:22:52,600 --> 00:22:57,800
+因为随着模块的深入，您将看到这些错误消息
+because you'll be seeing these error messages as we move forward in the module
+

@@ -1,0 +1,1755 @@
+1
+00:00:00,866 --> 00:00:02,166
+你好黑客
+hello hackers
+
+2
+00:00:02,533 --> 00:00:05,966
+欢迎回到PWN学院的内核安全模块
+welcome to the kernel security module of pwn college
+
+3
+00:00:05,966 --> 00:00:09,133
+我是Yan，今天我们要讨论的是
+I am Yan and today we're going to be talking about
+
+4
+00:00:10,333 --> 00:00:14,166
+Linux内核中的shellcode
+intricacies of shellcode in the Linux kernel 
+
+5
+00:00:15,166 --> 00:00:16,066
+到目前为止
+so far in this course
+
+6
+00:00:16,100 --> 00:00:17,533
+你做了很多用户空间的事情
+you've done a lot of user space stuff
+
+7
+00:00:17,533 --> 00:00:18,966
+写过了大量的用户空间shellcode
+you've written a lot of user space shellcode
+
+8
+00:00:18,966 --> 00:00:21,966
+其中一些可能看起来像屏幕上的
+some of it might look like what you see on the screen
+
+9
+00:00:22,000 --> 00:00:26,133
+这是一个简单干净的shellcode，打开，读，写，然后退出
+that's a simple open read write and then exit cleanly shellcode
+
+10
+00:00:26,166 --> 00:00:33,666
+整个课程中，你可能一直用它来实现目标
+that might be used throughout the course to achieve your goals
+
+11
+00:00:33,666 --> 00:00:36,166
+当你执行shellcode来泄漏flag时
+once you have shellcode execution to leak the flag
+
+12
+00:00:36,166 --> 00:00:40,133
+这个用户空间的shellcode，不会有效果
+now this user space shellcode won't work
+
+13
+00:00:40,300 --> 00:00:45,400
+如果完全照着这个在内核中执行
+if it is exactly verbatim executed in the kernel
+
+14
+00:00:45,666 --> 00:00:46,400
+为什么没效果
+why not 
+
+15
+00:00:46,566 --> 00:00:49,866
+因为它用了系统调用
+well because it uses system calls
+
+16
+00:00:50,000 --> 00:00:52,900
+回忆一下程序交互模块
+and if you recall way back when from the program interaction module
+
+17
+00:00:53,666 --> 00:00:56,966
+我说过系统调用是一个接口
+I said that system calls are an interface
+
+18
+00:00:57,500 --> 00:00:59,133
+让用户空间代码
+for user space code
+
+19
+00:00:59,200 --> 00:01:02,500
+能与运行在0环的内核交互
+to interact with kernel that it's running under the supervision
+
+20
+00:01:03,533 --> 00:01:04,566
+像这样
+as such
+
+21
+00:01:04,900 --> 00:01:06,733
+当syscall指令发生时
+when a syscall instruction happens 
+
+22
+00:01:06,833 --> 00:01:14,333
+控制流会跳转到，内核内部的系统调用入口函数
+and control flow redirects into the syscall entry function inside the kernel
+
+23
+00:01:15,133 --> 00:01:18,733
+内核假定它来自用户空间
+the kernel assumes that it is coming from user space
+
+24
+00:01:18,833 --> 00:01:20,900
+控制权之前在用户空间
+that control had been in user space
+
+25
+00:01:21,066 --> 00:01:22,733
+之前在用户空间执行
+execution had been in user space
+
+26
+00:01:22,800 --> 00:01:24,700
+再进入内核的
+and then it moved into the kernel
+
+27
+00:01:24,866 --> 00:01:25,900
+这种假设
+this Assumption
+
+28
+00:01:28,200 --> 00:01:30,666
+导致内核会做出某些行为
+leads the kernel to make certain actions 
+
+29
+00:01:30,733 --> 00:01:36,200
+如果是在内核空间调用的，这些行为将是非法的
+which are invalid if code execution is coming from kernel space
+
+30
+00:01:36,700 --> 00:01:39,566
+所以如果你在内核空间触发一个系统调用
+so if you trigger a system call from kernel space
+
+31
+00:01:39,733 --> 00:01:41,200
+内核会崩溃
+the kernel will crash
+
+32
+00:01:41,200 --> 00:01:43,200
+实际上很难
+it's actually shockingly hard 
+
+33
+00:01:43,433 --> 00:01:47,933
+既要一个功能完整且安全的系统调用接口
+to create a functional and secure syscall interface
+
+34
+00:01:47,933 --> 00:01:50,033
+还要能从内核内部触发
+that can also be triggered from inside the kernel
+
+35
+00:01:50,200 --> 00:01:52,733
+这本就不是系统调用的初衷
+that's just not what a syscall is for
+
+36
+00:01:52,800 --> 00:01:55,333
+因此，在内核空间的shellcode中使用syscall
+so if you do a syscall in your kernel space shellcode
+
+37
+00:01:56,000 --> 00:01:58,066
+事情不会很顺利
+things will not work very well at all
+
+38
+00:01:58,066 --> 00:02:00,166
+事实上，内核会崩溃
+in fact your kernel will crash
+
+39
+00:02:00,533 --> 00:02:03,133
+准确的说，内核线程会崩溃
+or really that kernel thread will crash 
+
+40
+00:02:03,133 --> 00:02:04,733
+对于你的进程
+and to your process 
+
+41
+00:02:04,900 --> 00:02:08,033
+看起来就好像syscall触发了段错误
+it'll look like your syscall instruction triggered a segmentation fault
+
+42
+00:02:08,300 --> 00:02:11,266
+这在正常情况下是不应该发生的
+which under normal circumstances should never happen
+
+43
+00:02:11,666 --> 00:02:12,500
+该怎么做呢
+so what do you do
+
+44
+00:02:12,633 --> 00:02:17,966
+你要利用你能在内核中执行代码的事实
+well what you do is leverage the fact that you are executing code inside the kernel
+
+45
+00:02:18,066 --> 00:02:19,233
+你就是内核
+you are the kernel 
+
+46
+00:02:19,400 --> 00:02:21,500
+这是一个超乎想象的权力
+that's an incredible amount of power
+
+47
+00:02:21,966 --> 00:02:27,266
+通过内核api，你能做任何你想做的事
+and you can do anything you want to do by using kernel APIs to do it
+
+48
+00:02:28,300 --> 00:02:29,533
+你想做的事，能有很多
+what you want to do varies
+
+49
+00:02:29,600 --> 00:02:31,966
+如果你想提升特权
+if you want to escalate privileges of course
+
+50
+00:02:32,066 --> 00:02:34,466
+如之前课程中讨论的
+as discussed in prior lectures 
+
+51
+00:02:34,633 --> 00:02:40,500
+可以执行prepare_kernel_cred和commit_creds内核函数
+you want to execute the prepare_kernel_cred and the commit_creds kernel functions
+
+52
+00:02:40,500 --> 00:02:42,133
+你可能想要逃出seccomp
+you want to escape from seccomp
+
+53
+00:02:42,133 --> 00:02:46,366
+可以修改current_task_struct的
+you want to mangle the 
+
+54
+00:02:46,433 --> 00:02:54,700
+thread_info中的相关标志
+thread_info security flags or the thread_info flags in general of your current tasks structure 
+
+55
+00:02:54,833 --> 00:02:59,833
+如果你想在用户空间中运行命令
+if you want to run a command in user space 
+
+56
+00:03:00,066 --> 00:03:04,566
+你可以调用run_cmd内核API
+you want to call the run_cmd Kernel API 
+
+57
+00:03:05,100 --> 00:03:07,500
+这些都不涉及系统调用
+none of these involve system calls
+
+58
+00:03:07,900 --> 00:03:14,200
+它们要么需要你找到当前task_struct
+they require you to either find the current task_struct
+
+59
+00:03:14,466 --> 00:03:17,100
+找出目标成员变量的偏移，正确修改目标变量
+and figure out how to offset into it properly and modified properly
+
+60
+00:03:17,100 --> 00:03:20,766
+要么需要调用这里列出的API函数
+or call these API functions listed there
+
+61
+00:03:21,733 --> 00:03:26,933
+它们都不需要，或者说不能，通过系统调用来完成
+none of them require or can be done with system calls
+
+62
+00:03:27,933 --> 00:03:30,900
+内核api就是正常函数
+kernel APIs are normal functions
+
+63
+00:03:31,066 --> 00:03:33,300
+如何调用内核API
+what you do to call a kernel API
+
+64
+00:03:33,300 --> 00:03:35,200
+只需触发call指令
+is you trigger the call instruction
+
+65
+00:03:35,266 --> 00:03:37,066
+而不是syscall指令
+not the syscall instruction
+
+66
+00:03:37,933 --> 00:03:39,566
+但call什么呢
+but what do you call 
+
+67
+00:03:39,566 --> 00:03:43,133
+这里，我写了一个shellcode
+if I try to make a shellcode here
+
+68
+00:03:43,300 --> 00:03:48,166
+调用prepare_kernel_cred
+with just a very simple call of prepare_kernel_cred
+
+69
+00:03:48,866 --> 00:03:50,366
+参数为0
+with an argument of zero
+
+70
+00:03:52,966 --> 00:03:54,766
+这里出了什么问题呢
+under the hood what goes wrong 
+
+71
+00:03:54,766 --> 00:03:57,700
+GCC编译这个shellcode时
+is that GCC when it compiles this shellcode
+
+72
+00:03:57,833 --> 00:03:59,433
+当它汇编这个shellcode时
+when it assembles the shellcode 
+
+73
+00:03:59,833 --> 00:04:04,300
+它创建了一个要重定位的可执行文件
+it creates an executable with a relocation
+
+74
+00:04:04,300 --> 00:04:06,766
+这个重定位基本就是说
+and that relocation basically means 
+
+75
+00:04:07,000 --> 00:04:09,700
+它不知道prepare_kernel_cred在哪里
+it doesn't know where prepare_kernel_cred is
+
+76
+00:04:09,766 --> 00:04:11,300
+不知道它是什么
+what it is 
+
+77
+00:04:11,566 --> 00:04:12,800
+当然，如果这是puts
+of course if this was puts
+
+78
+00:04:13,466 --> 00:04:14,600
+可能没问题
+it might be fine
+
+79
+00:04:14,600 --> 00:04:15,933
+实际上，还是有问题
+it actually wouldn't be fine
+
+80
+00:04:15,933 --> 00:04:21,000
+你能让它在可执行程序中没问题
+but there are things you could do to make it fine in an executable 
+
+81
+00:04:21,133 --> 00:04:22,400
+但在shellcode中不行
+not in shellcode
+
+82
+00:04:22,400 --> 00:04:25,600
+在shellcode中，你不能仅通过其名称调用函数
+in shellcode you can't just call a function by its name
+
+83
+00:04:25,600 --> 00:04:26,800
+在shellcode运行时
+shellcode when it runs 
+
+84
+00:04:26,866 --> 00:04:33,166
+它的运行环境是0和1的数据或指令
+it runs in memory in the context of ones and zeros
+
+85
+00:04:33,400 --> 00:04:37,000
+你需要知道函数在哪里，才能调用它
+you need to know where a function is to call it
+
+86
+00:04:39,000 --> 00:04:40,766
+那么如何找到函数的位置呢
+so how do you find where the function is 
+
+87
+00:04:40,766 --> 00:04:45,366
+这取决于KASLR是开还是关
+well it varies based on whether KASLR is on or off
+
+88
+00:04:45,533 --> 00:04:47,300
+如果KASLR关了
+if KASLR is off
+
+89
+00:04:47,400 --> 00:04:51,366
+你可以解析一个内核提供的文件
+well you can parse a file that the kernel provides 
+
+90
+00:04:51,533 --> 00:04:53,100
+叫/proc/kallsyms
+called /proc/kallsyms
+
+91
+00:04:53,166 --> 00:04:54,066
+只要你是root
+as long as you are root
+
+92
+00:04:54,066 --> 00:04:54,933
+更具体地说
+actually more specifically
+
+93
+00:04:54,933 --> 00:04:56,600
+只要你有特定权限
+as long as you have certain privileges
+
+94
+00:04:56,700 --> 00:05:00,400
+这个，你在pwn学院的容器化设施中，是没有的
+that you don't have inside the containerized infrastructure of pwn college
+
+95
+00:05:00,400 --> 00:05:03,966
+但你在有漏洞的内核镜像，和你的linux机器上有
+but you do inside the vulnerable Vms and on your own Linux box
+
+96
+00:05:04,166 --> 00:05:07,100
+如果你找到一个相同的系统
+if you identify an identical system
+
+97
+00:05:07,700 --> 00:05:08,666
+理想情况下是相同的硬件
+ideally the same hardware 
+
+98
+00:05:08,833 --> 00:05:13,733
+相同的内核版本等等
+same kernel version etc etc 
+
+99
+00:05:13,733 --> 00:05:15,266
+配置等等
+configuration and so on
+
+100
+00:05:15,800 --> 00:05:21,200
+比如，在pwn学院题目的练习模式中
+and this is for example the practice mode for a challenge in pwn college
+
+101
+00:05:21,700 --> 00:05:27,700
+你可以使用/proc/kallsyms
+you can use the /proc/kallsyms file 
+
+102
+00:05:27,700 --> 00:05:39,800
+读出内核函数的内存地址
+to read out the address where in memory where certain kernel API functions are located
+
+103
+00:05:39,866 --> 00:05:41,733
+或内核导出的任何东西的地址
+anything that the kernel exports
+
+104
+00:05:44,900 --> 00:05:46,500
+如果KASLR开了
+if KASLR is on
+
+105
+00:05:46,666 --> 00:05:47,933
+就麻烦了
+you have a bigger problem
+
+106
+00:05:47,933 --> 00:05:53,166
+类似于用户空间的ASLR
+but it's analogous to the problem of ASLR is on in the user space
+
+107
+00:05:53,333 --> 00:05:55,166
+你得泄露一个地址
+you need to leak an address
+
+108
+00:05:55,166 --> 00:05:57,400
+基于这个地址
+and based on that address you need to compute
+
+109
+00:05:58,333 --> 00:06:00,900
+基于泄露地址与目标地址间的偏移量
+based on an offset of what you leaked and what you're interested in
+
+110
+00:06:00,900 --> 00:06:03,566
+你需要计算出目标地址
+you need to compute the address of what you're interested in 
+
+111
+00:06:03,700 --> 00:06:04,233
+但
+but
+
+112
+00:06:06,400 --> 00:06:09,200
+尽管现实世界的系统会开启KASLR
+though real world systems will have KASLR on
+
+113
+00:06:09,333 --> 00:06:12,800
+但KASLR关闭的情况也值得练习
+it's also important to practice and learn with KASLR off
+
+114
+00:06:12,900 --> 00:06:14,900
+你会在这个模块练习它
+which you'll be able to do in this module
+
+115
+00:06:15,366 --> 00:06:21,666
+假设你找到了一个内核API的位置
+so let's say you found the location of a kernel API
+
+116
+00:06:21,733 --> 00:06:22,500
+那下一步呢
+what next 
+
+117
+00:06:22,500 --> 00:06:24,733
+下一步你要调用它
+well next you have to call it
+
+118
+00:06:26,566 --> 00:06:27,300
+怎么调用它
+how do you call it 
+
+119
+00:06:27,466 --> 00:06:31,000
+不能用syscall指令
+well you don't use the syscall instruction
+
+120
+00:06:31,133 --> 00:06:32,366
+得用call指令
+you use the call instruction
+
+121
+00:06:32,366 --> 00:06:34,366
+内核api就是普通函数
+kernel apis are normal functions 
+
+122
+00:06:34,466 --> 00:06:35,600
+不幸的是
+unfortunately
+
+123
+00:06:35,733 --> 00:06:39,400
+普通call指令使用一个32位的相对偏移
+a normal call instruction takes a relative 32 bit offset
+
+124
+00:06:39,900 --> 00:06:43,166
+它会移动给定的偏移量，到那里执行
+and it shifts execution by that amount and goes there
+
+125
+00:06:44,100 --> 00:06:45,866
+如果你知道你的shellcode在哪里
+if you know where your shellcode is
+
+126
+00:06:45,866 --> 00:06:51,566
+并且从它到目标函数的距离，在32位表示范围内
+and it's within 32 bits difference of the function you want
+
+127
+00:06:51,566 --> 00:06:52,933
+你就可以用call
+you could use a call instruction
+
+128
+00:06:52,933 --> 00:06:54,800
+但这很烦
+but it's a giant pain in the butt
+
+129
+00:06:55,000 --> 00:06:59,966
+如果你知道你的目标在哪
+if you know where your target is
+
+130
+00:07:01,666 --> 00:07:02,500
+并且
+and
+
+131
+00:07:03,166 --> 00:07:05,166
+你有它在内存中的绝对地址
+you have its absolute location in memory
+
+132
+00:07:05,166 --> 00:07:06,966
+你可以执行绝对跳转的call
+you can just make an absolute call
+
+133
+00:07:06,966 --> 00:07:08,866
+绝对跳转的call必须直接从
+an absolute call has to be in direct
+
+134
+00:07:08,866 --> 00:07:10,766
+跳转目标必须从寄存器取
+it has to go through a register 
+
+135
+00:07:10,766 --> 00:07:17,000
+可以通过把目标地址放入寄存器
+and you can accomplish it by putting the address you want to jump to into a register
+
+136
+00:07:17,066 --> 00:07:20,200
+再调用寄存器，来完成绝对跳转
+and then calling that register 
+
+137
+00:07:20,200 --> 00:07:25,600
+这会调用该寄存器指向的函数
+which calls the function at the address that the register is pointing to
+
+138
+00:07:26,066 --> 00:07:26,966
+你可以看到
+and you can see
+
+139
+00:07:27,800 --> 00:07:28,433
+在这里
+over here 
+
+140
+00:07:28,966 --> 00:07:32,666
+我把这个call大地址的指令，汇编会怎样
+what happens if I try to assemble a call to this giant address
+
+141
+00:07:32,700 --> 00:07:34,700
+提示：调用的操作数类型不匹配
+this says operand type mismatch for call 
+
+142
+00:07:34,866 --> 00:07:36,600
+基本就是说
+that basically means hey
+
+143
+00:07:37,066 --> 00:07:38,200
+这个地址太大了
+this is too big
+
+144
+00:07:38,866 --> 00:07:41,533
+32位装不下
+it won't fit into 32 bits 
+
+145
+00:07:41,700 --> 00:07:42,766
+即使能装下
+and even if it did
+
+146
+00:07:42,800 --> 00:07:44,766
+我提供了一个绝对地址
+I provided an absolute address 
+
+147
+00:07:44,766 --> 00:07:47,100
+但call真正需要的是一个相对地址
+but what call really takes is a relative address
+
+148
+00:07:47,100 --> 00:07:48,366
+有时这很有用
+sometimes this is useful
+
+149
+00:07:48,400 --> 00:07:52,800
+有时，你可能知道shellcode相对于内核的位置
+sometimes you might know where your shellcode is in relation to the kernel
+
+150
+00:07:52,800 --> 00:07:56,066
+但你不知道它们的绝对地址
+but you don't know the absolute addresses of either
+
+151
+00:07:56,733 --> 00:07:57,533
+但
+but
+
+152
+00:07:59,466 --> 00:08:03,133
+KASLR关着的时候，不是这种情况
+this isn't the case for example with KASLR off
+
+153
+00:08:03,933 --> 00:08:08,466
+或知道内核函数绝对地址的情况下
+or in cases where you know the absolute address of a kernel API function
+
+154
+00:08:09,000 --> 00:08:14,733
+这就是常规的间接实现的直接跳转
+and so here is our normal indirect absolute jump
+
+155
+00:08:15,166 --> 00:08:17,200
+汇编没问题
+and it come assembles happily 
+
+156
+00:08:17,366 --> 00:08:20,366
+你可以在shellcode中使用它跳转到这个地址
+and you can use that in your shellcode to jump to this address
+
+157
+00:08:20,366 --> 00:08:22,533
+当然，这是一个毫无意义的地址
+this is a nonsensical address of course
+
+158
+00:08:22,566 --> 00:08:27,700
+你会把它换成你想调用的内核函数地址
+which you would replace with your address of the kernel API you're interested in calling
+
+159
+00:08:29,966 --> 00:08:32,133
+这样我们就可以调用内核函数了
+so we are able to call kernel APIs 
+
+160
+00:08:32,133 --> 00:08:34,566
+这样我们就能执行run_cmd
+that'll let us execute run_cmd
+
+161
+00:08:35,133 --> 00:08:37,033
+还是执行prepare_kernel_cred
+let us actually prepare_kernel_cred
+
+162
+00:08:37,500 --> 00:08:38,800
+commit_creds，啥都行
+commit_creds everything 
+
+163
+00:08:39,033 --> 00:08:40,400
+执行函数没问题了
+you're good to go 
+
+164
+00:08:40,400 --> 00:08:41,966
+除了seccomp
+except for with seccomp
+
+165
+00:08:42,133 --> 00:08:43,466
+seccomp逃逸很棘手
+escaping seccomp is tricky 
+
+166
+00:08:43,466 --> 00:08:47,900
+需要寻找和修改
+requires finding and modifying structures
+
+167
+00:08:49,200 --> 00:08:52,800
+内核记录当前进程的对象
+that the kernel keeps track of  for the current process 
+
+168
+00:08:52,866 --> 00:08:56,600
+叫current的task_struct对象
+the current task struct
+
+169
+00:08:56,966 --> 00:08:59,933
+幸运的是，内核一直指着这个对象
+luckily the kernel points to this struct
+
+170
+00:09:00,366 --> 00:09:02,100
+因为它也需要找到它
+because it also needs to find it
+
+171
+00:09:02,366 --> 00:09:05,533
+用的GS段寄存器记录它
+by using the GS segment register
+
+172
+00:09:05,666 --> 00:09:09,200
+这些段寄存器的使用方法有点棘手
+now these segment registers are a little tricky to interact with
+
+173
+00:09:09,200 --> 00:09:15,133
+它们比RDI和RSI等通用寄存器难用
+they're harder to interact with than general purpose registers like RDI and RSI
+
+174
+00:09:16,366 --> 00:09:17,900
+当然在C代码中
+and of course in C
+
+175
+00:09:17,900 --> 00:09:19,200
+你不需要考虑这些
+you don't have to think about any of this
+
+176
+00:09:19,200 --> 00:09:21,566
+你直接用current变量就行
+you just use the current variable
+
+177
+00:09:21,566 --> 00:09:24,100
+它是内核中的一个神奇的宏
+it's a magic macro inside the kernel 
+
+178
+00:09:24,233 --> 00:09:26,400
+它会找到当前的task_struct对象
+that finds you the current task_struct
+
+179
+00:09:26,700 --> 00:09:28,533
+但如何在shellcode中找到它呢
+but how do you do that in your shellcode
+
+180
+00:09:29,100 --> 00:09:32,266
+当然，你可以浏览内核源代码
+well you can crawl through kernel source code 
+
+181
+00:09:32,433 --> 00:09:35,533
+试着去理解内核是怎么做的等等
+try to understand how the kernel does it etc etc etc
+
+182
+00:09:35,966 --> 00:09:39,933
+这对你的精神没好处
+that's not gonna be good for your sanity
+
+183
+00:09:40,200 --> 00:09:42,000
+更好的选择是
+what is better for your sanity is 
+
+184
+00:09:42,033 --> 00:09:44,566
+让编译器来做苦工
+let the compiler do the hard work
+
+185
+00:09:45,066 --> 00:09:47,800
+用C代码做你想做的
+literally write what you want to do in C
+
+186
+00:09:48,000 --> 00:09:50,066
+你希望你的shellcode做的
+what you want your shellcode to end up doing
+
+187
+00:09:50,100 --> 00:09:51,200
+用C写出来
+write that in C
+
+188
+00:09:52,166 --> 00:09:56,000
+为要攻击的内核，编译它
+build it for the kernel that you want to attack and
+
+189
+00:09:57,300 --> 00:10:00,600
+这可以在我们的PWN学院基础设施中完成
+this can be done in our pwn college infrastructure
+
+190
+00:10:00,666 --> 00:10:03,566
+用vm build命令，很简单
+very easily using the vm build command
+
+191
+00:10:04,133 --> 00:10:10,533
+然后逆向它，看看它是怎么用汇编写的
+and reverse engineer that to see how these actions translate into assembly
+
+192
+00:10:10,566 --> 00:10:12,700
+然后在你的shellcode中用汇编实现它
+and then reimplement that assembly in your shellcode
+
+193
+00:10:12,700 --> 00:10:13,766
+所以在右边
+so on the right here
+
+194
+00:10:14,066 --> 00:10:15,333
+我做了两件事
+I do two things
+
+195
+00:10:15,333 --> 00:10:17,466
+一种是找到
+one is I figure out how to get the address of 
+
+196
+00:10:17,633 --> 00:10:29,766
+current->thread_info.flags变量
+the current task_struct thread_info flags variable
+
+197
+00:10:30,366 --> 00:10:31,533
+的地址
+the address of that
+
+198
+00:10:31,866 --> 00:10:35,433
+以及获取这个TIF_SECCOMP的值
+and how to get the value of this TIF_SECCOMP 
+
+199
+00:10:35,466 --> 00:10:36,766
+flags内某bit位的偏移值
+the offset into the flags
+
+200
+00:10:36,766 --> 00:10:40,966
+这个bit表示seccomp是开还是关
+that is the one bit that says that seccomp is on or off
+
+201
+00:10:41,300 --> 00:10:42,100
+还有
+and
+
+202
+00:10:43,300 --> 00:10:46,300
+我写了这个最简单的内核模块
+I write this minimized kernel module
+
+203
+00:10:46,466 --> 00:10:47,400
+我构建了它
+I build it 
+
+204
+00:10:47,533 --> 00:10:49,366
+在我们的环境中，这非常容易
+super easily in our infrastructure
+
+205
+00:10:49,366 --> 00:10:52,133
+当然，你也可以在这个环境之外，构建它
+but you can of course build this outside of the infrastructure as well
+
+206
+00:10:52,133 --> 00:10:58,000
+我逆向了构建结果
+and I disassemble the results to see what happens
+
+207
+00:10:58,000 --> 00:10:59,600
+这里是相关的
+and here is the relevant thing
+
+208
+00:10:59,600 --> 00:11:03,066
+这里把值放到rax，函数的返回值
+this moves into rax the return value of this function
+
+209
+00:11:05,100 --> 00:11:09,700
+是GS指向地址的偏移量为0的地方
+offset of 0 from the GS the global segment register
+
+210
+00:11:11,000 --> 00:11:14,200
+你可以直接把它复制到你的shellcode中
+and this is something that you can just copy into your shellcode
+
+211
+00:11:14,200 --> 00:11:17,400
+这是一个有效的x86汇编指令
+this is valid x86 assembly that will work
+
+212
+00:11:18,800 --> 00:11:24,533
+这是控制seccomp的标志的偏移量
+this is the value of the offset of the seccomp flag
+
+213
+00:11:25,366 --> 00:11:26,933
+这是
+again that is something
+
+214
+00:11:27,200 --> 00:11:30,900
+这和构建的目标内核版本有关
+that is specific to the version of the kernel that I built this for
+
+215
+00:11:31,066 --> 00:11:32,933
+但是编译器帮我找出来了
+but the compiler figured it out for me
+
+216
+00:11:32,933 --> 00:11:34,800
+我不需要浏览内核源代码
+I didn't have to crawl through source code
+
+217
+00:11:34,800 --> 00:11:36,666
+我可以把它们组合起来
+and I can take that put it together
+
+218
+00:11:36,933 --> 00:11:38,966
+然后构建我的shellcode
+and build my shellcode or
+
+219
+00:11:40,133 --> 00:11:41,966
+更懒点的话，这很好
+you're even lazier which is great
+
+220
+00:11:42,000 --> 00:11:44,700
+你可以用C写
+you can put it together in C
+
+221
+00:11:45,066 --> 00:11:46,933
+汇编它，再提取出来
+assemble it and extract it
+
+222
+00:11:47,100 --> 00:11:51,666
+要注意的是，调用内核函数
+one caveat for calling kernel APIs 
+
+223
+00:11:51,800 --> 00:11:52,900
+这行不通
+this won't work
+
+224
+00:11:53,600 --> 00:12:04,133
+这会创建重定位符，让加载器来解析
+what this will do is create relocations which the loader will resolve 
+
+225
+00:12:04,300 --> 00:12:07,200
+等内核模块的加载器
+when the kernels module loader
+
+226
+00:12:07,200 --> 00:12:08,900
+当内核模块加载时
+when that kernel module is loaded
+
+227
+00:12:08,966 --> 00:12:10,733
+它会说，嘿
+so it will basically say hey
+
+228
+00:12:10,966 --> 00:12:12,100
+我要call某个东西
+I'm gonna call something
+
+229
+00:12:12,100 --> 00:12:13,566
+我不知道那是什么
+I honestly have no idea what it is
+
+230
+00:12:13,566 --> 00:12:15,300
+它会call 0
+it'll literally do call 0
+
+231
+00:12:15,400 --> 00:12:17,933
+这会汇编成call下一条指令
+which will disassemble to calling the next instruction 
+
+232
+00:12:18,166 --> 00:12:19,666
+在加载时
+at load time
+
+233
+00:12:20,166 --> 00:12:23,333
+它会说，好的，要call
+it'll say okay okay that's gonna be calling
+
+234
+00:12:25,100 --> 00:12:26,933
+prepare_kernel_cred之类的
+prepare_kernel_cred or whatever
+
+235
+00:12:27,200 --> 00:12:29,666
+但在汇编代码上看，这说不通
+but in the assembly it won't make any sense
+
+236
+00:12:30,066 --> 00:12:32,733
+这就是为什么难以
+this is actually why it's a little tricky to
+
+237
+00:12:33,466 --> 00:12:39,733
+用没考虑这种情况的工具，反汇编内核模块
+disassemble kernel modules in tools that aren't prepared for these sort of tricks
+
+238
+00:12:42,533 --> 00:12:44,933
+这包括大多数逆向工具
+which is actually most of the reversing tools
+
+239
+00:12:47,100 --> 00:12:49,900
+这就是
+so that's how you figure out
+
+240
+00:12:52,666 --> 00:12:53,133
+对不起
+sorry 
+
+241
+00:12:53,133 --> 00:12:58,700
+这就是找到该结构体地址和布局的方法
+that's how you figure out the addresses and the layouts of structures
+
+242
+00:12:58,866 --> 00:13:01,000
+请先尝试使用C语言
+please just try to use C first 
+
+243
+00:13:01,000 --> 00:13:02,733
+看看它做了什么
+and then see what it does
+
+244
+00:13:03,133 --> 00:13:04,266
+拷贝出来
+and then steal that 
+
+245
+00:13:04,333 --> 00:13:05,100
+现在
+now 
+
+246
+00:13:06,233 --> 00:13:08,700
+你知道如何调用内核api
+you know how to call kernel Apis
+
+247
+00:13:08,933 --> 00:13:12,133
+知道如何修改内核数据结构并找到它们等等
+you know how to modify kernel data structures and find them etc
+
+248
+00:13:12,200 --> 00:13:13,600
+基本上就成了
+you're basically done
+
+249
+00:13:14,066 --> 00:13:15,266
+还有什么会出错呢
+what could still go wrong 
+
+250
+00:13:15,366 --> 00:13:16,900
+通常
+well oftentimes 
+
+251
+00:13:17,366 --> 00:13:19,633
+在内核漏洞利用时，你需要
+you need to in kernel exploitation
+
+252
+00:13:19,800 --> 00:13:21,166
+在用户空间漏洞利用时
+in user space exploitation
+
+253
+00:13:21,166 --> 00:13:22,200
+你可以执行shellcode
+you can hit your shellcode 
+
+254
+00:13:22,200 --> 00:13:23,066
+它打印出flag
+it prints out the flag
+
+255
+00:13:23,100 --> 00:13:24,666
+你不用管后面会怎样
+you don't care what happens afterwards
+
+256
+00:13:25,166 --> 00:13:26,566
+但在内核空间中，你要
+in kernel space you do
+
+257
+00:13:26,566 --> 00:13:28,066
+如果是要提权
+if it's a privilege escalation
+
+258
+00:13:28,066 --> 00:13:30,466
+它只提升当前进程的权限
+and it just escalates the current process
+
+259
+00:13:31,000 --> 00:13:36,533
+调用了commit_creds prepare_kernel_cred 0
+by calling commit_creds prepare_kernel_cred 0
+
+260
+00:13:37,166 --> 00:13:38,933
+这将使当前进程成为root进程
+that'll make the current process root
+
+261
+00:13:38,933 --> 00:13:40,700
+如果这时shellcode崩溃了
+if then your shellcode crashes
+
+262
+00:13:40,700 --> 00:13:44,533
+那该进程会在你用它读出flag前，崩溃
+the current process will crash before you can use it to read the flag
+
+263
+00:13:45,200 --> 00:13:48,466
+因此，你必须干净地退出内核shellcode
+so you have to have your kernel shellcode exit cleanly
+
+264
+00:13:48,533 --> 00:13:49,500
+这是至关重要的
+that's critical
+
+265
+00:13:51,766 --> 00:13:52,733
+一个常见的例子
+a common example 
+
+266
+00:13:52,800 --> 00:13:57,200
+如果你劫持了内核要调用的函数指针
+if you hijack a function pointer that the kernel called
+
+267
+00:13:57,666 --> 00:13:59,166
+请让你的shellcode执行起来像个函数
+make your shellcode act like a function
+
+268
+00:13:59,233 --> 00:14:00,733
+完成目标后，记得返回
+make it return afterwards
+
+269
+00:14:00,933 --> 00:14:01,600
+就这些
+that's all 
+
+270
+00:14:01,600 --> 00:14:02,566
+如果清理干净了
+if it cleans up 
+
+271
+00:14:02,566 --> 00:14:06,533
+要确保，栈正常
+it makes sure its stack is not messed up 
+
+272
+00:14:06,533 --> 00:14:08,000
+然后清理干净
+and then cleans up properly
+
+273
+00:14:08,000 --> 00:14:09,966
+让内核可以继续执行
+the kernel can continue execution
+
+274
+00:14:10,066 --> 00:14:11,100
+通常
+often times
+
+275
+00:14:11,766 --> 00:14:16,800
+这里的题目中，这些就够了
+this actually is probably all you need for these challenges 
+
+276
+00:14:16,966 --> 00:14:18,766
+但一般情况下
+but in the general case
+
+277
+00:14:19,366 --> 00:14:22,133
+修复环境可能会更复杂
+fixing up the environment might be more and more advanced
+
+278
+00:14:24,166 --> 00:14:27,100
+要点是，内核漏洞利用时
+but the point is for kernel exploitation
+
+279
+00:14:27,600 --> 00:14:30,066
+你要确保
+you need to make sure that
+
+280
+00:14:30,300 --> 00:14:33,000
+shellcode执行完，系统仍能正常工作
+the system survives after your shellcode
+
+281
+00:14:33,000 --> 00:14:35,133
+或不管你做什么
+or whatever your payload is done
+
+282
+00:14:36,266 --> 00:14:38,133
+都要执行必要的行为
+taking the actions that is taking 
+
+283
+00:14:38,933 --> 00:14:39,800
+最后
+finally
+
+284
+00:14:39,900 --> 00:14:40,966
+我们谈谈调试
+we get to debugging 
+
+285
+00:14:41,000 --> 00:14:43,666
+你的shellcode不可能一次就成功
+your shellcode isn't gonna work on the first shot 
+
+286
+00:14:43,666 --> 00:14:44,333
+这没事
+that's fine 
+
+287
+00:14:44,333 --> 00:14:45,500
+这不是个问题
+that's not a problem
+
+288
+00:14:45,933 --> 00:14:47,133
+如何调试它
+how do you debug it 
+
+289
+00:14:47,200 --> 00:14:51,300
+内核漏洞利用有点棘手
+well kernel exploits are a little tricky 
+
+290
+00:14:51,433 --> 00:14:52,933
+大多数内核漏洞
+most kernel exploits
+
+291
+00:14:53,200 --> 00:14:56,366
+因为大多数内核漏洞要从内部触发
+because most kernel vulnerabilities are triggerable from the inside
+
+292
+00:14:56,366 --> 00:14:57,333
+要从用户空间触发
+from user space
+
+293
+00:14:57,333 --> 00:14:59,666
+而不能从网络触发
+not from like the network let's say
+
+294
+00:14:59,800 --> 00:15:03,566
+但大多数攻击都有一个用户空间的程序
+but most attacks will have a userspace component
+
+295
+00:15:03,933 --> 00:15:05,133
+这个用户空间的程序
+that userspace component
+
+296
+00:15:05,133 --> 00:15:08,100
+会将有效载荷注入内核以触发bug
+will inject the payload into the kernel to trigger the bug
+
+297
+00:15:08,566 --> 00:15:10,333
+那么你该调试什么呢
+so what do you debug
+
+298
+00:15:10,600 --> 00:15:15,133
+如果你用gdb调试用户空间的攻击程序
+if you run GDB on your user space attack component
+
+299
+00:15:16,533 --> 00:15:19,966
+在vm镜像中的攻击程序
+your attack program inside the VM 
+
+300
+00:15:20,000 --> 00:15:21,166
+这很好也很简单
+that's nice and easy
+
+301
+00:15:21,166 --> 00:15:23,766
+里面会有你攻击程序的所有符号等等
+it'll have all the symbols of your attack program etc
+
+302
+00:15:24,066 --> 00:15:28,266
+但这样，你完全不知道内核中发生了什么
+but it leaves you completely completely blind as to what the kernel is doing
+
+303
+00:15:28,666 --> 00:15:31,966
+这样你不能步入syscall
+so you can't single step through system calls
+
+304
+00:15:32,166 --> 00:15:33,366
+不能进入系统调用
+into system calls 
+
+305
+00:15:33,366 --> 00:15:34,533
+不能进入系统调用处理程序
+into the handlers
+
+306
+00:15:34,600 --> 00:15:36,700
+不能进入有漏洞的内核代码
+into the vulnerable kernel code
+
+307
+00:15:36,700 --> 00:15:37,900
+正如我之前提到的
+and as I mentioned before 
+
+308
+00:15:38,000 --> 00:15:47,300
+在gdb中调试用户空间的程序，通常的结果是
+the typical outcome is from inside GDB debugging your user space component
+
+309
+00:15:47,366 --> 00:15:48,333
+看起来就像
+it'll look like
+
+310
+00:15:48,333 --> 00:15:49,966
+syscall指令
+for example the syscall instruction 
+
+311
+00:15:50,133 --> 00:15:55,266
+触发了段错误，或sigill或sigkill之类的
+segfaulted or sigilled or sigkilled or whatever
+
+312
+00:15:55,466 --> 00:15:58,800
+不管怎样，就崩了
+however it gets broken
+
+313
+00:15:59,966 --> 00:16:04,066
+所以你要做的就是连接到QEMU
+so what you have to do is attach to QEMU itself
+
+314
+00:16:04,500 --> 00:16:05,700
+在GDB之外
+outside of GDB 
+
+315
+00:16:05,733 --> 00:16:06,766
+调试内核
+to debug your kernel
+
+316
+00:16:06,766 --> 00:16:07,366
+当然
+now of course
+
+317
+00:16:07,366 --> 00:16:08,533
+如果你没有运行Qemu的话
+if you aren't running a Qemu 
+
+318
+00:16:08,566 --> 00:16:11,866
+如果就运行在平常的硬件上
+if you're running in actual normal hardware 
+
+319
+00:16:12,200 --> 00:16:14,066
+你可能需要连接
+you might have to attach
+
+320
+00:16:14,366 --> 00:16:18,166
+比如嵌入式设备中，专用的硬件调试器
+using a dedicated hardware debugger in an embedded device for example 
+
+321
+00:16:18,566 --> 00:16:19,266
+但在这里
+but here
+
+322
+00:16:20,300 --> 00:16:22,033
+在本模块的练习题中
+in the practice challenges of this module
+
+323
+00:16:22,066 --> 00:16:24,700
+你将在Qemu中运行内核
+you'll be running the kernel inside Qemu
+
+324
+00:16:25,200 --> 00:16:27,166
+在PWN学院的环境中
+and in the pwn college dojo
+
+325
+00:16:27,500 --> 00:16:30,333
+你可以运行一个非常方便的vm debug命令
+there's a very handy vm debug command that you can run
+
+326
+00:16:30,400 --> 00:16:32,866
+它会附加到运行中的内核
+and it will attach to the running kernel 
+
+327
+00:16:32,966 --> 00:16:36,933
+现在调试用户空间的部分就难了
+now it's harder to debug the user space component
+
+328
+00:16:37,766 --> 00:16:41,133
+你没有用户空间那部分的符号了
+you don't have the symbols of your user space component
+
+329
+00:16:41,200 --> 00:16:42,933
+尽管你有内核的符号
+although you do have the symbols of your kernel
+
+330
+00:16:43,000 --> 00:16:43,733
+这很有帮助
+which is helpful
+
+331
+00:16:43,966 --> 00:16:46,133
+但是没有用户空间程序的符号
+but without the symbols of your user space component
+
+332
+00:16:46,266 --> 00:16:47,766
+就难以
+there's a little bit of a headache
+
+333
+00:16:48,100 --> 00:16:52,666
+断在你期望的用户空间部件中
+in breaking at parts of your user space component that you would expect 
+
+334
+00:16:52,766 --> 00:16:53,266
+我的建议是
+my advice
+
+335
+00:16:53,700 --> 00:16:56,700
+编译用户空间的攻击程序时，关掉位置无关代码选项
+turn off position independ code in your user space attack component
+
+336
+00:16:56,700 --> 00:16:57,800
+这个你可以控制
+which you will control
+
+337
+00:16:58,100 --> 00:17:06,866
+然后断在现在已知的地址
+and break in the now known addresses for your attack 
+
+338
+00:17:07,033 --> 00:17:10,333
+所以在GDB中，你可以在那里中断
+so that in GDB you can break there
+
+339
+00:17:10,666 --> 00:17:12,866
+然后步入内核
+and step your way into the kernel 
+
+340
+00:17:12,900 --> 00:17:19,100
+然后观察导致你利用失败的bug
+and observe the bugs being triggered  and your exploit failing
+
+341
+00:17:19,400 --> 00:17:20,600
+这样你就能修好它
+so that you can fix it
+
+342
+00:17:22,800 --> 00:17:23,666
+总之
+TLDR here 
+
+343
+00:17:23,933 --> 00:17:27,933
+在虚拟机之外运行GDB
+run GDB outside of the virtual machine
+
+344
+00:17:28,166 --> 00:17:30,066
+而不要在虚拟机内部
+not inside of the virtual machine
+
+345
+00:17:30,866 --> 00:17:37,633
+希望这是一个有用的技巧教学
+hopefully that was a useful quick dive into the different tricks
+
+346
+00:17:37,633 --> 00:17:42,533
+能帮助你掌握，成功黑入内核所需的知识
+that you will need up your sleeve to successfully hack the kernel 
+
+347
+00:17:42,700 --> 00:17:47,733
+能让你在内核中用shellcode做些事情
+to successfully execute shellcode that does something in the kernel
+
+348
+00:17:47,800 --> 00:17:49,133
+做一些有成效的事情
+does something productive
+
+349
+00:17:51,266 --> 00:17:57,733
+你会在这个模块的题目中得到很多练习
+you'll get plenty of practice in our challenges for this module 
+
+350
+00:17:57,800 --> 00:17:59,800
+当然还有PWN学院后面的模块
+and of course in the rest of pwn college
+
+351
+00:18:00,500 --> 00:18:01,300
+祝你好运
+good luck
+

@@ -1,0 +1,2755 @@
+1
+00:00:00,700 --> 00:00:02,266
+你好黑客
+hello hackers
+
+2
+00:00:02,266 --> 00:00:04,333
+我是Yan，欢迎来到pwn学院
+i'm Yan welcome to pwn college 
+
+3
+00:00:04,333 --> 00:00:05,500
+在这个视频中
+and in this video
+
+4
+00:00:05,733 --> 00:00:08,800
+我们将讨论数据
+we are going to be talking about data
+
+5
+00:00:08,900 --> 00:00:11,266
+该视频是汇编课的一部分
+this video is part of our Assembly crash course
+
+6
+00:00:11,266 --> 00:00:13,733
+如果你是直接看的这个视频
+if you're just seeing this video out of context
+
+7
+00:00:14,100 --> 00:00:17,133
+建议回到汇编系列课程的开头看
+go back and start at the beginning of the Assembly crash course
+
+8
+00:00:17,133 --> 00:00:17,933
+好的
+all right
+
+9
+00:00:18,166 --> 00:00:19,766
+我们开始讲数据
+let's talk about some data 
+
+10
+00:00:20,033 --> 00:00:22,233
+所有的道路都通向CPU
+recall that all roads lead to the cpu
+
+11
+00:00:22,366 --> 00:00:29,499
+CPU只理解二进制代码1和0
+recall that the cpu only understands binary code ones and zeros
+
+12
+00:00:29,666 --> 00:00:31,133
+我们深入研究一下
+so let's dig in 
+
+13
+00:00:31,266 --> 00:00:34,200
+二进制，1和0，是什么
+what is binary ones and zeros
+
+14
+00:00:34,700 --> 00:00:39,900
+二进制是以2为基数的数制
+binary is the number system of base 2
+
+15
+00:00:40,666 --> 00:00:42,366
+这是数学概念
+originally mathematically
+
+16
+00:00:42,533 --> 00:00:44,733
+这是
+and this is the kind of
+
+17
+00:00:46,000 --> 00:00:49,933
+西方文明中由Thomas Harriet描述的
+the western world described by Thomas Harriet
+
+18
+00:00:50,400 --> 00:00:52,566
+可能也有其它人
+and possibly by these other people
+
+19
+00:00:52,566 --> 00:00:57,533
+大约在16到17世纪左右
+roughly at a similar time between the 16th and 17th centuries
+
+20
+00:00:58,066 --> 00:01:00,866
+而其他文明在更早的时候就知道了
+it was known earlier by other civilizations
+
+21
+00:01:00,866 --> 00:01:03,666
+早很多，如同大多数这类事情一样
+much earlier as most of these sort of things are
+
+22
+00:01:05,900 --> 00:01:11,066
+但现在我们用它来赋能YouTube视频
+but now we're using it to power our YouTube videos 
+
+23
+00:01:11,166 --> 00:01:11,933
+这很有趣
+which is fun
+
+24
+00:01:12,100 --> 00:01:12,866
+好的
+all right
+
+25
+00:01:12,866 --> 00:01:15,366
+一个二进制数称为一位
+so a binary digit is called a bit
+
+26
+00:01:15,366 --> 00:01:16,900
+顺便说一下，你可能已经知道这些了
+you probably know all this by the way
+
+27
+00:01:16,900 --> 00:01:19,166
+我只是想确保
+i just want to make sure that
+
+28
+00:01:19,366 --> 00:01:21,500
+每个人都有坚实的基础
+we have a solid footing for everybody
+
+29
+00:01:21,500 --> 00:01:24,333
+这样才可以继续好好学汇编
+so that you can move forward and learn the crap out of assembly 
+
+30
+00:01:24,333 --> 00:01:24,766
+好的
+all right
+
+31
+00:01:26,200 --> 00:01:30,600
+基于十进制数数时
+and you know as you count up with base ten 
+
+32
+00:01:30,800 --> 00:01:34,200
+是这样数的0 1 2 3 4 5 6 7 8 9
+you go 0 1 2 3 4 5 6 7 8 9 
+
+33
+00:01:34,200 --> 00:01:35,900
+然后在9后面的数字
+and then the number after 9 
+
+34
+00:01:36,300 --> 00:01:38,066
+需要两位数
+requires two digits
+
+35
+00:01:38,733 --> 00:01:40,933
+1 0 数字10
+1 0 number ten 
+
+36
+00:01:41,300 --> 00:01:42,300
+到了二进制
+in binary
+
+37
+00:01:42,500 --> 00:01:43,400
+这样 0 1
+you go 0 1
+
+38
+00:01:43,566 --> 00:01:45,633
+然后马上就到了10
+and then right away you have 10 
+
+39
+00:01:45,800 --> 00:01:46,700
+因为没有字符2
+because there is no 2
+
+40
+00:01:47,000 --> 00:01:49,500
+你可以在右边看到
+so you can see on the right here 
+
+41
+00:01:49,800 --> 00:01:54,466
+十进制值
+the decimal values 
+
+42
+00:01:55,000 --> 00:01:58,466
+以及它们的二进制表示
+and their associated binary representation
+
+43
+00:01:58,700 --> 00:02:00,233
+这里有个笔误
+and i have a typo here 
+
+44
+00:02:01,433 --> 00:02:03,700
+24不小心打成了14
+instead of 24 i have 14 by accident
+
+45
+00:02:03,900 --> 00:02:05,400
+十进制中只有一个14
+there's only one 14 in decimal
+
+46
+00:02:05,466 --> 00:02:07,666
+23后面的数字显然是24
+the number after 23 is 24 obviously
+
+47
+00:02:07,933 --> 00:02:09,866
+但是你可以发现
+but you can kind of see that
+
+48
+00:02:10,800 --> 00:02:14,300
+二进制和十进制的表达方式是一样的
+binary represents things same way as decimal does 
+
+49
+00:02:14,300 --> 00:02:16,000
+顺便说一下
+by the way a fun trick 
+
+50
+00:02:16,000 --> 00:02:18,133
+如果你用手指数的话
+if you count on your fingers
+
+51
+00:02:18,800 --> 00:02:20,266
+用十进制能数
+and you do it in base 10
+
+52
+00:02:20,566 --> 00:02:21,666
+能数到10
+you can count to 10 
+
+53
+00:02:22,133 --> 00:02:24,566
+但要是用二进制
+if you do it in base 2
+
+54
+00:02:24,933 --> 00:02:27,066
+你可以数到2的10次方
+you can count to 2 to the 10
+
+55
+00:02:27,066 --> 00:02:30,666
+因为你有10位可供使用
+because you have 10 bits that you can set at will 
+
+56
+00:02:31,000 --> 00:02:34,266
+比如，你只用5根手指
+and so you can see with just 5 fingers 
+
+57
+00:02:34,500 --> 00:02:36,000
+甚至只用4根手指
+or just 4 fingers even
+
+58
+00:02:36,000 --> 00:02:39,800
+就能一直数到15
+let's say i could count to 15 by holding up different fingers
+
+59
+00:02:39,900 --> 00:02:42,000
+但有时可能数错
+but at some point you'll accidentally flip someone off 
+
+60
+00:02:43,366 --> 00:02:45,766
+我们继续
+let's dive onwards
+
+61
+00:02:46,400 --> 00:02:48,766
+这就是数学意义上的二进制
+so that's binary in the mathematical sense 
+
+62
+00:02:48,766 --> 00:02:50,900
+当然计算机使用二进制
+of course computers speak binary
+
+63
+00:02:50,900 --> 00:02:52,100
+为什么使用二进制
+why do they speak binary
+
+64
+00:02:52,100 --> 00:02:54,300
+因为逻辑门
+well because of logic gates
+
+65
+00:02:54,300 --> 00:02:56,733
+因为这样容易造
+because it's easy to build 
+
+66
+00:02:56,800 --> 00:03:01,966
+第一节课讲的逻辑门
+a logic gate that we talked about back in the first lecture in this module
+
+67
+00:03:02,800 --> 00:03:07,433
+用1和0构建逻辑门很容易
+it's easy to build a logic gate with 1s and 0s
+
+68
+00:03:07,866 --> 00:03:09,333
+因为这样逻辑简单
+because that makes logic easy 
+
+69
+00:03:09,466 --> 00:03:13,933
+现在还有其他的逻辑系统
+now there are other logical systems
+
+70
+00:03:13,933 --> 00:03:18,600
+能支持三进制
+that can do base 3 for example ternary logic
+
+71
+00:03:18,600 --> 00:03:20,200
+三进制计算机是存在的
+and ternary computers exist
+
+72
+00:03:20,200 --> 00:03:23,166
+但主要是玩具和历史旧物
+but mostly in like toy and historical form 
+
+73
+00:03:24,333 --> 00:03:25,666
+一般来说
+generally speaking
+
+74
+00:03:26,600 --> 00:03:28,100
+1和0才是正确的选择
+ones and zeros are the way to go
+
+75
+00:03:28,100 --> 00:03:31,633
+更容易对他们形成概念，更易理解
+they're just easier they're easier to conceptualize
+
+76
+00:03:31,866 --> 00:03:36,933
+而且它们更容易建造
+and they are easier to build 
+
+77
+00:03:37,700 --> 00:03:39,266
+好极了
+boom done all right
+
+78
+00:03:39,466 --> 00:03:41,900
+如果你有一个10进制的系统
+if you had like a system like a base 10 system
+
+79
+00:03:41,900 --> 00:03:45,366
+想象一下，当你用光来传送数据时
+and imagine that that you were using light to send data
+
+80
+00:03:45,500 --> 00:03:47,600
+不能只看有没有光来
+instead of just saying is there light or isn't there light 
+
+81
+00:03:47,600 --> 00:03:49,900
+还得考虑，比如，亮度只有一半
+now you have to reason about okay is the light like half on
+
+82
+00:03:49,966 --> 00:03:52,166
+还是8成光亮
+is it like 8 
+
+83
+00:03:52,833 --> 00:03:53,866
+我想说的是
+this is one i mean
+
+84
+00:03:53,933 --> 00:03:56,499
+0，1就非常简单了
+but this one zero super easy all right
+
+85
+00:03:56,500 --> 00:03:59,400
+光，电，所有的东西都很好地反映了这一点
+light electricity everything lenses up pretty well to that
+
+86
+00:04:01,000 --> 00:04:03,100
+所以我们现在用二进制代码
+so we use binary code now
+
+87
+00:04:04,433 --> 00:04:08,166
+作为人类，我们如何与二进制代码交互
+how do we as humans interface with binary code
+
+88
+00:04:08,266 --> 00:04:09,933
+它有很多位
+well it just has a lot of digits
+
+89
+00:04:09,933 --> 00:04:12,066
+这使得它很难处理
+making it very difficult to to deal with
+
+90
+00:04:12,066 --> 00:04:15,100
+如果我告诉你100101111011
+if i told you 100101111011
+
+91
+00:04:15,366 --> 00:04:16,200
+你会说
+you're just gonna be like 
+
+92
+00:04:16,200 --> 00:04:18,666
+Yan，你为啥，发生了什么
+Yan why are you just what happened right
+
+93
+00:04:18,666 --> 00:04:20,133
+你遭遇了什么
+what is happening to you
+
+94
+00:04:20,333 --> 00:04:25,366
+但是对于计算机来说，大量的数据是没问题的
+but with a computer of course a lot of data is okay
+
+95
+00:04:25,566 --> 00:04:28,366
+但我们还是需要能够理解
+but we still need to be able to reason about the data
+
+96
+00:04:28,366 --> 00:04:29,666
+计算机处理的数据
+that the computer is processing 
+
+97
+00:04:29,833 --> 00:04:30,366
+特别是
+especially 
+
+98
+00:04:30,766 --> 00:04:35,200
+这节课要理解的层面
+on the level that we're going to be reasoning about it in this course 
+
+99
+00:04:35,466 --> 00:04:39,899
+那么如何表示二进制数据呢
+so how do we represent binary data 
+
+100
+00:04:40,033 --> 00:04:41,566
+我们可以用10进制表示
+well we could represent it as decimal
+
+101
+00:04:42,000 --> 00:04:42,900
+我们可以说
+we could say hey
+
+102
+00:04:44,533 --> 00:04:47,566
+1010就是10
+you know 1010 that's ten 
+
+103
+00:04:47,933 --> 00:04:48,700
+很好
+that's great 
+
+104
+00:04:48,800 --> 00:04:50,000
+或者你说
+or you say okay hey
+
+105
+00:04:50,500 --> 00:04:51,500
+我动一下
+let me move myself
+
+106
+00:04:51,500 --> 00:04:53,066
+每次都是
+oh my god every time 
+
+107
+00:04:53,633 --> 00:04:55,766
+我移到这里
+let me move myself here 
+
+108
+00:04:55,966 --> 00:04:56,933
+放这里不碍事
+where i'm not in the way
+
+109
+00:04:57,066 --> 00:04:59,200
+我们拿到个数字
+we could say okay hey we got a number
+
+110
+00:04:59,600 --> 00:05:02,500
+11000000
+11000000 
+
+111
+00:05:03,066 --> 00:05:04,233
+哦，我想
+oh i think i don't know
+
+112
+00:05:04,466 --> 00:05:05,766
+即128(口误)
+and that's you know 128
+
+113
+00:05:05,800 --> 00:05:07,066
+这些你能都记住
+you can memorize all these 
+
+114
+00:05:07,100 --> 00:05:08,866
+但这很难
+but it's gonna be difficult to deal with
+
+115
+00:05:10,033 --> 00:05:12,166
+所以十进制不是很好
+so decimal is not great 
+
+116
+00:05:12,800 --> 00:05:14,800
+另一个原因是
+and another way of saying this 
+
+117
+00:05:14,800 --> 00:05:18,100
+很多整数不对齐
+is like a lot of like the round numbers don't line up
+
+118
+00:05:18,100 --> 00:05:18,966
+你看
+i mean you see
+
+119
+00:05:19,200 --> 00:05:21,433
+这似乎是一个整数
+this seems like a very round number 
+
+120
+00:05:24,000 --> 00:05:25,633
+二进制看，这似乎是一个整数
+this seems like a very round number
+
+121
+00:05:26,000 --> 00:05:28,433
+但十进制看，它是240
+but it's just 240 
+
+122
+00:05:28,566 --> 00:05:30,700
+如果你接触的多
+i mean yeah if you work with computers long enough
+
+123
+00:05:30,700 --> 00:05:32,600
+你能认出这些常见数字
+you start recognizing these common numbers
+
+124
+00:05:32,600 --> 00:05:36,100
+但当你放大数字
+but once you kind of scale up to bigger and bigger numbers
+
+125
+00:05:36,233 --> 00:05:37,300
+就能难了
+it becomes difficult 
+
+126
+00:05:37,733 --> 00:05:42,866
+有人就意识到
+so someone realized somewhere along the way that 
+
+127
+00:05:42,866 --> 00:05:46,100
+如果是2的n次方进制
+if you use a base that is a power of two 
+
+128
+00:05:46,266 --> 00:05:50,333
+如4、8、16进制，等等
+base four eight sixteen etc etc
+
+129
+00:05:50,600 --> 00:05:51,633
+就可以
+then we can actually 
+
+130
+00:05:51,666 --> 00:05:58,066
+用这些进制的一个数字清晰地表示二进制的多个数字
+represent multiple binary digits in one of these digits cleanly
+
+131
+00:05:58,533 --> 00:06:04,800
+10进制的一个数字能表示大概3.几bit
+base 10 represents like three point something digits per base 10 digit
+
+132
+00:06:04,800 --> 00:06:06,033
+这很奇怪
+that's really weird 
+
+133
+00:06:06,233 --> 00:06:08,766
+而一个8进制数字正好能表示3bit
+whereas base 8 represents exactly three digits 
+
+134
+00:06:09,000 --> 00:06:11,266
+一个16进制数字能表示4bit
+base 16 represents exactly four digits
+
+135
+00:06:11,500 --> 00:06:16,866
+所以用八进制或者十六进制
+and so use octo base 8 or hexadecimal base 16 
+
+136
+00:06:17,333 --> 00:06:19,666
+表示二进制数
+to represent binary code 
+
+137
+00:06:20,200 --> 00:06:21,300
+而不用10进制
+instead of base 10 
+
+138
+00:06:21,600 --> 00:06:24,666
+在右边
+and here it is on the right 
+
+139
+00:06:24,766 --> 00:06:28,000
+你可以看到这个1111 0000
+and so you can see with this 1111 0000
+
+140
+00:06:28,000 --> 00:06:29,366
+是f0
+hey that's f 0
+
+141
+00:06:29,500 --> 00:06:30,300
+当然
+of course
+
+142
+00:06:30,466 --> 00:06:32,133
+16进制有16个字符
+hexadecimal has 16 digits
+
+143
+00:06:32,133 --> 00:06:37,433
+10进制只有10个字符
+we only have 10 digits available in base 10
+
+144
+00:06:37,600 --> 00:06:39,666
+就是我们熟悉的数字
+and that's the digits we know and love
+
+145
+00:06:39,700 --> 00:06:41,866
+所以我们用字母填充它们
+and so we pad them with letters 
+
+146
+00:06:41,966 --> 00:06:46,833
+十六进制中9后面的数是a
+so hexadecimal the number after nine is a 
+
+147
+00:06:46,933 --> 00:06:49,033
+然后b，然后c，然后d，然后e，然后f
+then b then c then d then e then f 
+
+148
+00:06:50,000 --> 00:06:56,133
+F转换成十进制是15
+f translates to 15 in decimal
+
+149
+00:06:56,900 --> 00:06:59,266
+然后是0x10
+and then after that it's 0x10
+
+150
+00:06:59,766 --> 00:07:00,933
+已经可以看出来
+and you can already see it
+
+151
+00:07:00,966 --> 00:07:02,800
+0x10对齐的很漂亮
+0x10 it lines up beautifully
+
+152
+00:07:03,133 --> 00:07:04,066
+这里一堆0
+a bunch of zeros here 
+
+153
+00:07:04,300 --> 00:07:05,400
+这里也一堆0
+boom bunch of zero there 
+
+154
+00:07:05,633 --> 00:07:08,166
+这些大的整数都对齐了
+now all of these big round numbers line up well
+
+155
+00:07:08,166 --> 00:07:11,100
+比8进制还好看
+a little better even than octo
+
+156
+00:07:12,933 --> 00:07:19,266
+有些地方会用八进制
+and there are places where we use octo base 8
+
+157
+00:07:19,433 --> 00:07:21,533
+但十六进制才是王道
+but hexadecimal is king 
+
+158
+00:07:21,633 --> 00:07:24,066
+这就是我们显示数据的方式
+that's how we display data
+
+159
+00:07:24,400 --> 00:07:30,466
+CPU用二进制看数据
+the cpu sees it as binary code or binary numbers
+
+160
+00:07:30,466 --> 00:07:33,100
+我们通常用16进制看数据
+we see it as hexadecimal numbers typically 
+
+161
+00:07:33,766 --> 00:07:34,266
+酷
+awesome
+
+162
+00:07:34,333 --> 00:07:35,566
+我们继续
+let's move on 
+
+163
+00:07:35,566 --> 00:07:38,400
+现在你们都知道十六进制了
+and now you all know hexadecimal
+
+164
+00:07:39,400 --> 00:07:40,233
+这就是数字
+that's numbers 
+
+165
+00:07:40,433 --> 00:07:41,566
+那文本呢?
+what about text 
+
+166
+00:07:41,800 --> 00:07:44,933
+在你看这张幻灯片的时候
+at some point you looking at this slide
+
+167
+00:07:44,966 --> 00:07:46,533
+它会显示文本
+and it shows you text
+
+168
+00:07:46,533 --> 00:07:48,400
+而不是显示一堆十六进制数
+not showing you a bunch of hexadecimal 
+
+169
+00:07:49,366 --> 00:07:53,933
+我们表示文本的方式是用不同的编码
+well the way that we express text is in a different encoding
+
+170
+00:07:54,200 --> 00:08:00,100
+基本上我们使用的文本编码是ASCII
+basically the text encoding that we use is ASCII
+
+171
+00:08:00,533 --> 00:08:03,566
+实际上是ASCII的扩展，称为utf8
+an expansion of ASCII actually called utf8
+
+172
+00:08:03,566 --> 00:08:06,466
+这种文本编码赋能了大多数网页
+that's the text encoding that powers most of the web 
+
+173
+00:08:07,466 --> 00:08:09,866
+utf8的前身
+and the precursor to utf8
+
+174
+00:08:10,666 --> 00:08:14,133
+它被称为美国信息交换标准代码
+which is called the American standard code for information interchange 
+
+175
+00:08:14,200 --> 00:08:21,433
+是在60年代还是60年代末创作的
+was created in like the 60s the late 60s or something 
+
+176
+00:08:22,133 --> 00:08:26,700
+它规定了如何使用7bit进行编码
+and it specifies how to encode using 7 bits
+
+177
+00:08:29,900 --> 00:08:33,400
+基本上就是键盘上的字母
+basically the letters that are on your keyboard
+
+178
+00:08:34,000 --> 00:08:35,700
+如果你有英文键盘
+if you have an English keyboard
+
+179
+00:08:36,566 --> 00:08:43,100
+基本上是小写大写英文字母拉丁字母
+but basically lower case uppercase English letters Latin letters
+
+180
+00:08:43,100 --> 00:08:46,966
+主要是英文字母
+but you know specifically in this case English letters
+
+181
+00:08:47,333 --> 00:08:50,100
+数字和一堆常见的特殊字符
+the digits and then a bunch of common special characters
+
+182
+00:08:50,200 --> 00:08:53,200
+右边是一个ASCII表
+this on the right is an ASCII table
+
+183
+00:08:53,266 --> 00:08:57,300
+每次移动我都
+every freaking time moving me 
+
+184
+00:08:57,466 --> 00:08:59,466
+右边是一个ASCII表
+on the right here is an ascii table 
+
+185
+00:08:59,666 --> 00:09:01,466
+查看方式是
+and the way that you look it up
+
+186
+00:09:01,500 --> 00:09:05,200
+左边是第一个16进制数
+is the left side is the first hex digit
+
+187
+00:09:06,400 --> 00:09:07,500
+不，错了
+no my bad
+
+188
+00:09:08,300 --> 00:09:14,366
+顶部的2到7是第一个十六进制数
+the top is the first hex digit from two through seven
+
+189
+00:09:14,400 --> 00:09:16,600
+左边是第二个 十六进制数字
+the left side is the second hex digit
+
+190
+00:09:16,600 --> 00:09:21,066
+所以0x41在ascii编码中是字母A
+so hex 41 encodes in ascii to the letter A
+
+191
+00:09:21,366 --> 00:09:25,633
+所以当你看到这个A的时候
+and so whenever you see like this A right here
+
+192
+00:09:26,133 --> 00:09:27,166
+大写字母A
+the capital letter A
+
+193
+00:09:27,566 --> 00:09:32,766
+在一个bit风暴中
+ somewhere over the crazy storm of bits
+
+194
+00:09:33,000 --> 00:09:36,800
+飞到你的无线卡中
+that flew over into your wireless card 
+
+195
+00:09:37,166 --> 00:09:38,733
+给你展现出这个幻灯片
+to give you this slide
+
+196
+00:09:38,900 --> 00:09:41,566
+其中有个0x41表示字母A
+there was a hex 41 representing that letter A
+
+197
+00:09:43,700 --> 00:09:44,466
+很大程度上
+for the most part
+
+198
+00:09:44,800 --> 00:09:50,066
+你可以便捷地看成0x40加上字母的序号
+you can kind of see these shortcuts hex 40 plus the number of the letter 
+
+199
+00:09:50,466 --> 00:09:52,733
+A是第一个字母，B是第二个字母，以此类推
+a's the first letter b's the second letter and so forth
+
+200
+00:09:53,133 --> 00:09:55,333
+这是大写字母
+is uppercase letters 
+
+201
+00:09:55,333 --> 00:09:57,166
+(小写则)0x60加序号
+hex 60 plus the letter 
+
+202
+00:09:57,333 --> 00:10:00,866
+0x61是a,0x65是e，等等
+so hex 61 is a hex 65 is e etc 
+
+203
+00:10:01,466 --> 00:10:04,766
+数字是0x30加数字
+digit representations is hex 30 plus the digit 
+
+204
+00:10:04,800 --> 00:10:09,066
+0x35是数字5
+hex 35 is the representation of the digit 5 
+
+205
+00:10:09,466 --> 00:10:10,366
+像这个
+like this 
+
+206
+00:10:11,133 --> 00:10:12,066
+等等
+and so on
+
+207
+00:10:13,400 --> 00:10:16,266
+你还会认识一些其它的特殊字符
+there are some other special characters that you will learn to recognize
+
+208
+00:10:16,366 --> 00:10:19,800
+你可能会知道2f是正斜杠
+you will learn that 2f is forward slash probably
+
+209
+00:10:21,533 --> 00:10:24,166
+好吧，我讲的ASCII
+all right i mentioned ascii started out
+
+210
+00:10:24,966 --> 00:10:28,933
+是以美国为中心的
+very kind of you know America focused 
+
+211
+00:10:28,966 --> 00:10:33,733
+它被称为美国信息交换标准
+it's actually called American standard of information interchange 
+
+212
+00:10:34,500 --> 00:10:38,066
+它随着网络的全球化而进化
+it evolved when the web became global
+
+213
+00:10:38,166 --> 00:10:43,300
+我们需要通用的方式来表达任何语言
+and we needed common ways to express any language 
+
+214
+00:10:43,433 --> 00:10:45,733
+它后来演变成了utf8
+it evolved into utf8
+
+215
+00:10:46,333 --> 00:10:49,800
+我记得是通用文本格式，不确定
+i think Universal Text Format don't quote me on that one
+
+216
+00:10:51,566 --> 00:10:54,166
+utf8基本上就是ASCII码
+so utf8 basically is ascii
+
+217
+00:10:54,333 --> 00:10:55,833
+如果第一位置为1
+but if the top bit is set
+
+218
+00:10:56,200 --> 00:10:59,800
+它是8位编码格式（ascii是7位）
+it's a 8 bit format initially
+
+219
+00:10:59,866 --> 00:11:00,800
+如果第一位置为1
+if the top bit is set
+
+220
+00:11:00,933 --> 00:11:01,900
+它会读更多位
+it reads more bits
+
+221
+00:11:02,200 --> 00:11:03,466
+若读的字节首位是1
+and those top bits are set 
+
+222
+00:11:03,500 --> 00:11:04,866
+它会读更多
+it reads more and more bits right
+
+223
+00:11:04,866 --> 00:11:08,566
+所以它可以表示很多东西
+so it can represent a lot of things
+
+224
+00:11:09,200 --> 00:11:13,400
+不同语言的符号
+a lot of different language glyphs
+
+225
+00:11:13,400 --> 00:11:15,633
+还有很多表情符号
+and also a lot of emojis 
+
+226
+00:11:15,666 --> 00:11:18,733
+这就是所有表情符号的来源
+that's where all your emojis come from 
+
+227
+00:11:19,233 --> 00:11:21,166
+Utf8非常重要
+utf8 is very important
+
+228
+00:11:21,333 --> 00:11:22,433
+它来自ASCII码
+it came from ascii 
+
+229
+00:11:22,733 --> 00:11:24,566
+可以告诉你的朋友
+tell your friends all right
+
+230
+00:11:24,766 --> 00:11:26,333
+但是在这门课上
+but in this class
+
+231
+00:11:26,400 --> 00:11:27,900
+当我们看
+mostly when we look at
+
+232
+00:11:29,600 --> 00:11:31,400
+我们要看的程序
+the types of program that we'll be looking at
+
+233
+00:11:31,600 --> 00:11:34,800
+甚至以后你看到的会处理英文文本的程序
+and even when you look at programs that deal with English text
+
+234
+00:11:35,333 --> 00:11:37,933
+ASCII仍然是常用的
+ascii is still your go to typically 
+
+235
+00:11:39,000 --> 00:11:41,400
+当然，还有其它文本格式
+of course there are other ways to format text
+
+236
+00:11:41,766 --> 00:11:44,366
+我们现在就来讨论
+that we'll talk about right now actually all right
+
+237
+00:11:46,333 --> 00:11:47,866
+8位编码
+8 bits encode 
+
+238
+00:11:48,000 --> 00:11:53,800
+实际上是7位，但utf8会用8位编码一个字母
+actually 7 bits but 8 bits with utf8 encode a single letter 
+
+239
+00:11:54,100 --> 00:11:58,066
+现在8位就是我们所说的一个字节
+now 8 bits is what we call a byte nowadays 
+
+240
+00:11:58,300 --> 00:12:01,100
+从历史上看，这与文本编码有关
+historically this is tied to text encoding 
+
+241
+00:12:01,166 --> 00:12:03,066
+一字节有8位的原因
+the reason that we have 8 bits to a byte
+
+242
+00:12:03,533 --> 00:12:05,366
+一个字节就是位的集合
+a byte just being a collection of bits 
+
+243
+00:12:05,933 --> 00:12:07,233
+确切地说是8个位
+8 of them to be precise
+
+244
+00:12:07,600 --> 00:12:10,766
+就是因为文本
+is because of text 
+
+245
+00:12:11,633 --> 00:12:15,166
+其实，一字节可以是任意位
+basically you can have any number of bits to a byte
+
+246
+00:12:15,300 --> 00:12:18,300
+我遇到过有的架构有很奇怪的位数
+i've worked with architecture with insane amounts of bits
+
+247
+00:12:18,500 --> 00:12:19,700
+一个字节有很多位
+a lot of bits to a byte
+
+248
+00:12:19,733 --> 00:12:21,833
+或者很少的位，等等
+little bit to a byte etc etc etc
+
+249
+00:12:23,166 --> 00:12:26,533
+这些都是最晚上世纪60年代末的古董
+these were all ancient from the like the late 60s was the most recent one
+
+250
+00:12:26,666 --> 00:12:27,800
+这是有原因的
+there's a reason for that 
+
+251
+00:12:28,233 --> 00:12:29,233
+在60年代
+in the 60s
+
+252
+00:12:29,733 --> 00:12:32,066
+ASCII码创建时
+while also being involved in the creation of ASCII
+
+253
+00:12:32,133 --> 00:12:35,966
+由于某种原因，IBM创建了另一个EBC DIC
+for some reason IBM created another EBC DIC
+
+254
+00:12:35,966 --> 00:12:38,066
+它是另一种文本格式
+another format for expressing text
+
+255
+00:12:38,133 --> 00:12:39,300
+还有一些不令人满意的东西
+there was some wonky other thing
+
+256
+00:12:39,466 --> 00:12:42,300
+基本上相同的字母有不同的表示
+i mean basically the same letters in different configurations
+
+257
+00:12:42,400 --> 00:12:44,333
+所以0x41不是大写的a了
+so a hex 41 wouldn't be capital A
+
+258
+00:12:44,433 --> 00:12:46,666
+它可能是一些随机的垃圾
+it would be some random junk
+
+259
+00:12:46,800 --> 00:12:51,766
+实际上，由于某种原因，我上周末在看EBC DIC
+and i actually for some reason was looking at EBC DIC last weekend
+
+260
+00:12:51,766 --> 00:12:53,533
+所以我大概能想出这个表
+so i could kind of picture the table in my head
+
+261
+00:12:53,766 --> 00:12:55,766
+但不清楚0x41是什么
+but not enough to tell you what 0x41 is
+
+262
+00:12:56,000 --> 00:12:58,933
+我记得字母在左下角
+i think the letters were on the bottom left 
+
+263
+00:12:59,533 --> 00:13:00,100
+不管怎样
+anyways
+
+264
+00:13:02,400 --> 00:13:05,900
+EBC DIC是一种8位文本编码
+EBC DIC was an 8 bit text encoding
+
+265
+00:13:06,166 --> 00:13:10,533
+1963年，ibm的大型机已经非常普及
+and ibm's mainframes were very widespread by 1963
+
+266
+00:13:11,400 --> 00:13:16,500
+所以他们偶然创造了8位字节
+and so they kind of created the 8 bit byte by accident
+
+267
+00:13:17,100 --> 00:13:20,200
+ASCII取代了EBC DIC
+ASCII replaced EBC DIC
+
+268
+00:13:20,333 --> 00:13:24,366
+但8位是一字节的概念保留了下来
+but you know the concept of 8 bits to a byte stuck
+
+269
+00:13:24,800 --> 00:13:27,166
+每个现代架构都使用8位字节
+every modern architecture uses 8 bit bytes
+
+270
+00:13:28,166 --> 00:13:34,266
+技术上讲，没有官方定义一个字节就是8位
+technically speaking a byte is not i think officially defined as 8 bits
+
+271
+00:13:34,600 --> 00:13:37,300
+如果你想要非常精确的话，这就像一个八进制
+that's like an octat if you want to be extremely precise
+
+272
+00:13:37,800 --> 00:13:40,133
+但只要有人说一字节
+but whenever anyone says bytes
+
+273
+00:13:40,266 --> 00:13:41,233
+意思就是8位
+they mean 8 bits 
+
+274
+00:13:41,400 --> 00:13:42,966
+除了特殊情况
+except for in various itare situations
+
+275
+00:13:43,666 --> 00:13:47,066
+所以8位组成一字节
+so bits form into 8 bytes
+
+276
+00:13:47,766 --> 00:13:51,733
+每一个都可以保存一些值
+each of which can hold some values
+
+277
+00:13:52,033 --> 00:13:56,966
+或者是一些文本，看成文本的话
+or you know in code some text if you look at it as text
+
+278
+00:13:57,100 --> 00:14:02,300
+我们如何把字节组成字
+okay now how do we group bytes into words 
+
+279
+00:14:02,533 --> 00:14:03,733
+又一次
+and again
+
+280
+00:14:03,800 --> 00:14:06,566
+又弄错了
+oh my god and again i'm doing the wrong thing 
+
+281
+00:14:06,600 --> 00:14:09,000
+我又挡住了幻灯片的文本
+and again i am covering slide text 
+
+282
+00:14:09,133 --> 00:14:12,133
+抱歉，好的
+i'm sorry about that um all right
+
+283
+00:14:14,200 --> 00:14:16,200
+字节能组成字
+bytes get grouped into words
+
+284
+00:14:16,366 --> 00:14:20,100
+所以我说x86是64位架构时
+so when i tell you x86 is a 64 bit architecture 
+
+285
+00:14:20,266 --> 00:14:22,433
+我真正的意思是
+what i actually mean is that 
+
+286
+00:14:23,666 --> 00:14:27,233
+X86处理位时
+x86 deals with bits
+
+287
+00:14:28,566 --> 00:14:29,600
+8位为一字节
+8 bits to a byte 
+
+288
+00:14:30,400 --> 00:14:32,333
+8字节为一个字
+8 bytes to a word 
+
+289
+00:14:33,033 --> 00:14:35,433
+字长为64位
+for a word length of 64 bits
+
+290
+00:14:35,600 --> 00:14:37,533
+它一次处理64位
+and it deals with 64 bits at a time
+
+291
+00:14:41,666 --> 00:14:44,300
+这有一些历史上的奇怪之处
+now this has some historic oddities
+
+292
+00:14:44,666 --> 00:14:48,100
+因为我们并不总是使用64位架构
+because we didn't always have 64 bit architectures
+
+293
+00:14:48,266 --> 00:14:50,233
+所以很久以前
+so once upon a time
+
+294
+00:14:50,433 --> 00:14:52,000
+我们只有8位架构
+we just had 8 bit architectures
+
+295
+00:14:52,800 --> 00:14:54,633
+一个字节就是一个字节
+and so a byte was just a byte 
+
+296
+00:14:55,333 --> 00:14:57,066
+然后我们有了16位架构
+then we had 16 bit architectures
+
+297
+00:14:57,200 --> 00:14:58,533
+但一字节仍然是8位
+but a byte was still 8 bits
+
+298
+00:14:59,933 --> 00:15:04,366
+我们需要用别的名字来称呼它
+and we said okay well we need some other name to call it
+
+299
+00:15:04,466 --> 00:15:05,433
+就是字
+that was a word
+
+300
+00:15:06,500 --> 00:15:08,666
+然后我们创建了一个32位架构
+then we created a 32 bit architecture
+
+301
+00:15:09,133 --> 00:15:11,000
+然后我们说好吧
+so then we said okay well
+
+302
+00:15:11,400 --> 00:15:12,633
+16位是一个字
+but 16 bits is a word 
+
+303
+00:15:12,733 --> 00:15:15,100
+所以32位是一个双字
+so 32 bits is gonna be a double word
+
+304
+00:15:15,666 --> 00:15:17,233
+但其他人说
+but then other people said okay
+
+305
+00:15:17,300 --> 00:15:20,500
+字的长度是32位
+the word width is 32 bits 
+
+306
+00:15:20,533 --> 00:15:22,400
+32位是一个双字
+so 32 bits is gonna be a double word 
+
+307
+00:15:22,633 --> 00:15:23,833
+其他人说，嘿
+other people said hey
+
+308
+00:15:24,400 --> 00:15:28,300
+32位是架构的字长
+32 bit is the word length of architecture the word width of architecture
+
+309
+00:15:28,333 --> 00:15:30,333
+所以16位现在是半个字
+so 16 bits is now going to be a half word
+
+310
+00:15:30,600 --> 00:15:31,766
+就有了重叠
+so you have this overlap
+
+311
+00:15:31,866 --> 00:15:38,366
+所以半字、字都指16位
+so like half word could be or word could be both refer to 16 bits
+
+312
+00:15:38,700 --> 00:15:41,733
+双字、字都指32位
+double word or word could both refer to 32 bits 
+
+313
+00:15:41,833 --> 00:15:43,666
+到了64位时
+and then when we went to 64 bits
+
+314
+00:15:44,300 --> 00:15:45,366
+我们会这么说
+we'll say that okay you know what 
+
+315
+00:15:45,666 --> 00:15:46,533
+这太疯狂了
+this is insane
+
+316
+00:15:46,633 --> 00:15:48,033
+我们叫它四字
+let's just call it a quad word
+
+317
+00:15:48,366 --> 00:15:54,000
+所以现在最安全的表达方式是
+so it is so nowadays the safe way to say things 
+
+318
+00:15:54,033 --> 00:15:57,600
+半字是两字节
+half word is two bytes 
+
+319
+00:15:58,166 --> 00:15:59,166
+双字
+double word
+
+320
+00:15:59,566 --> 00:16:01,400
+你可能认为是半字的4倍
+which you would think is four times the half word
+
+321
+00:16:01,433 --> 00:16:02,033
+但不是
+but no
+
+322
+00:16:02,366 --> 00:16:03,200
+半字是两个字节
+half word is two bytes 
+
+323
+00:16:03,266 --> 00:16:04,666
+双字是四个字节
+double word is four bytes
+
+324
+00:16:04,800 --> 00:16:06,066
+四字是8字节
+quad word is 8 bytes
+
+325
+00:16:06,133 --> 00:16:07,833
+至少最后一步说得通
+at least that last step makes sense 
+
+326
+00:16:08,266 --> 00:16:09,166
+好吧
+awesome okay
+
+327
+00:16:09,366 --> 00:16:12,000
+所以说字的时候
+so you know if you want to talk about words
+
+328
+00:16:12,866 --> 00:16:14,466
+我的建议是要精确
+my recommendation be precise 
+
+329
+00:16:14,466 --> 00:16:17,966
+有趣的一点，半个字节称为nibble
+also fun fact half of a byte is called a nibble
+
+330
+00:16:20,000 --> 00:16:21,833
+这个挺有趣的
+i just put that in there just for fun
+
+331
+00:16:21,966 --> 00:16:23,666
+好
+okay cool
+
+332
+00:16:25,900 --> 00:16:27,466
+我们讨论了文本的表示
+we talked about expressing text
+
+333
+00:16:29,666 --> 00:16:34,000
+再谈谈数字的表达
+let's talk about expressing numbers
+
+334
+00:16:34,333 --> 00:16:37,033
+64位体系结构
+a 64 bit architecture
+
+335
+00:16:37,133 --> 00:16:41,066
+64位CPU一般一次可以处理64位
+64 bit cpu can reason about 64 bits at a time generally
+
+336
+00:16:41,166 --> 00:16:42,100
+这就是它的意思
+that's what it means
+
+337
+00:16:42,400 --> 00:16:43,633
+表示它的字长
+means its wordwidth 
+
+338
+00:16:43,766 --> 00:16:46,933
+通常是适合它寄存器的长度
+amount that typically fits into its registers etc etc 
+
+339
+00:16:47,000 --> 00:16:48,400
+是64位
+is 64 bits 
+
+340
+00:16:48,466 --> 00:16:56,700
+现在有其他聪明的方法来处理更多
+now there are other kind of clever ways to reason about more 
+
+341
+00:16:56,766 --> 00:16:58,833
+所以现代x86真的很酷
+so actually modern x86 is really cool
+
+342
+00:16:59,300 --> 00:17:01,866
+它有专门的硬件
+and it actually has specialized hardware 
+
+343
+00:17:01,900 --> 00:17:03,800
+每次能处理大约512位
+to reason about 512 bits at a time 
+
+344
+00:17:03,866 --> 00:17:05,266
+就是64字节
+that's 64 bytes
+
+345
+00:17:05,700 --> 00:17:06,633
+这是很多的数据
+that's a lot of data 
+
+346
+00:17:07,166 --> 00:17:12,033
+用它来处理多媒体等等
+uses that for stuff like multimedia processing and so forth 
+
+347
+00:17:12,200 --> 00:17:12,733
+好的
+all right
+
+348
+00:17:13,000 --> 00:17:21,533
+所以64位二进制数字可以表示很大范围的值
+so 64 binary digits can express an enormous range of values 
+
+349
+00:17:21,633 --> 00:17:23,500
+从最小值0
+from 0 at the minimum 
+
+350
+00:17:23,900 --> 00:17:29,266
+到一些酷的数字如 0x539即1337
+to some other cool numbers hex 539 is 1337
+
+351
+00:17:29,366 --> 00:17:31,866
+很有黑客范（3=e，7=t）
+that is a very leet number 
+
+352
+00:17:32,600 --> 00:17:40,700
+到最大值2的64次方-1
+to the maximum which is 2 to the 64 power minus one
+
+353
+00:17:40,766 --> 00:17:50,100
+每多一位能表示的范围就翻一倍
+so every bit is an additional amount of data that you can convey
+
+354
+00:17:50,133 --> 00:17:50,900
+如果有1位
+if you have one bit
+
+355
+00:17:50,900 --> 00:17:52,466
+可以表示1或0
+you can just say one or zero
+
+356
+00:17:52,466 --> 00:17:53,733
+只能表示2个值
+you can only convey two values 
+
+357
+00:17:53,800 --> 00:17:54,800
+如果有2位
+if you have two bits
+
+358
+00:17:55,166 --> 00:17:56,566
+就可以表达4个值
+you can convey four values
+
+359
+00:17:56,700 --> 00:18:01,000
+0、1、10和11
+a 0  a 1 a 10 and a 11
+
+360
+00:18:03,766 --> 00:18:05,533
+每增加一比特，它就会翻倍
+and every additional bit doubles it 
+
+361
+00:18:05,666 --> 00:18:09,533
+一个n位的数字可以表示
+so an n bit number can convey
+
+362
+00:18:10,366 --> 00:18:12,633
+可以编码
+can encode can represent 
+
+363
+00:18:12,866 --> 00:18:15,666
+2的n次方个值
+two to the n total values
+
+364
+00:18:15,666 --> 00:18:18,299
+最大值是2^n - 1
+and the maximum value is two to the n minus one
+
+365
+00:18:18,533 --> 00:18:20,633
+从0到2^n - 1
+from 0 to 2 to the n - 1
+
+366
+00:18:20,933 --> 00:18:23,966
+64位整数的最大值是这个
+the maximum 64 bit integer is this monstrosity
+
+367
+00:18:24,700 --> 00:18:29,900
+用十六进制表示成FFFF FFFF FFFF FFFF
+and then in hex we represented it as ffff ffff ffff ffff
+
+368
+00:18:32,066 --> 00:18:32,933
+展开一下
+quick sidebar
+
+369
+00:18:32,933 --> 00:18:36,733
+这让我们思考起来
+that will kind of start getting our thinking juices flowing 
+
+370
+00:18:36,800 --> 00:18:39,800
+如果给64位最大值加1，会怎样
+what happened if you add one to the maximum 64 bit number 
+
+371
+00:18:39,833 --> 00:18:42,933
+会得到一个65位的数
+well you would normally end up with a 65 bit number
+
+372
+00:18:43,133 --> 00:18:45,233
+如果给1位最大值加1
+if you add one to the maximum one bit number
+
+373
+00:18:45,266 --> 00:18:46,533
+1位最大值为1
+the maximum bit numbers one
+
+374
+00:18:46,666 --> 00:18:47,466
+会得到10
+you get 10
+
+375
+00:18:47,633 --> 00:18:48,733
+这是一个两位的数字
+that's a two bit number
+
+376
+00:18:50,400 --> 00:18:56,433
+但是64位架构装不下65位的数
+but the 65th bit doesn't fit in a 64 bit architecture
+
+377
+00:18:56,833 --> 00:18:58,099
+它会去哪呢
+so where does it go
+
+378
+00:18:58,233 --> 00:18:59,266
+其实不要惊慌
+actually don't panic
+
+379
+00:18:59,400 --> 00:19:00,200
+我们不会失去它
+we don't lose it
+
+380
+00:19:00,266 --> 00:19:02,199
+cpu有地方存储它
+the cpu has a special place where it stores it 
+
+381
+00:19:02,266 --> 00:19:03,566
+这个地方
+that special place is actually
+
+382
+00:19:03,566 --> 00:19:07,966
+由任何会产生65位数的操作所共享
+shared any operation that will end up making a 65th bit
+
+383
+00:19:08,166 --> 00:19:10,733
+这第65位会放到一个特殊的盒子中
+that 65th bit will get put into this special box 
+
+384
+00:19:10,866 --> 00:19:13,400
+如果你想要它
+so if you want to if you want it
+
+385
+00:19:13,400 --> 00:19:15,333
+要在这之后马上取它
+you need to get it right away after that
+
+386
+00:19:15,533 --> 00:19:18,000
+在我们称之为的溢出之后
+after what we call overflow 
+
+387
+00:19:18,166 --> 00:19:19,866
+当你溢出时
+where you overflow
+
+388
+00:19:21,700 --> 00:19:23,900
+操作整数发生溢出时
+integer overflow where you do an integer operation
+
+389
+00:19:24,300 --> 00:19:25,733
+你往一个很大的数加1
+you add one to a very large number 
+
+390
+00:19:25,766 --> 00:19:29,000
+最后得到65位数时
+and you end up with 65 bits
+
+391
+00:19:29,300 --> 00:19:31,633
+你就溢出了，超过了最大值
+you overflowed the maximum value
+
+392
+00:19:33,266 --> 00:19:35,033
+当然也有相反的情况
+so and of course the inverse happens 
+
+393
+00:19:35,233 --> 00:19:36,300
+当你减去1
+when you subtract one
+
+394
+00:19:36,400 --> 00:19:37,800
+你用0减去1时
+you have zero and you subtract one
+
+395
+00:19:37,966 --> 00:19:39,233
+然后就会下溢
+and then you underflow
+
+396
+00:19:40,500 --> 00:19:43,100
+它以同样的方式保存在那里
+and it gets saved the same way 
+
+397
+00:19:43,266 --> 00:19:45,466
+你要保存这多余的一位
+you save that extra one
+
+398
+00:19:47,733 --> 00:19:49,466
+概念上很相似
+conceptually similar and go from there
+
+399
+00:19:49,533 --> 00:19:50,100
+好的
+all right
+
+400
+00:19:50,600 --> 00:19:55,133
+我将在几节课后讨论这个问题
+i'll talk about that a couple of lectures from now actually 
+
+401
+00:19:55,400 --> 00:19:59,500
+我们刚说用0减去1
+so we just said subtracting one from zero 
+
+402
+00:20:00,133 --> 00:20:01,800
+结果是-1
+now that gives us negative one
+
+403
+00:20:01,866 --> 00:20:03,500
+但我们在这里看的所有数字
+but all of the numbers we're looking at here
+
+404
+00:20:03,633 --> 00:20:06,966
+都是正数
+they're very positive numbers
+
+405
+00:20:07,766 --> 00:20:10,733
+怎么表示负数呢
+so how do we talk about negative numbers
+
+406
+00:20:11,966 --> 00:20:12,566
+好吧
+well
+
+407
+00:20:13,300 --> 00:20:18,733
+冯·诺伊曼架构的那个冯·诺伊曼
+John von Neumann of von Neumann architecture fame
+
+408
+00:20:18,866 --> 00:20:20,566
+前几节课应该听过他了
+which you heard about a couple lectures ago 
+
+409
+00:20:21,833 --> 00:20:26,766
+建议使用补码
+actually gave a suggestion to use something called 2's complement
+
+410
+00:20:26,833 --> 00:20:27,866
+这是一个疯狂的想法
+it's a crazy idea 
+
+411
+00:20:28,233 --> 00:20:31,566
+他取代了之前的老想法
+and it replaces an older idea that said hey 
+
+412
+00:20:32,266 --> 00:20:33,433
+为什么不直接用一位
+why don't we just have a bit
+
+413
+00:20:33,800 --> 00:20:37,200
+最左边的一位
+the left most bit here right here
+
+414
+00:20:37,300 --> 00:20:39,200
+来表示符号，这个数是负的
+it'll say that hey this number is negative
+
+415
+00:20:39,666 --> 00:20:41,800
+这个数是正的
+so this number will be positive 
+
+416
+00:20:42,133 --> 00:20:44,466
+00……11是正3
+00...11 is positive 3
+
+417
+00:20:44,566 --> 00:20:47,300
+在8位架构中是1...
+but 1 in an 8 bit architecture
+
+418
+00:20:47,366 --> 00:20:51,900
+但你可以想象64位中是1，更多的0，然后11
+which you can imagine 64 bit is just 1 and then way more zeros and then 11 
+
+419
+00:20:52,066 --> 00:20:53,266
+结果是-3
+that will be a negative 3 
+
+420
+00:20:53,566 --> 00:20:54,566
+这很好也很简单
+that's nice and simple
+
+421
+00:20:55,400 --> 00:20:56,633
+但它有一个缺点
+but it has a drawback
+
+422
+00:20:57,900 --> 00:21:00,133
+0会有两种不同的表示方法
+we have two different representations for 0
+
+423
+00:21:00,333 --> 00:21:01,966
++0和-0
+we have positive 0 and negative 0
+
+424
+00:21:01,966 --> 00:21:03,700
+从数学上讲，这是个坏消息
+mathematically this is a bad news
+
+425
+00:21:04,300 --> 00:21:09,033
+我们不想要处理0的两种形式
+we don't want to have to deal with two representations of 0
+
+426
+00:21:09,366 --> 00:21:12,000
+特别是在实现数学运算时
+in terms of implementing mathematical operations
+
+427
+00:21:13,300 --> 00:21:17,000
+还有就是，你做任何运算时
+the other thing is that any operation you make 
+
+428
+00:21:17,500 --> 00:21:20,266
+比如加减法等等
+like add subtract etc etc 
+
+429
+00:21:20,366 --> 00:21:22,033
+都必须要关注
+it has to be aware of 
+
+430
+00:21:22,033 --> 00:21:27,166
+处理的是有符号数还是无符号数
+whether it is dealing with signed numbers or unsigned numbers
+
+431
+00:21:27,800 --> 00:21:30,166
+因为如果有一个0
+because if you have a zero
+
+432
+00:21:30,200 --> 00:21:31,400
+用它减去1
+and you subtract one from it
+
+433
+00:21:31,700 --> 00:21:32,900
+会得到-1
+and you end up with negative one
+
+434
+00:21:33,333 --> 00:21:35,033
+结果就像这样
+you're going to end up with this situation 
+
+435
+00:21:35,266 --> 00:21:37,000
+1，一串0，1
+one a bunch of zeros negative one
+
+436
+00:21:37,100 --> 00:21:39,266
+如果是无符号操作
+and then if you're only talking about positive numbers
+
+437
+00:21:39,766 --> 00:21:43,433
+你想表示尽可能多的正数
+so you just want as many positive numbers to represent as possible
+
+438
+00:21:44,700 --> 00:21:47,000
+最大值是255
+which means the biggest one is 255
+
+439
+00:21:47,033 --> 00:21:49,066
+那么0 - 1应该是255
+then zero minus one should be 255
+
+440
+00:21:49,266 --> 00:21:53,466
+所以CPU必须关注有无符号
+so your CPUs would have to be signedness aware
+
+441
+00:21:53,966 --> 00:21:55,633
+必须要有多套指令
+you'd have to have multiple instructions 
+
+442
+00:21:55,700 --> 00:21:59,100
+比如一个有符号加法，一个无符号加法
+one for doing add sign add unsign 
+
+443
+00:21:59,133 --> 00:22:03,433
+或另一个地方来存储符号
+or different sets of places to store signedness
+
+444
+00:22:03,600 --> 00:22:04,766
+那将是一场噩梦
+it would be a nightmare
+
+445
+00:22:05,733 --> 00:22:09,166
+所以冯·诺伊曼提出了
+so von neumann came up with 
+
+446
+00:22:09,800 --> 00:22:14,066
+或者可能在别处发现并提议使用它
+or maybe found elsewhere and proposed to use it
+
+447
+00:22:14,333 --> 00:22:18,533
+一个非常聪明的方法叫做补码
+a very clever approach called 2's complement
+
+448
+00:22:20,066 --> 00:22:22,866
+首先，补码中0只有一种表示
+first of all 2's complement has one representation of 0 if 0
+
+449
+00:22:22,866 --> 00:22:23,766
+这很好也很简单
+that's nice and easy
+
+450
+00:22:23,900 --> 00:22:25,033
+全0即是0
+all 0 bits 0 
+
+451
+00:22:26,533 --> 00:22:31,033
+疯狂的是
+and the crazy thing is that 
+
+452
+00:22:31,266 --> 00:22:35,166
+负数与正数的表示法相同
+negative numbers have the same representation as positive numbers 
+
+453
+00:22:35,233 --> 00:22:38,166
+所以0 - 1结果为全1
+so zero minus one is all ones
+
+454
+00:22:38,600 --> 00:22:41,333
+这既是255也是-1
+and that is both 255 and negative 1 
+
+455
+00:22:41,933 --> 00:22:43,700
+如果再减去一
+if you subtract another one from that 
+
+456
+00:22:44,500 --> 00:22:46,433
+是11...0
+it's all 1 and 1 0 
+
+457
+00:22:46,900 --> 00:22:49,100
+等于254或- 2
+it's 254 or negative 2
+
+458
+00:22:50,900 --> 00:22:54,566
+这样你就可以在大多数情况下不用担心符号了
+and so you can do your arithmetic for the most part without worrying about the sign
+
+459
+00:22:54,633 --> 00:22:57,266
+加减等操作肯定不用担心了
+definitely add subtract several others
+
+460
+00:22:57,666 --> 00:23:02,166
+不用担心数据的符号了
+you don't have to worry about the signedness of the data
+
+461
+00:23:02,966 --> 00:23:04,300
+值都是一样的
+it's the same
+
+462
+00:23:06,533 --> 00:23:07,400
+另一个好处
+another benefit
+
+463
+00:23:07,733 --> 00:23:15,066
+最左边的位仍然是符号位
+the left most bit here is still the sign bit
+
+464
+00:23:15,300 --> 00:23:18,966
+因为所有负数最左边的都是1
+because all negative numbers will have that as one
+
+465
+00:23:19,266 --> 00:23:19,833
+这很好
+which is great 
+
+466
+00:23:19,900 --> 00:23:22,900
+缺点是会有点疯狂
+now the downside is you'll go a little crazy
+
+467
+00:23:23,000 --> 00:23:25,366
+为什么这个是-1
+because i mean why does this represent negative 1 
+
+468
+00:23:25,433 --> 00:23:26,266
+你能大概看出来
+you can kind of see it 
+
+469
+00:23:26,400 --> 00:23:27,900
+为什么这个是-2
+why does this represent negative 2 
+
+470
+00:23:28,100 --> 00:23:29,633
+你也许还能看出来
+you can still kind of maybe see it
+
+471
+00:23:29,766 --> 00:23:33,766
+但当你看到任意一堆1和0
+but if you look at an arbitrary a bunch of 1s and 0s 
+
+472
+00:23:33,866 --> 00:23:36,633
+你很难分辨出它是什么负数
+it's very hard to say what negative number it is
+
+473
+00:23:38,466 --> 00:23:42,000
+但是如果你把这个值当作正数
+but basically if you take this value as a positive number
+
+474
+00:23:42,733 --> 00:23:45,300
+然后减去256
+and you subtract 256 from it
+
+475
+00:23:45,600 --> 00:23:47,000
+这将是负的
+that's going to be the negative
+
+476
+00:23:47,566 --> 00:23:49,833
+从这个角度来看，是有道理的
+it kind of makes sense from that perspective 
+
+477
+00:23:52,500 --> 00:23:54,733
+现在在补码中
+now in 2's complement
+
+478
+00:23:55,600 --> 00:24:00,600
+8位中最小可表达的负数
+the smallest expressible negative number in 8 bit
+
+479
+00:24:01,800 --> 00:24:03,133
+以8位为一字节
+for an 8 bit byte 
+
+480
+00:24:03,133 --> 00:24:04,566
+是-128
+is negative 128 
+
+481
+00:24:04,866 --> 00:24:06,399
+1后面全是0
+it's one followed by all zeros
+
+482
+00:24:07,000 --> 00:24:13,366
+这在无符号数中是128
+this is an unsigned 128
+
+483
+00:24:14,500 --> 00:24:16,500
+然后是256，哦，不好意思
+and then it's 256 oh sorry
+
+484
+00:24:16,766 --> 00:24:18,599
+如果减去128
+if you subtract 128 
+
+485
+00:24:19,733 --> 00:24:23,266
+如果你把它看作一个无符号整数
+this if you were looking at it as an unsigned integer
+
+486
+00:24:23,366 --> 00:24:24,700
+应该是128
+would be 128
+
+487
+00:24:25,600 --> 00:24:26,566
+等等，这对吗?
+wait is this right
+
+488
+00:24:30,066 --> 00:24:31,033
+是的
+yes yes yes 
+
+489
+00:24:31,500 --> 00:24:34,633
+如果把它看成一个无符号整数，就是128
+if you were looking it at as an unsigned integer would be 128
+
+490
+00:24:35,466 --> 00:24:37,133
+如果用它减去256
+if you subtract 256 from that 
+
+491
+00:24:37,366 --> 00:24:38,533
+最后会得到-128
+you end up with -128
+
+492
+00:24:38,633 --> 00:24:40,833
+这是它在补码中的值
+that's its value in two's complement
+
+493
+00:24:41,066 --> 00:24:44,933
+当你在有符号的情况下考虑它
+when you are thinking about it in the context of it being signed
+
+494
+00:24:48,666 --> 00:24:51,666
+如果-128减去1
+if you subtract one from that negative 128
+
+495
+00:24:51,966 --> 00:24:54,000
+最后得到一个0跟着全是1
+you end up with a 0 and all ones 
+
+496
+00:24:54,200 --> 00:24:55,500
+这是一个正数了
+that's a positive number now
+
+497
+00:24:55,566 --> 00:24:56,400
+127
+127 
+
+498
+00:24:56,600 --> 00:25:02,233
+这是有符号补码表示方法中最大的正数（8位）
+the biggest positive number in signed interpretation of two's complement 
+
+499
+00:25:02,333 --> 00:25:06,699
+数据既可以解释为有符号整数
+again the data can both be interpreted as signed integer 
+
+500
+00:25:06,733 --> 00:25:09,800
+取值范围为-128 ~ 127
+in which case it ranges from -128 to 127
+
+501
+00:25:09,900 --> 00:25:11,100
+也可以是无符号整数
+or an unsigned integer 
+
+502
+00:25:11,200 --> 00:25:14,400
+取值范围为0 ~ 255
+in which case it ranges from 0 to 255 
+
+503
+00:25:14,666 --> 00:25:15,766
+很酷
+super cool stuff 
+
+504
+00:25:16,066 --> 00:25:18,066
+这实际上是
+and this is actually where the 
+
+505
+00:25:18,566 --> 00:25:19,800
+写c代码时
+if you've written in c
+
+506
+00:25:19,966 --> 00:25:23,433
+你可以声明成无符号整型和有符号整型
+and you've ??? set unsigned int versus int
+
+507
+00:25:23,533 --> 00:25:24,499
+默认情况是有符号的
+which by default is signed 
+
+508
+00:25:24,700 --> 00:25:27,966
+这就它改变的，是类型
+that's what it changes is the types
+
+509
+00:25:28,400 --> 00:25:31,666
+不是数据操作的类型
+not the types of operations performed on the data typically
+
+510
+00:25:31,700 --> 00:25:35,333
+因为它们对符号是不可知的
+because they are agnostic to signedness
+
+511
+00:25:35,433 --> 00:25:37,466
+而是我们稍后会学到的
+but actually as we'll learn later
+
+512
+00:25:38,066 --> 00:25:40,166
+如何根据这些数据做决定的
+how that data is reason about to make decisions
+
+513
+00:25:40,300 --> 00:25:41,100
+这很酷
+which is super cool 
+
+514
+00:25:41,133 --> 00:25:43,300
+总之，补码真的很酷
+anyways 2's complement really cool
+
+515
+00:25:44,600 --> 00:25:45,266
+我们继续
+let's move on 
+
+516
+00:25:45,733 --> 00:25:49,100
+好了，最后我们来谈谈字的结构
+alright finally let's talk about the anatomy of a word
+
+517
+00:25:49,166 --> 00:25:49,866
+我们有
+so we have a 
+
+518
+00:25:49,866 --> 00:25:51,066
+这是一个32位的字
+this is a 32 bit word
+
+519
+00:25:51,166 --> 00:25:53,200
+我们有一堆比特
+we have a bunch of bits 
+
+520
+00:25:53,366 --> 00:25:55,400
+这里用十六进制表示
+here it is represented in hex
+
+521
+00:25:55,700 --> 00:25:58,100
+上面写着酷猫（4=a，7=t，5=s）
+this says cool (c001) cats (c475)
+
+522
+00:25:58,400 --> 00:25:59,433
+我真聪明
+very very clever by me 
+
+523
+00:25:59,700 --> 00:26:01,100
+好吧
+all right anyways
+
+524
+00:26:02,166 --> 00:26:06,800
+它们都有名字
+so there's a number of names for a number of things
+
+525
+00:26:06,866 --> 00:26:08,533
+左边的一件东西
+one things to the left 
+
+526
+00:26:09,166 --> 00:26:10,600
+屏幕镜像了
+yeah mirrored on the screen 
+
+527
+00:26:10,666 --> 00:26:12,700
+总之，左边的是
+but anyways things to the left are 
+
+528
+00:26:13,300 --> 00:26:16,800
+最高有效位，最左位，或者叫最高位
+the most significant or the left most or the high bits
+
+529
+00:26:17,300 --> 00:26:18,533
+为什么它们是最有效的呢
+now why are they most significant
+
+530
+00:26:18,666 --> 00:26:23,400
+因为在这些位上做修改，对值的影响最大
+because a change in those bits will most change the value of that number
+
+531
+00:26:24,533 --> 00:26:27,166
+概念上你可以用十进制来考虑
+conceptually you can think about it in decimal 
+
+532
+00:26:27,200 --> 00:26:29,366
+如果数字700万
+if i have the number 7 million
+
+533
+00:26:29,566 --> 00:26:32,200
+把最左边的数字改成6，即600万
+and i change the left most digit to 6 million
+
+534
+00:26:32,300 --> 00:26:33,233
+这是一个巨大的差异
+that's a huge difference 
+
+535
+00:26:33,266 --> 00:26:34,633
+要是改最右边的
+if i change the right most difference
+
+536
+00:26:34,866 --> 00:26:36,200
+会得到7百万零一
+i get 7 million and one 
+
+537
+00:26:36,266 --> 00:26:37,233
+前后差别很小
+that's a small difference 
+
+538
+00:26:38,100 --> 00:26:39,700
+因此最右边的位
+hence the right most bit
+
+539
+00:26:39,800 --> 00:26:43,100
+低位，是最低有效位
+the low bits are the least significant bits
+
+540
+00:26:43,666 --> 00:26:46,500
+同样的，有最低有效字节
+and you know you have the same least significant byte
+
+541
+00:26:46,766 --> 00:26:47,900
+最高有效字节
+most significant byte
+
+542
+00:26:48,166 --> 00:26:51,433
+最后一位是最低有效位
+the last bit is that most least significant bit
+
+543
+00:26:51,666 --> 00:26:53,633
+最后一个字节是保存它的字节
+the last byte is the byte holding it
+
+544
+00:26:54,300 --> 00:26:55,633
+首位也一样
+same of the first bit
+
+545
+00:26:55,666 --> 00:26:58,833
+也就是首字节中的符号位
+which is also the sign bit in the first byte alright
+
+546
+00:26:59,300 --> 00:27:01,433
+现在你知道字的组成部分了
+now you know the parts of a word 
+
+547
+00:27:01,566 --> 00:27:05,133
+实际上，你现在对数据已经了解很多了
+actually you know an enormous amount now about data
+
+548
+00:27:05,566 --> 00:27:07,766
+以及它存在于的电脑
+as it exists inside computers 
+
+549
+00:27:07,933 --> 00:27:10,566
+希望你们已经准备好学习
+hopefully you're ready to learn about 
+
+550
+00:27:10,900 --> 00:27:13,200
+计算机如何处理这些数据的了
+how computers process these data
+
+551
+00:27:13,933 --> 00:27:14,733
+再见
+see you soon
+

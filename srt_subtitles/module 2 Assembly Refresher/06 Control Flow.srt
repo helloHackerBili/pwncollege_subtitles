@@ -1,0 +1,2190 @@
+1
+00:00:01,000 --> 00:00:02,766
+你好黑客
+hello hackers
+
+2
+00:00:03,333 --> 00:00:04,600
+欢迎来到pwn学院
+welcome to pwn College
+
+3
+00:00:04,600 --> 00:00:07,566
+我是Yan，今天我们要讨论的是
+I'm Yan and today we're going to talk about
+
+4
+00:00:07,866 --> 00:00:10,566
+汇编中的控制流
+control flow in assembly
+
+5
+00:00:11,966 --> 00:00:13,433
+我们了解了寄存器
+so we've learned about registers 
+
+6
+00:00:13,433 --> 00:00:14,833
+了解了内存
+we've learned about memory 
+
+7
+00:00:14,833 --> 00:00:16,100
+了解了数据
+we've learned about data
+
+8
+00:00:17,166 --> 00:00:18,866
+这很好
+that's great but 
+
+9
+00:00:20,166 --> 00:00:22,800
+现在我们可以编写一个程序来处理数据
+we can now write a cool program to crunch a bunch of data
+
+10
+00:00:22,800 --> 00:00:26,100
+但它是如何判断
+but how does it make decisions on whether or not
+
+11
+00:00:26,333 --> 00:00:28,066
+这个数据是好的
+that data is good 
+
+12
+00:00:28,066 --> 00:00:30,366
+这个数据处理好了，等等
+that data has been crunched well etc etc 
+
+13
+00:00:31,766 --> 00:00:37,566
+这些判断由能影响控制流的指令做出
+we make these decisions using control flow impacting instructions 
+
+14
+00:00:37,666 --> 00:00:39,366
+我们在这里讨论一下
+which we'll talk about here
+
+15
+00:00:39,533 --> 00:00:40,333
+首先
+first
+
+16
+00:00:41,100 --> 00:00:45,166
+我们看看CPU是如何执行数据的
+let's look at how a CPU actually executes data
+
+17
+00:00:47,600 --> 00:00:50,933
+抱歉，执行代码的
+of course sorry actually executes code 
+
+18
+00:00:51,000 --> 00:00:58,333
+冯·诺伊曼架构中，汇编指令就是简单的数据
+assembly instructions are in von Neuman architecture are simply just data
+
+19
+00:00:58,700 --> 00:00:59,866
+正如我们说过的
+as we talked about
+
+20
+00:00:59,900 --> 00:01:03,666
+汇编会直接转换成二进制代码
+assembly directly translates into binary code
+
+21
+00:01:04,166 --> 00:01:08,333
+程序加载时，被吐到内存中
+which is then just like spewed into memory when your program is loaded
+
+22
+00:01:10,300 --> 00:01:12,733
+然后直接传递给CPU
+and is then passed directly to the CPU
+
+23
+00:01:12,733 --> 00:01:14,000
+所以在内存的某个地方
+so somewhere in memory
+
+24
+00:01:14,133 --> 00:01:15,466
+无论程序加载在哪里
+wherever your program is loaded 
+
+25
+00:01:15,466 --> 00:01:17,933
+本例中是0x40800
+in this case at 0x40800
+
+26
+00:01:18,266 --> 00:01:19,366
+这里有一个pop rax
+there's a pop rax 
+
+27
+00:01:19,366 --> 00:01:20,566
+然后 pop rbx
+and then a pop rbx 
+
+28
+00:01:20,566 --> 00:01:22,500
+接着是 add rax, rbx
+and then an add rax rbx 
+
+29
+00:01:22,500 --> 00:01:24,400
+然后是push rax，存储计算结果
+and then push rax for the result
+
+30
+00:01:24,600 --> 00:01:27,600
+这是人类可读的形式
+and this is human readable form 
+
+31
+00:01:27,666 --> 00:01:32,500
+实际上在40800处，它是二进制码
+in reality it's the binary code at 40800
+
+32
+00:01:32,900 --> 00:01:34,100
+有一个0x58
+there's a 0x58 
+
+33
+00:01:34,266 --> 00:01:35,766
+表示pop rax
+that's pop rax
+
+34
+00:01:35,833 --> 00:01:38,566
+这就是转换后的字节码
+that's literally what the bytes translates to
+
+35
+00:01:38,933 --> 00:01:40,866
+然后是pop rbx
+then there is a pop RBX 
+
+36
+00:01:40,866 --> 00:01:41,600
+就是 5b
+that's 5b
+
+37
+00:01:42,466 --> 00:01:45,633
+它在内存地址40801处
+and that's at 40801 the memory address 
+
+38
+00:01:45,733 --> 00:01:48,333
+然后下个指令有3字节
+then there're 3 bytes 
+
+39
+00:01:48,433 --> 00:01:52,233
+因为add RAX RBX需要3个字节来编码
+because add RAX RBX takes 3 bytes to encode
+
+40
+00:01:53,100 --> 00:01:59,100
+X86是所谓的变长指令集架构
+x86 is what is called a variable width instruction set architecture 
+
+41
+00:01:59,933 --> 00:02:05,266
+事实上，大多数流行架构都是变长指令集
+in fact most popular architectures are variable width 
+
+42
+00:02:05,400 --> 00:02:07,733
+我以后会证明
+I will back that statement up in a second
+
+43
+00:02:07,900 --> 00:02:10,400
+但是x86中，不同架构（口误）
+but x86 depending on the architecture
+
+44
+00:02:10,600 --> 00:02:12,900
+编码出的字节数是不同的
+there's a different amount of bytes that's going to encode 
+
+45
+00:02:13,033 --> 00:02:14,066
+不同指令
+depending on the instruction
+
+46
+00:02:14,066 --> 00:02:16,533
+编码出的字节数是不同的
+there's a different amount of bytes that's going to encoded
+
+47
+00:02:18,533 --> 00:02:21,800
+有一些架构声称是定长的
+there are some architectures that claim to be fixed width
+
+48
+00:02:22,600 --> 00:02:23,900
+ARM就是其中之一
+ARM is one of them 
+
+49
+00:02:23,900 --> 00:02:27,700
+这个架构超越了x86
+the architecture that is outcompeting x86
+
+50
+00:02:28,100 --> 00:02:30,666
+但公平的说，并没有
+but wouldn't do so in a fair and just world 
+
+51
+00:02:30,866 --> 00:02:36,933
+ARM也有很多非标准长度的指令
+but ARM has plenty of non standard length instructions 
+
+52
+00:02:37,100 --> 00:02:41,333
+实际上，任何人对ARM的任何宣称，都只是宣称
+realistically every claim that anyone makes about ARM is crap
+
+53
+00:02:41,533 --> 00:02:42,300
+ARM垃圾
+ARM is crap 
+
+54
+00:02:42,633 --> 00:02:43,833
+X86最棒
+x86 is the best
+
+55
+00:02:44,166 --> 00:02:45,966
+我首创的说法
+you heard it here first but the
+
+56
+00:02:46,266 --> 00:02:51,700
+总之，这个指令占3个字节
+TLDR 3 bytes to this instruction
+
+57
+00:02:52,533 --> 00:02:59,100
+x86变长指令集带来的影响
+and the impact of the fact that x86 is a variable width architecture 
+
+58
+00:02:59,200 --> 00:03:03,966
+在以后的模块中会变得更加重要
+that becomes much more important later on in future modules
+
+59
+00:03:04,733 --> 00:03:06,100
+就像蓝色的??材料
+in like the blue ?? material 
+
+60
+00:03:06,266 --> 00:03:08,000
+但是现在
+but right now
+
+61
+00:03:09,166 --> 00:03:10,866
+就是这样
+this is just how it is
+
+62
+00:03:10,966 --> 00:03:16,366
+add rax,rbx在40802, 03, 04处
+so add rax, rbx instructions at 40802 3 and 4
+
+63
+00:03:16,366 --> 00:03:17,900
+然后40805处
+and then at 40805
+
+64
+00:03:18,566 --> 00:03:19,166
+3个字节
+3 bytes 
+
+65
+00:03:19,433 --> 00:03:22,466
+40805处，1字节
+40805 1 byte boom
+
+66
+00:03:22,500 --> 00:03:23,966
+这被直接吐入到内存
+and this is just spewed into memory 
+
+67
+00:03:24,066 --> 00:03:25,766
+然后CPU执行它
+and then the CPU executes it
+
+68
+00:03:26,266 --> 00:03:28,566
+好的，CPU知道要执行它
+all right and the CPU knows to execute it 
+
+69
+00:03:28,666 --> 00:03:34,100
+因为rip指令指针指向这里
+because rip the instruction pointer is just like pointed here
+
+70
+00:03:34,233 --> 00:03:35,366
+RIP里是的这个值
+it has this value
+
+71
+00:03:35,366 --> 00:03:36,933
+所以CPU下次执行时
+and so the next time the CPU runs 
+
+72
+00:03:36,933 --> 00:03:38,166
+会执行这条指令
+it'll execute this instruction 
+
+73
+00:03:38,233 --> 00:03:41,800
+然后再将指针指向下一条指令
+and then point the pointer to the next instruction 
+
+74
+00:03:41,900 --> 00:03:43,166
+然后重复这个过程
+and then repeat
+
+75
+00:03:44,166 --> 00:03:46,433
+那如果你想跳过一条指令呢
+so what if you want to skip an instruction 
+
+76
+00:03:46,566 --> 00:03:47,600
+你可以
+well you can 
+
+77
+00:03:48,466 --> 00:03:51,466
+你可以使用jmp
+you can use jump
+
+78
+00:03:52,100 --> 00:03:55,200
+这个语法有点疯狂
+now this is a bit of a crazy syntax
+
+79
+00:03:56,866 --> 00:04:01,800
+或者说跳转标签在汇编中有一点点复杂
+let's say one complex syntax in assembly is jump labels
+
+80
+00:04:02,000 --> 00:04:04,766
+这里mov CX 1337
+so this mov CX , 1337
+
+81
+00:04:05,000 --> 00:04:08,700
+我们在尝试写一个在开头看到的函数
+and recall we're trying to make a little function that we saw in the beginning
+
+82
+00:04:08,966 --> 00:04:10,300
+它就检查个值
+that just checks some value 
+
+83
+00:04:10,366 --> 00:04:15,866
+看值是否设置，来将leetness设置为1337或0
+and sets our leetness to 1337 or 0 depending on if that value is set 
+
+84
+00:04:18,900 --> 00:04:19,700
+现在
+now
+
+85
+00:04:20,133 --> 00:04:24,866
+我们把1337放到寄存器CX中
+we move 1337 into a register CX
+
+86
+00:04:24,966 --> 00:04:28,099
+即，RCX的低16位
+the lower 16 bits of RCX
+
+87
+00:04:28,866 --> 00:04:31,733
+然后跳转到这个标签
+and then we jump to this label
+
+88
+00:04:32,066 --> 00:04:33,700
+跳转到STAY_LEET
+say jump to STAY_LEET 
+
+89
+00:04:33,866 --> 00:04:35,266
+这基本上是在说
+and this basicly says hey
+
+90
+00:04:36,266 --> 00:04:37,266
+不要执行这个
+don't execute this 
+
+91
+00:04:37,400 --> 00:04:38,333
+我们跳过它
+we jump over it
+
+92
+00:04:39,100 --> 00:04:41,066
+接下来我们要做的是push RCX
+and then the next thing we do is push rcx
+
+93
+00:04:41,266 --> 00:04:43,166
+这就是它在内存中的布局
+alright this is how it's laid out in memory
+
+94
+00:04:43,333 --> 00:04:45,966
+这是它汇编后的样子
+and this is what it looks like when assembled
+
+95
+00:04:46,066 --> 00:04:47,700
+我是说，这不是实际内存中的布局
+I mean this isn't how it's laid out in memory
+
+96
+00:04:47,766 --> 00:04:51,600
+这是语义上的，指令的布局
+this is semantically how the instructions are laid out sequentially
+
+97
+00:04:51,733 --> 00:04:54,966
+这个跳转标签不是一条指令
+this is because this jump label is not an instruction actually
+
+98
+00:04:55,133 --> 00:04:58,466
+它只是汇编这条指令时，汇编器的一个帮手
+it's just a helper to assemble this instruction
+
+99
+00:04:58,700 --> 00:05:00,900
+这些是得到的字节
+these are the bytes that result
+
+100
+00:05:01,000 --> 00:05:02,866
+这是mov cx 1337
+this is mov CX 1337
+
+101
+00:05:02,900 --> 00:05:07,133
+你可以在这里看到小端序的1337
+you can in fact see little endian 1337 right here
+
+102
+00:05:07,266 --> 00:05:08,433
+很酷啊
+cool huh 
+
+103
+00:05:08,666 --> 00:05:12,166
+66 b9是mov CX
+and 66 b9 is mov CX
+
+104
+00:05:12,733 --> 00:05:14,033
+神奇
+amazing mind blown 
+
+105
+00:05:14,533 --> 00:05:16,800
+这是跳转，EB
+this is jump EB 
+
+106
+00:05:17,233 --> 00:05:18,466
+EB表示jmp
+EB is jump 
+
+107
+00:05:18,766 --> 00:05:24,066
+EB 04表示跳过4个字节，再执行
+EB 04 means hey skip 4 bytes and then start executing
+
+108
+00:05:25,333 --> 00:05:30,700
+我们跳过这一条，mov cx, 0
+boom we skip this guy which is mov sorry cx 0 
+
+109
+00:05:30,700 --> 00:05:32,400
+抱歉，我也不知道为啥这里写的rcx
+I don't know why I have RCX here
+
+110
+00:05:32,766 --> 00:05:33,366
+我的
+my bad 
+
+111
+00:05:33,366 --> 00:05:36,600
+然后直接执行push RCX
+and then we directly execute push RCX
+
+112
+00:05:36,733 --> 00:05:40,366
+这个标签告诉我们这里填什么值
+this label told us what value to put here
+
+113
+00:05:40,366 --> 00:05:42,900
+标签确实会被汇编
+but the label does actually get assembled
+
+114
+00:05:42,900 --> 00:05:45,333
+但它就是一个供汇编器使用的标签
+it's just a label for the assembler to use
+
+115
+00:05:47,066 --> 00:05:47,633
+现在
+now 
+
+116
+00:05:47,800 --> 00:05:51,966
+有趣的是这个跳转指令很酷
+interesting thing is this jump instruction is kind of cool
+
+117
+00:05:52,066 --> 00:05:54,500
+它是一个有符号跳转
+it is a signed jump
+
+118
+00:05:54,733 --> 00:06:00,666
+这是一个有符号的值
+this is a signed byte variable so a value 
+
+119
+00:06:00,800 --> 00:06:02,200
+如果是FF
+so if it is FF 
+
+120
+00:06:02,233 --> 00:06:04,166
+它会向后跳1
+it would jump backwards by 1
+
+121
+00:06:04,166 --> 00:06:05,166
+如果是Fe
+if it's Fe
+
+122
+00:06:05,933 --> 00:06:08,333
+它向后跳2，fe是补码
+it jumps backwards by 2 in 2's complement
+
+123
+00:06:09,000 --> 00:06:11,000
+那么向后跳是什么意思呢
+now what does it mean to jump backwards
+
+124
+00:06:11,100 --> 00:06:13,300
+如果这是jmp 0
+well if this was jump 0
+
+125
+00:06:14,366 --> 00:06:18,200
+它会给rip加0
+it would add 0 to the instruction pointer
+
+126
+00:06:18,266 --> 00:06:19,333
+这就是jmp的原理
+that's what jump does 
+
+127
+00:06:19,333 --> 00:06:20,866
+给rip加一个值
+adds to the instruction pointer
+
+128
+00:06:20,966 --> 00:06:22,866
+rip指向的是下一条指令
+the instruction pointer is pointing at the next instruction
+
+129
+00:06:22,966 --> 00:06:25,500
+这里是40806
+in this case 40806 this guy
+
+130
+00:06:26,566 --> 00:06:27,933
+如果我们jmp 0
+if we jump 0
+
+131
+00:06:27,933 --> 00:06:28,733
+它就向rip加上0
+it adds 0 to it 
+
+132
+00:06:28,800 --> 00:06:30,166
+就正常执行下一条指令
+just executes the next instruction
+
+133
+00:06:30,333 --> 00:06:32,566
+事实上，我确信它能运行
+I actually I'm sure it'll work
+
+134
+00:06:33,500 --> 00:06:35,033
+我猜会汇编成nop（no operation）
+I guess it would be a no op 
+
+135
+00:06:35,133 --> 00:06:35,866
+不确定
+I don't know
+
+136
+00:06:37,100 --> 00:06:38,833
+可能会有一些性能影响
+probably have some performance implications 
+
+137
+00:06:38,933 --> 00:06:39,600
+不管怎样
+anyways
+
+138
+00:06:41,300 --> 00:06:42,533
+如果我们jmp -1
+if we jump negative 1
+
+139
+00:06:42,633 --> 00:06:44,633
+它会跳到下一条指令前1字节处
+it'll jump 1 before the next instruction
+
+140
+00:06:44,766 --> 00:06:46,200
+就是当前指令内
+which is halfway through this instruction
+
+141
+00:06:46,266 --> 00:06:48,200
+它会把04当指令执行
+it will try to execute 04 as an instruction
+
+142
+00:06:48,266 --> 00:06:49,733
+这可能是指令，也可能不是
+which may or may not be an instruction
+
+143
+00:06:49,933 --> 00:06:51,266
+估计情况会很糟
+probably you're going to have a bad time
+
+144
+00:06:52,066 --> 00:06:54,266
+如果jmp -2 eb fe
+if you jump negative 2 ebfe
+
+145
+00:06:54,800 --> 00:06:55,500
+记住它
+memorize that 
+
+146
+00:06:55,566 --> 00:06:58,533
+因为调试汇编代码时，有时它很有帮助
+because it's sometimes helpful in debugging assembly code
+
+147
+00:06:58,733 --> 00:07:00,833
+Eb fe跳回到自己
+ebfe jumps back to itself
+
+148
+00:07:01,000 --> 00:07:01,766
+再次执行它
+executes it again 
+
+149
+00:07:01,866 --> 00:07:02,400
+跳回来
+jumps back 
+
+150
+00:07:02,533 --> 00:07:03,666
+这是一个无限循环
+and it's an infinite loop
+
+151
+00:07:03,733 --> 00:07:06,466
+Eb fe在x86中是无限循环
+ebfe is an infinite loop in x86
+
+152
+00:07:06,533 --> 00:07:07,800
+你可以直接写它
+you can write it directly
+
+153
+00:07:07,800 --> 00:07:09,566
+太棒了，好的
+it's awesome all right cool
+
+154
+00:07:09,900 --> 00:07:11,500
+这就是跳转jmp
+so that's jump 
+
+155
+00:07:11,566 --> 00:07:13,400
+但它仍然没有做判断
+but that's still not making decisions
+
+156
+00:07:13,466 --> 00:07:16,666
+它就是跳过
+that's just skipping no matter what 
+
+157
+00:07:16,800 --> 00:07:18,566
+这个将永远不会被执行，直接跳过了
+this will never be executed just skipped
+
+158
+00:07:18,666 --> 00:07:21,966
+jmp实际上对在代码中嵌入数据很有帮助
+jump is actually very useful for embedding data in your code
+
+159
+00:07:22,000 --> 00:07:23,566
+你可以在这里放任何东西
+like you can actually put anything here
+
+160
+00:07:23,733 --> 00:07:25,733
+你可以放一堆数据
+you can put a bunch of data 
+
+161
+00:07:25,933 --> 00:07:26,866
+你可以放一张图片
+you can put an image 
+
+162
+00:07:26,933 --> 00:07:30,366
+你可以放一个cad GIF，都没问题
+you can put a cad gif and it all work
+
+163
+00:07:30,533 --> 00:07:33,000
+它会跳过去，继续执行
+and it'll just jump over and keep executing
+
+164
+00:07:33,300 --> 00:07:36,100
+很简洁，但对做判断没有帮助
+really neat but not useful for making decisions
+
+165
+00:07:36,200 --> 00:07:37,400
+我们来做一些判断
+so let's make some decisions
+
+166
+00:07:37,400 --> 00:07:39,900
+我们可以用条件跳转来实现
+we can do that with a conditional jump
+
+167
+00:07:40,933 --> 00:07:44,866
+这里我们可以把值移到CX中
+and here we can move some value into CX 
+
+168
+00:07:44,966 --> 00:07:48,100
+然后执行条件跳转
+then we can make a conditional jump 
+
+169
+00:07:48,466 --> 00:07:51,566
+跳转到标签继续执行
+to our jump label and keep executing
+
+170
+00:07:51,733 --> 00:07:56,333
+这个条件跳转表示如果不为0则跳转
+this conditional jump says jump if not 0
+
+171
+00:07:56,400 --> 00:07:58,166
+有很多条件跳转指令
+and there's a bunch of conditional jumps
+
+172
+00:07:58,233 --> 00:07:59,333
+有相等则跳转
+there's  jump if equal 
+
+173
+00:07:59,400 --> 00:08:00,300
+不相等则跳转
+jump if not equal
+
+174
+00:08:00,300 --> 00:08:01,666
+大于则跳转
+jump if greater than
+
+175
+00:08:01,800 --> 00:08:02,766
+小于则跳转
+jump if less than
+
+176
+00:08:03,100 --> 00:08:04,233
+小于等于则跳转
+jump if less than equal 
+
+177
+00:08:04,366 --> 00:08:06,733
+很多
+is a lot of stuff right
+
+178
+00:08:08,300 --> 00:08:09,800
+我们在讨论什么
+but what are we talking about
+
+179
+00:08:10,066 --> 00:08:10,966
+什么是相等
+what is equal
+
+180
+00:08:11,333 --> 00:08:13,466
+这个说了标签是什么
+I mean this said what the label
+
+181
+00:08:13,700 --> 00:08:14,833
+标签不是（判断）
+the label is not like 
+
+182
+00:08:14,833 --> 00:08:16,566
+标签是我们跳转的距离
+the label is just how far we jump
+
+183
+00:08:16,733 --> 00:08:17,533
+就是这个家伙
+that's this guy
+
+184
+00:08:18,200 --> 00:08:19,200
+那什么是相等
+what is equal
+
+185
+00:08:19,466 --> 00:08:23,000
+什么是相等，是最后看的
+what is equal is the last thing we checked for Equality 
+
+186
+00:08:24,200 --> 00:08:27,333
+x86上这点很有趣
+and this is very interesting about x86
+
+187
+00:08:27,600 --> 00:08:31,066
+很多现代架构也是
+and actually many modern architectures
+
+188
+00:08:31,266 --> 00:08:33,866
+首先执行检查
+you first check things 
+
+189
+00:08:34,033 --> 00:08:38,733
+然后根据检查结果采取行动
+and then you take actions on the checked things
+
+190
+00:08:38,800 --> 00:08:40,566
+所以这还不完整
+so this actually isn't complete
+
+191
+00:08:40,700 --> 00:08:44,133
+我们首先要做的是检查
+what we need is to first check something
+
+192
+00:08:46,300 --> 00:08:49,500
+我们说说条件
+now let's talk about conditions
+
+193
+00:08:49,633 --> 00:08:51,000
+条件有点复杂
+conditions are kind of crazy
+
+194
+00:08:51,033 --> 00:08:55,099
+X86有一个叫rflags的特殊寄存器
+x86 has a whole special register called rflags
+
+195
+00:08:55,466 --> 00:08:58,366
+你不能随意用mov更改rflags
+and you can't just like move in and out rflags
+
+196
+00:08:58,700 --> 00:08:59,966
+这是一个特殊寄存器
+it's just a special register
+
+197
+00:09:00,000 --> 00:09:03,300
+有其他指令能访问它的部分
+there's other ways other instructions that can access parts of it and so forth
+
+198
+00:09:08,133 --> 00:09:16,066
+基本上，rflags保存了一堆表示条件标志的位
+basically rflags holds a bunch of bits representing condition flags
+
+199
+00:09:17,900 --> 00:09:18,966
+它就有它们
+it just has them
+
+200
+00:09:19,066 --> 00:09:20,866
+位1是某个标志
+bit 1 is some flag
+
+201
+00:09:20,866 --> 00:09:22,000
+位2是另一个标志
+bit 2 is another flag
+
+202
+00:09:22,000 --> 00:09:24,200
+算术运算
+and any arithmetic operation 
+
+203
+00:09:24,200 --> 00:09:29,600
+尤其是比较运算和测试运算
+but especially comparison operations and test operations
+
+204
+00:09:29,900 --> 00:09:31,933
+即cmp和test指令
+so cmp and test 
+
+205
+00:09:32,000 --> 00:09:33,966
+他们会更新这些标志
+they update all of those flags
+
+206
+00:09:34,266 --> 00:09:39,133
+这些标志都有特定的含义
+and these flags have specific meaning at a very low level
+
+207
+00:09:39,366 --> 00:09:41,933
+常用到的条件标志
+the main conditional flags that are actually checked
+
+208
+00:09:42,066 --> 00:09:46,400
+在所有x86支持的各种条件中
+to implement all of the various conditions that x86 support
+
+209
+00:09:46,700 --> 00:09:48,066
+有进位标志，CF
+is the carry flag
+
+210
+00:09:50,000 --> 00:09:51,066
+算是
+kind of let's say 
+
+211
+00:09:51,300 --> 00:09:52,900
+不是所有情况都是
+this isn't accurate in all cases 
+
+212
+00:09:53,033 --> 00:09:58,333
+但这是一个有用的近似
+but it's a useful approximation
+
+213
+00:09:58,500 --> 00:09:59,600
+CF表示
+the carry flag says hey
+
+214
+00:10:00,133 --> 00:10:01,400
+在上个操作中
+in this last operation 
+
+215
+00:10:01,400 --> 00:10:02,966
+上个64位操作中
+this last 64 bit operation 
+
+216
+00:10:03,633 --> 00:10:05,200
+或32位操作
+or 32 bit operation
+
+217
+00:10:05,833 --> 00:10:08,000
+或8位，或者其他大小的
+or 8 bit or whatever the size 
+
+218
+00:10:08,066 --> 00:10:12,499
+是多出来的1比特
+was the kind of extra bit one 
+
+219
+00:10:12,533 --> 00:10:13,966
+表示进位
+was the carry bit one
+
+220
+00:10:14,000 --> 00:10:17,700
+比如，8位值中，0xff加1
+so if in 8 bits we added 0xFF plus one
+
+221
+00:10:18,000 --> 00:10:19,800
+结果是0x00
+that is 0x00 
+
+222
+00:10:20,100 --> 00:10:24,600
+但，CF里，是1
+that there is a 1 bit and that is the carry flag
+
+223
+00:10:24,800 --> 00:10:26,833
+这也可能将OF（溢出标志）置1
+that would also set the overflow flag
+
+224
+00:10:27,000 --> 00:10:30,600
+看计算结果是否有从负数回绕到正数
+did the result wrap between negative and positive
+
+225
+00:10:30,700 --> 00:10:33,200
+比如 补码为FFFF的值，是负数
+so FFFF is negative in 2's complement
+
+226
+00:10:33,366 --> 00:10:36,000
+加上1，它就变成正的了
+you add 1 it wraps around to positive
+
+227
+00:10:38,933 --> 00:10:39,866
+等等
+wait was that
+
+228
+00:10:41,466 --> 00:10:43,200
+我好奇2个方向回绕都会改变这个标志吗
+I wonder if it's set on both directions
+
+229
+00:10:43,266 --> 00:10:44,866
+不太确定
+I'm not positive about it
+
+230
+00:10:44,866 --> 00:10:47,466
+因为很少会直接与标志寄存器交互
+because you rarely interact with these flags directly
+
+231
+00:10:47,600 --> 00:10:52,266
+实际上会和这些跳转交互
+you actually interact with these more semantic type of jumps 
+
+232
+00:10:52,333 --> 00:10:54,000
+而不是这些跳转依赖的标志
+that are than taken on those flags
+
+233
+00:10:54,200 --> 00:10:58,666
+SF（符号标志）表示上次操作结果是否为负数
+signed flag was the result of the last operation negative
+
+234
+00:10:58,666 --> 00:11:03,199
+最左边的位，符号位，是否为1
+was the was its left most bit the sign bit set 
+
+235
+00:11:03,300 --> 00:11:05,300
+ZF（零标志）表示上次操作结果是否为0
+or the zero flag was the result zero
+
+236
+00:11:05,500 --> 00:11:09,366
+如果你想检验某项是否相等
+so if you wanted to check if something is equal
+
+237
+00:11:09,566 --> 00:11:11,533
+这是上一条指令
+for example here's the last thing
+
+238
+00:11:11,600 --> 00:11:13,466
+比较两个值是否相等
+two values are equal you compare
+
+239
+00:11:13,700 --> 00:11:14,900
+它会做个减法
+which does a subtraction 
+
+240
+00:11:15,066 --> 00:11:21,800
+但不像sub rax, rbx会将rax-rbx赋值给rax
+but instead of sub rax RBX would say rax equals rax minus RBX
+
+241
+00:11:22,800 --> 00:11:24,766
+cmp rax, rbx只做减法
+cmp rax, rbx just does the subtraction
+
+242
+00:11:24,766 --> 00:11:25,933
+更新标志位
+updates the flags 
+
+243
+00:11:25,933 --> 00:11:27,600
+然后丢弃计算结果
+and throws out the result
+
+244
+00:11:29,166 --> 00:11:33,366
+cmp rax, rbx，然后相等则跳转到STAY_LEET
+cmp rax, rbx and then jump if equal to STAY_LEET
+
+245
+00:11:33,400 --> 00:11:37,533
+实际上它才会检查，然后跳转
+this will actually check the value and will jump away
+
+246
+00:11:38,700 --> 00:11:40,933
+test很适合检查0
+test is good for testing for 0 
+
+247
+00:11:41,166 --> 00:11:44,900
+这个test rax,rax，它会和自己按位与
+so this test rax,rax it ands it against itself 
+
+248
+00:11:44,933 --> 00:11:45,533
+如果是0
+if it's 0
+
+249
+00:11:45,533 --> 00:11:48,000
+如果结果是0，它就跳转(口误)
+if the result is 0 it'll jump (口误)
+
+250
+00:11:48,000 --> 00:11:50,966
+如果结果不为0，它才跳转
+if the result is not 0 it'll jump 
+
+251
+00:11:53,033 --> 00:11:58,000
+这将比较rax与rbx，rax大于rbx就跳转
+this compares rax against rbx and does a jump if above
+
+252
+00:11:58,200 --> 00:12:00,566
+这是指无符号比较
+that means it's an unsigned comparison
+
+253
+00:12:00,666 --> 00:12:02,100
+最棒的是
+and the awesome thing
+
+254
+00:12:02,166 --> 00:12:05,733
+比较指令相同，且会设置相同的标志
+is the same comparison instruction sets the same flags
+
+255
+00:12:05,733 --> 00:12:07,966
+但解释这些标志的方式
+but how you interpret those flags
+
+256
+00:12:08,500 --> 00:12:13,566
+会根据有无符号改变
+will change from unsigned to a sign 
+
+257
+00:12:13,666 --> 00:12:16,000
+会根据是ja还是jg而改变
+from an above to a greater than
+
+258
+00:12:16,166 --> 00:12:18,833
+jg，表示有符号比较
+jump if greater that's a signed comparison 
+
+259
+00:12:19,066 --> 00:12:28,266
+这样0xFFFFFFF小于0，因为它是-1
+so hex fffffff is less than 0 because that's negative one 
+
+260
+00:12:28,366 --> 00:12:29,700
+而ja
+in a jump above
+
+261
+00:12:31,133 --> 00:12:33,733
+0xFFFFFF是一个非常大的数字
+hex ffffff is a very large number 
+
+262
+00:12:33,800 --> 00:12:34,533
+是无符号的
+unsigned 
+
+263
+00:12:34,600 --> 00:12:35,733
+它大于0
+it's greater than 0
+
+264
+00:12:36,166 --> 00:12:42,000
+大多数情况下，这里是唯一在意有无符号的地方
+and this is more or less for the most part the only place where signedness actually matters
+
+265
+00:12:42,100 --> 00:12:44,466
+当然还有其他的情况
+I mean there's other cases of course 
+
+266
+00:12:44,600 --> 00:12:45,966
+但这是最常见的
+but this is the biggest one
+
+267
+00:12:46,200 --> 00:12:51,500
+所以有无符号是通过合适的跳转指令检查的
+signedness is checked by using the right jump 
+
+268
+00:12:51,666 --> 00:12:53,333
+甚至不是合适的比较指令
+not even the right comparison
+
+269
+00:12:53,366 --> 00:12:58,333
+有无符号的数据，对应着相应的跳转指令
+but the right jump for the right data type whether it's signed or unsign
+
+270
+00:12:58,400 --> 00:13:00,166
+你能从这两者看到区别
+and you can see that the difference between
+
+271
+00:13:00,266 --> 00:13:01,566
+jg，有符号
+greater than which is signed 
+
+272
+00:13:01,600 --> 00:13:03,266
+ja，无符号
+and above which is unsign
+
+273
+00:13:03,466 --> 00:13:11,000
+ja跳转要求CF为0，并且ZF为0
+above checks that the carry flag is 0 and the zero flag is 0 
+
+274
+00:13:11,166 --> 00:13:13,166
+jg要求ZF为0
+whereas greater checks if the zero flag is 0
+
+275
+00:13:13,300 --> 00:13:15,400
+并且SF等于OF
+and the sign flag equals the overflow flag
+
+276
+00:13:15,500 --> 00:13:17,400
+我不知道为什么这意味着大于
+I don't know why that translates to greater than
+
+277
+00:13:17,533 --> 00:13:18,800
+你可以在网上查到
+I mean you can look it up on the internet 
+
+278
+00:13:18,800 --> 00:13:20,100
+它会解释的
+and it'll explain it for you
+
+279
+00:13:20,100 --> 00:13:21,500
+我就不解释了
+I won't explain it for you
+
+280
+00:13:22,366 --> 00:13:24,066
+它能起作用真是太酷了
+it's pretty cool that it works
+
+281
+00:13:25,700 --> 00:13:28,766
+这一切都是通过这种简单的方式实现的
+and it's all made possible this simple way 
+
+282
+00:13:28,833 --> 00:13:32,400
+先进行比较，然后重点在于跳转
+where you compare and then it's just the jumps are what matters
+
+283
+00:13:32,500 --> 00:13:34,366
+这都归功于补码
+that's made possible by 2's complement
+
+284
+00:13:35,433 --> 00:13:36,400
+酷
+awesome okay
+
+285
+00:13:37,100 --> 00:13:38,533
+现在有了条件
+now that we have conditions
+
+286
+00:13:38,600 --> 00:13:40,200
+还有条件跳转
+and we have conditional jumps
+
+287
+00:13:40,966 --> 00:13:44,666
+我们就可以实现有用处的循环了
+we can actually make loops that do stuff
+
+288
+00:13:44,900 --> 00:13:48,600
+这是一个循环，会计数到10
+so this is a loop that will count to 10 
+
+289
+00:13:48,766 --> 00:13:50,333
+它将RAX设置为0
+it sets RAX to 0
+
+290
+00:13:50,466 --> 00:13:51,300
+然后rax加1
+it increments it 
+
+291
+00:13:51,400 --> 00:13:52,533
+将其与10进行比较
+it compares it against 10
+
+292
+00:13:52,700 --> 00:13:55,600
+如果小于10，它会跳转回去
+and if it's less than 10 it will jump back
+
+293
+00:13:55,700 --> 00:13:58,033
+如果小于10，无符号小于
+if it's below 10 unsigned less than 
+
+294
+00:13:58,133 --> 00:13:59,733
+它会跳转回循环头
+it'll jump back to loop header
+
+295
+00:14:00,266 --> 00:14:01,700
+当它没有跳转回循环头时
+when it doesn't jump back to loop header
+
+296
+00:14:01,766 --> 00:14:04,966
+就继续执行后面的指令
+just keeps going forward to the next instruction 
+
+297
+00:14:05,033 --> 00:14:06,366
+此时rax是10
+and now RAX is 10
+
+298
+00:14:06,533 --> 00:14:07,333
+好吧
+okay
+
+299
+00:14:08,300 --> 00:14:09,966
+使用循环和控制流
+with looping and control flow
+
+300
+00:14:10,266 --> 00:14:13,933
+我们几乎拥有编写任何程序所需的一切
+we have almost everything we need to write any program
+
+301
+00:14:13,966 --> 00:14:14,800
+这很令人兴奋
+this is exciting
+
+302
+00:14:14,833 --> 00:14:15,966
+我们可以编写电子游戏
+we could write video games
+
+303
+00:14:15,966 --> 00:14:17,533
+我们可以写很多很酷的东西
+we could write a lot of cool stuff
+
+304
+00:14:18,866 --> 00:14:20,833
+我们所需的还有一个东西，函数
+all we need is one more thing functions
+
+305
+00:14:21,000 --> 00:14:24,000
+现代代码会分割成多个函数
+modern code is split into functions
+
+306
+00:14:24,000 --> 00:14:24,766
+你写一个函数
+you write a function 
+
+307
+00:14:24,866 --> 00:14:25,866
+再调用函数
+you call the function
+
+308
+00:14:26,266 --> 00:14:32,100
+最终归结为call和ret两个指令
+well that in the end boils down to call and ret two instructions 
+
+309
+00:14:32,300 --> 00:14:36,933
+Call保存它所在地址，然后跳转到别处
+call saves the place it's at and goes somewhere else 
+
+310
+00:14:37,066 --> 00:14:41,866
+这样ret就能返回到函数调用处的地址
+so that ret can return to that place where you called the function
+
+311
+00:14:42,000 --> 00:14:43,133
+在C程序中
+so in a C program 
+
+312
+00:14:43,133 --> 00:14:44,733
+这是一个函数调用
+this is a function call
+
+313
+00:14:44,733 --> 00:14:46,600
+执行这个
+boom goes here execute this 
+
+314
+00:14:46,666 --> 00:14:47,466
+回来
+comes back
+
+315
+00:14:47,600 --> 00:14:49,066
+这是我们的checker
+and this is our checker
+
+316
+00:14:49,133 --> 00:14:52,366
+我们整节课都在实现它
+that we've been implementing this whole lecture 
+
+317
+00:14:52,366 --> 00:14:53,966
+然后又调用了一次
+then it calls it again
+
+318
+00:14:54,100 --> 00:14:55,400
+又上到这了
+boom goes up there
+
+319
+00:14:55,766 --> 00:14:57,466
+返回时，它知道返回地址
+and it knows when it returns
+
+320
+00:14:57,466 --> 00:15:01,533
+因为它在call时，保存了下一条指令的地址
+and it knows because it saved the address of the next instruction after this call
+
+321
+00:15:02,100 --> 00:15:04,533
+就是它会回到的这个地址
+that it'll go back to the this
+
+322
+00:15:04,900 --> 00:15:07,600
+汇编中是这样的
+in assembly this is what it looks like
+
+323
+00:15:07,866 --> 00:15:10,633
+首先将第一个参数初始化为0
+we first initialize the first argument to 0
+
+324
+00:15:10,933 --> 00:15:11,666
+传给check_leet
+to check_leet 
+
+325
+00:15:11,733 --> 00:15:13,366
+这是我们的check_leet函数
+here's our function check_leet
+
+326
+00:15:13,500 --> 00:15:20,200
+它检测authed，即第一个参数，是否是0
+it tests if authed the first argument is 0 
+
+327
+00:15:20,466 --> 00:15:21,866
+如果是的话
+if it is
+
+328
+00:15:23,800 --> 00:15:24,833
+哦，有问题
+oops that's buggy
+
+329
+00:15:25,066 --> 00:15:26,066
+我来修正一下
+let me fix that 
+
+330
+00:15:26,166 --> 00:15:28,566
+这应该是jnz，稍等
+this should be non 0 one sec
+
+331
+00:15:30,000 --> 00:15:31,966
+好了，现在对了
+all right now it's correct
+
+332
+00:15:32,133 --> 00:15:32,933
+所以
+so
+
+333
+00:15:33,466 --> 00:15:36,200
+这是我们的函数check_leet
+this is our function check_leet 
+
+334
+00:15:36,900 --> 00:15:42,100
+这里表示，第一个参数是不是0
+right here say hey is the first argument zero 
+
+335
+00:15:42,200 --> 00:15:43,700
+如果不是的话
+if it is not
+
+336
+00:15:43,900 --> 00:15:45,066
+那就返回1337
+then we're gonna be leet 
+
+337
+00:15:45,166 --> 00:15:49,900
+我们通过rax返回1337
+we're gonna return in RAX 1337
+
+338
+00:15:50,966 --> 00:15:51,766
+否则
+otherwise 
+
+339
+00:15:53,466 --> 00:15:54,666
+它从这里
+so it goes here 
+
+340
+00:15:54,800 --> 00:15:55,766
+跳转
+jumps
+
+341
+00:15:56,133 --> 00:15:56,833
+执行这个
+it executes this 
+
+342
+00:15:56,900 --> 00:15:59,333
+否则如果rdi
+otherwise if rdi
+
+343
+00:15:59,400 --> 00:16:02,000
+我们用来传递第一个参数的寄存器
+the register we're using to pass the first argument
+
+344
+00:16:02,500 --> 00:16:03,366
+是0
+is 0
+
+345
+00:16:04,766 --> 00:16:06,300
+我们mov ax，0
+we'll move ax 
+
+346
+00:16:06,633 --> 00:16:11,266
+它（rax）是我们用来传递返回值的寄存器
+which is what the register we're using ,rax, to pass the return value
+
+347
+00:16:11,600 --> 00:16:13,366
+我们将把ax初始化为0
+we're going to initialize it to 0 
+
+348
+00:16:13,400 --> 00:16:14,566
+然后返回
+and then we're going to return
+
+349
+00:16:14,766 --> 00:16:16,200
+当返回时
+all right when this return happens
+
+350
+00:16:16,233 --> 00:16:17,166
+这两个返回都一样
+either of these returns 
+
+351
+00:16:17,266 --> 00:16:18,533
+当这个调用发生时
+when this call happens
+
+352
+00:16:19,133 --> 00:16:22,666
+我们把这个地址，下条指令的地址，压入栈
+we push the address of this guy the next instruction 
+
+353
+00:16:22,733 --> 00:16:25,366
+我们把rip的值压入栈
+we put the value of rip onto the stack
+
+354
+00:16:25,733 --> 00:16:26,866
+再执行这个函数
+we go to the function
+
+355
+00:16:26,966 --> 00:16:27,733
+函数返回时
+when it returns 
+
+356
+00:16:27,733 --> 00:16:29,466
+我们把这个值弹出栈
+we pop that value off the stack
+
+357
+00:16:29,766 --> 00:16:30,866
+然后回去
+and we go back
+
+358
+00:16:31,100 --> 00:16:31,966
+我们
+and we can keep
+
+359
+00:16:31,966 --> 00:16:34,800
+我们回到下一条指令继续执行
+we go back to the next instruction continue execution
+
+360
+00:16:34,933 --> 00:16:38,966
+我们用参数0调用了cheek_leet
+so we call check_leet with argument 0
+
+361
+00:16:39,133 --> 00:16:41,833
+然后cheek_leet返回后，我们继续执行
+then we continue going when check_leet returns
+
+362
+00:16:41,900 --> 00:16:43,133
+又用参数1调用了一次
+we called it with argument 1
+
+363
+00:16:43,366 --> 00:16:45,466
+然后我们调用exit
+and then we call exit and boom
+
+364
+00:16:46,733 --> 00:16:51,333
+下节课我们会讲到如何退出程序
+and we'll talk about how to exit a program in the next video
+
+365
+00:16:52,166 --> 00:16:53,400
+太酷了
+boom how cool is this 
+
+366
+00:16:53,466 --> 00:16:57,600
+我们有了一个用汇编代码编写的程序
+we have a program in assembly code 
+
+367
+00:16:57,733 --> 00:17:00,733
+里面包含了函数等所有东西
+where we have functions and everything
+
+368
+00:17:01,566 --> 00:17:05,000
+几节课就学完了它
+and you just learned it over the course of a couple of lectures
+
+369
+00:17:05,900 --> 00:17:07,866
+希望这是一件让人震惊的事
+hopefully that was a mind blown thing
+
+370
+00:17:08,266 --> 00:17:09,333
+现在你可能会问
+now you might ask okay
+
+371
+00:17:09,333 --> 00:17:10,100
+但是在函数调用中
+but function calls
+
+372
+00:17:10,166 --> 00:17:11,766
+变量名到处都是
+you got variable names all over the place
+
+373
+00:17:11,900 --> 00:17:13,200
+我怎么设置变量名
+how can I do variable names
+
+374
+00:17:13,966 --> 00:17:18,100
+汇编器中可能有一些宏，支持设置变量名
+there's probably some macro support in the assembler to do variable names
+
+375
+00:17:18,200 --> 00:17:21,500
+比如，rax在这里叫bob还是别的什么
+and say hey here rax is known as Bob or whatever
+
+376
+00:17:23,166 --> 00:17:25,166
+但是汇编很简单
+but assembly so simple
+
+377
+00:17:25,400 --> 00:17:26,533
+它提供了变量名
+it gives you the variable name
+
+378
+00:17:26,600 --> 00:17:28,200
+你有16个变量可以使用
+you have 16 variables you can use 
+
+379
+00:17:28,333 --> 00:17:36,533
+rax rbx rcx RDX RDI RSI RSP RBP
+rax rbx RCX RDX RDI RSI RSP RBP
+
+380
+00:17:38,100 --> 00:17:42,566
+R8 r9 r10 r11 r12 r13 r14 r15
+r8 r9 r10 r11 r12 r13 r14 r15
+
+381
+00:17:44,100 --> 00:17:47,366
+还有RIP可以读取当前地址
+and RIP to read where you are
+
+382
+00:17:48,366 --> 00:17:49,600
+这太酷了
+how cool is that
+
+383
+00:17:49,933 --> 00:17:51,966
+你不必担心变量的命名
+you don't have to worry about naming variables
+
+384
+00:17:52,033 --> 00:17:53,900
+你需要担心它们用完
+you do have to worry about running out of them
+
+385
+00:17:53,966 --> 00:17:55,433
+你得把它们放到栈上
+you have to write them to the stack 
+
+386
+00:17:55,466 --> 00:17:56,666
+然后在从栈上拿出来
+and get them off the stack
+
+387
+00:17:57,933 --> 00:17:58,933
+但是你不用担心命名
+but you don't have to worry about them 
+
+388
+00:17:58,966 --> 00:17:59,433
+太好了
+that's great 
+
+389
+00:17:59,533 --> 00:18:00,233
+现在
+now 
+
+390
+00:18:00,933 --> 00:18:03,400
+寄存器有限
+you have very few of these register guys 
+
+391
+00:18:03,500 --> 00:18:04,800
+那如果
+so what happens if
+
+392
+00:18:05,933 --> 00:18:07,866
+我们在这里设置了rdi
+we set RDI here 
+
+393
+00:18:08,033 --> 00:18:09,933
+然后我们还想在函数中用它
+and we wanted to keep using it in this function
+
+394
+00:18:10,900 --> 00:18:12,000
+用RDI
+set RDI 
+
+395
+00:18:12,100 --> 00:18:13,166
+这将是一个坏消息
+that would be a bad news
+
+396
+00:18:13,333 --> 00:18:18,133
+事实证明，函数遵守某一个约定
+well it turns out that there's a contract that functions agree on 
+
+397
+00:18:18,366 --> 00:18:20,500
+称为调用约定
+call the calling convention
+
+398
+00:18:20,866 --> 00:18:23,166
+被调函数和调用函数约定了
+callee and caller functions agree
+
+399
+00:18:23,600 --> 00:18:30,333
+哪些寄存器将用于amd64上的参数传递
+which register going to be used for arguments on amd64
+
+400
+00:18:30,366 --> 00:18:32,500
+我们刚才说的是RDI
+which what we were talking about it's RDI 
+
+401
+00:18:32,666 --> 00:18:34,766
+它用于第一个参数
+hey remember that's what we used for the first argument
+
+402
+00:18:34,833 --> 00:18:36,333
+第二个是RSI
+that RSI for the second
+
+403
+00:18:36,466 --> 00:18:37,200
+第三个是RDX
+RDX for the third 
+
+404
+00:18:37,433 --> 00:18:38,333
+第四个是RCX
+RCX for the fourth 
+
+405
+00:18:38,433 --> 00:18:39,500
+还有R8 R9
+R8 R9
+
+406
+00:18:40,166 --> 00:18:42,766
+然后返回值放在rax
+and then the return value is going to go into rax 
+
+407
+00:18:42,766 --> 00:18:44,733
+如果你注意了，我们也用过它
+which hey if you're involved we also used
+
+408
+00:18:45,800 --> 00:18:48,166
+寄存器是共享的
+registers are shared again 
+
+409
+00:18:48,233 --> 00:18:51,466
+所以调用约定也需要
+so the calling convention also needs to 
+
+410
+00:18:51,566 --> 00:18:54,900
+定义谁负责保存数据
+define who is responsible for saving data
+
+411
+00:18:55,166 --> 00:18:56,666
+基本上是这样的
+and it basically like this
+
+412
+00:18:56,666 --> 00:18:57,566
+如果你调用了一个函数
+if you call a function 
+
+413
+00:18:57,700 --> 00:18:59,900
+该函数保证会还给你原来的
+it promises to give you back 
+
+414
+00:18:59,966 --> 00:19:03,333
+RBX RBP R12 R13 R14和R15
+RBX RBP R12 R13 R14 and R15
+
+415
+00:19:03,666 --> 00:19:05,333
+和调用前的状态一样
+back in the same state it found it
+
+416
+00:19:05,466 --> 00:19:07,000
+如果它要改变这些寄存器
+so if it's going to make changes to those
+
+417
+00:19:07,000 --> 00:19:08,000
+它首先会保存他们
+it'll first save them 
+
+418
+00:19:08,000 --> 00:19:08,966
+通常保存在栈上
+usually on the stack
+
+419
+00:19:09,766 --> 00:19:12,066
+它会把它们保存在栈上
+on the stack it'll save them on the stack push them all
+
+420
+00:19:12,733 --> 00:19:14,133
+然后修改它们
+then it'll modify them
+
+421
+00:19:14,133 --> 00:19:15,100
+根据需要使用它们
+use them however it needs
+
+422
+00:19:15,100 --> 00:19:17,166
+在返回之前，它会把它们从栈上弹出
+and before returning it'll pop them all off
+
+423
+00:19:18,266 --> 00:19:20,200
+其它寄存器都可以随便用
+everything else is up for grabs
+
+424
+00:19:20,300 --> 00:19:21,866
+当然除了RSP
+of course it's except RSP
+
+425
+00:19:23,200 --> 00:19:27,200
+用的都是同一个栈
+you're all using the same stack for these temporary storages of things
+
+426
+00:19:27,266 --> 00:19:28,566
+所以它会被维护
+so it's gonna be maintained
+
+427
+00:19:31,200 --> 00:19:34,000
+其它的寄存器都随便用
+everything else is up for grabs
+
+428
+00:19:35,133 --> 00:19:42,666
+如果你不希望rcx被你调用的函数破坏
+if you don't want RCX to be destroyed by a function you call 
+
+429
+00:19:42,733 --> 00:19:44,266
+就把它保存到栈上
+save it onto the stack
+
+430
+00:19:44,366 --> 00:19:46,533
+只需调用前压入栈，被调返回后，弹出栈
+just push it and pop it after you call the function
+
+431
+00:19:46,766 --> 00:19:49,266
+这叫做调用方保存的寄存器
+that's called Caller Saved Registers
+
+432
+00:19:50,133 --> 00:19:54,866
+这就是x86中的控制流
+and that is how control flow works in x86
+
+433
+00:19:55,066 --> 00:19:57,066
+现在你可以写一个简单的程序了
+and now you can actually write a simple program
+
+434
+00:19:57,133 --> 00:19:59,400
+除了一个烦人的问题
+except for this nagging question
+
+435
+00:19:59,733 --> 00:20:01,400
+该如何退出
+how do you quit
+
+436
+00:20:01,966 --> 00:20:05,066
+几张ppt前，我们调用了exit
+we called this exit function a couple slides ago
+
+437
+00:20:05,066 --> 00:20:06,566
+我在那里标了问号
+and I just have question marks
+
+438
+00:20:06,666 --> 00:20:09,666
+请收看下个视频，你会找到答案的
+well tune in to the next video and you'll find out
+

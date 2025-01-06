@@ -1,0 +1,1769 @@
+1
+00:00:00,566 --> 00:00:01,499
+你好黑客
+hello hackers
+
+2
+00:00:01,500 --> 00:00:02,600
+欢迎来到PWN学院的另一个视频
+welcome to another video in the pwn college
+
+3
+00:00:02,600 --> 00:00:05,500
+内存错误模块
+ memory  error module
+
+4
+00:00:05,600 --> 00:00:08,766
+我是Yan。今天我们要讨论的是栈金丝雀
+I'm Yan. today we're talking about stack canaries
+
+5
+00:00:08,700 --> 00:00:14,800
+我们将讲解针对内存破坏漏洞的保护机制
+so we're rolling into the mitigations against memory corruption vulnerabilities
+
+6
+00:00:15,066 --> 00:00:18,699
+栈金丝雀是我们要讲的第一个
+um and stack canaries is the 1st one we'll talk about
+
+7
+00:00:19,466 --> 00:00:21,899
+我说的确实是金丝雀
+I say canaries right
+
+8
+00:00:22,600 --> 00:00:24,500
+栈金丝雀是以金丝雀这种鸟来命名的
+stack canaries are very much named after an actual canary
+
+9
+00:00:24,500 --> 00:00:35,300
+或者说是以过去金矿里的金丝雀的概念命名的
+ or the concept of canaries in a gold mine back in the olden days
+
+10
+00:00:35,400 --> 00:00:43,300
+当时还没有先进的技术可以检测空气中的有毒气体
+before advanced technology that could detect gases and poisonous gases in the air
+
+11
+00:00:44,000 --> 00:00:46,966
+矿工们会带一只金丝雀进矿井
+miners would bring a canary with them to into the mine
+
+12
+00:00:47,300 --> 00:00:56,000
+因为金丝雀更容易受到毒气的影响
+ because canaries are more susceptible to poison gases and
+
+13
+00:00:56,300 --> 00:01:00,700
+如果他们发现金丝雀突然死了
+if they saw that their canary was dead all of a sudden
+
+14
+00:01:00,733 --> 00:01:02,499
+那他们就得离开矿井
+then they need to get out of the mine
+
+15
+00:01:02,566 --> 00:01:04,766
+因为他们很可能就是下一个
+because likely they would be next
+
+16
+00:01:04,933 --> 00:01:09,166
+这就是金丝雀的概念
+all right so that's kind of the concept of a canary and
+
+17
+00:01:09,600 --> 00:01:22,600
+1998年，该概念专门针对内存损坏漏洞提出
+in 1998 this concept was developed for memory corruption vulnerability specifically
+
+18
+00:01:22,600 --> 00:01:30,700
+原理是用一个数字金丝雀，它会在糟糕的事情发生之前被杀死
+the idea was that using a digital canary that would get killed before anything else bad happened
+
+19
+00:01:30,933 --> 00:01:32,466
+借此你可以保护栈
+you could protect the stack
+
+20
+00:01:33,200 --> 00:01:38,100
+这个概念是由一组来自
+this concept was created by a group of researchers from
+
+21
+00:01:38,333 --> 00:01:40,899
+俄勒冈科学与技术研究生院的研究人员提出的
+the Oregon Graduate Institute of Science & Technology
+
+22
+00:01:40,900 --> 00:01:41,700
+并于1998年在USENIX安全上发布
+and published in 1998 at USENIX security
+
+23
+00:01:41,900 --> 00:01:49,900
+至今仍是学术工作的顶级网络安全所之一
+ still one of the top cyber security venues for academic work to this day 
+
+24
+00:01:50,500 --> 00:01:56,900
+提出这个概念的人们后来成立了IMMUNIX
+and it was created by a group people that went on to found immunix
+
+25
+00:01:56,966 --> 00:02:00,699
+IMMUNIX公司
+which was a company that
+
+26
+00:02:01,900 --> 00:02:09,500
+利用如StackGuard之类的东西建立了些坚固的Linux系统，
+built these sort of very hardened Linux systems  that utilized stuff like StackGuard
+
+27
+00:02:09,700 --> 00:02:15,600
+后来他们又发明了app armor
+and  later on they went on to invent for example app armor
+
+28
+00:02:15,766 --> 00:02:17,933
+app armor 现在还在用
+which is used to this day
+
+29
+00:02:18,066 --> 00:02:19,533
+当然stackguard 现在也还在用
+along with stack guard of course
+
+30
+00:02:19,533 --> 00:02:22,133
+但应用app armor是专门用来保护
+but app armor is specifically used to protect
+
+31
+00:02:22,133 --> 00:02:22,933
+例如
+for example
+
+32
+00:02:23,600 --> 00:02:25,500
+Docker容器等等
+docker containers and so on
+
+33
+00:02:25,500 --> 00:02:28,866
+他们是非常有影响力的一群人
+so very impactful group of people
+
+34
+00:02:29,300 --> 00:02:33,400
+他们还和一个我十分关注的话题有关
+they also in a topic near and dear to my heart
+
+35
+00:02:34,600 --> 00:02:37,533
+他们参加了2003年的defcon CTF比赛
+competed in defcon CTF in the year 2003
+
+36
+00:02:38,333 --> 00:02:41,866
+我可能在这门课上讲过defcon CTF比赛
+I probably talked about defcon CTF in this course
+
+37
+00:02:41,800 --> 00:02:48,300
+它算是黑客届的奥林匹克
+it's essentially a kind of an Olympic of hacking
+
+38
+00:02:48,900 --> 00:02:51,900
+来自世界各地的顶尖团队都来这里，试图攻击对方
+the top groups from all over the world come and try to hack each other 
+
+39
+00:02:52,200 --> 00:02:56,166
+2003年Immunix Linux
+and one year in 2003 immunix Linux
+
+40
+00:02:57,766 --> 00:03:00,199
+由这些研究人员创立的公司
+ the company founded by these researchers
+
+41
+00:03:00,300 --> 00:03:01,766
+也在其中
+ was among them
+
+42
+00:03:02,766 --> 00:03:05,699
+这张截图是周六拍的
+this screenshot was taken on Saturday
+
+43
+00:03:05,700 --> 00:03:07,166
+当时他们处于领先地位
+when they were in the lead
+
+44
+00:03:07,166 --> 00:03:09,199
+这是2003年举办的第11届Defcon比赛
+this is defcon the 11 in 2003
+
+45
+00:03:10,000 --> 00:03:12,500
+我们录这段视频的17年前
+17 years ago as we were recording this
+
+46
+00:03:14,600 --> 00:03:19,700
+我记得那一年Anomaly队最终赢了
+and I believe that year team anomaly ended up winning
+
+47
+00:03:19,700 --> 00:03:25,000
+周六到周日比赛结束之间一定很激烈
+so something radical happened between Saturday and Sunday when the competition ends
+
+48
+00:03:25,700 --> 00:03:28,400
+Immunix失去了领先优势
+and the Immunix lost their lead
+
+49
+00:03:28,800 --> 00:03:39,600
+这年也是我母校的黑客团队第一年
+this also the 1st year where teams from hackers from my graduate institution Alma mater 
+
+50
+00:03:40,600 --> 00:03:43,266
+我毕业与加州大学圣巴巴拉分校
+where I did my graduate work UC Santa Barbara
+
+51
+00:03:44,000 --> 00:03:46,200
+参加比赛，团队名叫WMD
+competed under this name WMD
+
+52
+00:03:46,366 --> 00:03:48,533
+我记得两年后他们
+and I think two years later they would
+
+53
+00:03:49,133 --> 00:03:51,733
+两年还是四年后，他们获得了第一
+two years or four years later they would go on to win
+
+54
+00:03:52,733 --> 00:03:55,066
+我现在有点记不清了
+I'm a little discombobulator  now
+
+55
+00:03:55,266 --> 00:03:58,933
+但这只是历史的一个片段
+but it's kind of a snapshot in history and 
+
+56
+00:04:00,300 --> 00:04:05,700
+这些黑客创造了我们今天要讨论的技术
+these competitive hackers were creating technology that we'll talk about today
+
+57
+00:04:05,700 --> 00:04:10,400
+这仍然用于保护栈远离内存错误的影响
+that is still used to protect the stack against memory errors
+
+58
+00:04:10,566 --> 00:04:12,166
+那么什么是栈金丝雀呢
+all right so what are stack canaries
+
+59
+00:04:12,166 --> 00:04:14,066
+栈金丝雀非常简单
+stack canaries are pretty simple
+
+60
+00:04:14,900 --> 00:04:19,500
+栈金丝雀的目标是防止缓冲区溢出
+stack canaries are targeted to protect against buffer overflows
+
+61
+00:04:19,500 --> 00:04:24,900
+我们在本模块中讨论了缓冲区溢出
+the buffer overflows that we've been looking at so far in this module
+
+62
+00:04:25,100 --> 00:04:29,000
+缓冲区溢出这里指栈上的溢出
+buffer overflows which are overflows on the stack
+
+63
+00:04:29,600 --> 00:04:37,700
+覆盖返回地址或者其他变量等等
+and overflow the return address or other variables or something along these lines
+
+64
+00:04:37,800 --> 00:04:39,133
+金丝雀是怎么工作的
+how does a canary work
+
+65
+00:04:40,300 --> 00:04:43,766
+它很简单，在函数序言中
+it's fairly straightforward and In a function prologue
+
+66
+00:04:43,800 --> 00:04:46,200
+你取一个随机值，然后把它写到栈帧的末尾
+you take a random value and you write it to the end of the stack frame
+
+67
+00:04:46,600 --> 00:04:50,066
+就在你能识别的所有缓冲区后面
+right after either all of the buffers as you can identify them
+
+68
+00:04:50,900 --> 00:04:55,700
+在他们的右边
+ to the right of them
+
+69
+00:04:55,966 --> 00:04:59,099
+或者在返回地址左边
+or right to the left of the return address
+
+70
+00:04:59,100 --> 00:05:00,766
+然后保存基指针
+and saved a base pointer
+
+71
+00:05:00,966 --> 00:05:02,166
+然后在函数结尾
+and then in the function epilogue
+
+72
+00:05:02,166 --> 00:05:04,199
+您要确保这个值仍然是完整的
+you make sure that this value is still intact
+
+73
+00:05:04,200 --> 00:05:07,533
+如果金丝雀被杀了——有溢出破坏了它
+if the canary's been killed if an overflow clobbered it
+
+74
+00:05:09,466 --> 00:05:12,066
+然后你只需杀死整个程序
+then you simply kill the whole program
+
+75
+00:05:12,166 --> 00:05:13,899
+有趣的是
+now the interesting thing
+
+76
+00:05:14,766 --> 00:05:16,899
+金丝雀值是随机的
+is the canary value is random
+
+77
+00:05:16,900 --> 00:05:23,700
+因此，攻击者不知道金丝雀的值是多少
+so an attacker overflowing the entire buffer won't know what the value of the canary is
+
+78
+00:05:24,000 --> 00:05:24,400
+否则
+otherwise
+
+79
+00:05:24,400 --> 00:05:26,300
+它们可以用完全相同的值覆盖金丝雀
+they could overflow with the exact same value
+
+80
+00:05:26,300 --> 00:05:27,200
+不改变它
+and not change it
+
+81
+00:05:27,333 --> 00:05:28,899
+但是他们不知道这个值
+but they don't know that value
+
+82
+00:05:28,900 --> 00:05:32,000
+所以他们的溢出只会导致程序崩溃
+so they have to overflow with something leading to a crash
+
+83
+00:05:32,100 --> 00:05:34,900
+让我展示给你看，不叭叭了
+let me show you rather than keep babbling
+
+84
+00:05:37,066 --> 00:05:37,533
+ops
+ops
+
+85
+00:05:37,533 --> 00:05:38,866
+差点剧透了
+that's looking ahead a little
+
+86
+00:05:38,933 --> 00:05:41,733
+我们有个缓冲区溢出的例子
+so we have our buffer overflow
+
+87
+00:05:42,200 --> 00:05:43,800
+这是之前视频的例子
+that's the example from previous video
+
+88
+00:05:46,266 --> 00:05:51,299
+这是您可以得到的最简单的溢出
+ this is as simple overflow as you can get
+
+89
+00:05:51,400 --> 00:05:53,533
+缓冲区很小，读取量很大
+there's a small buffer and a big read
+
+90
+00:05:53,533 --> 00:05:55,699
+好了，我们来编译一下
+alright let's compile it
+
+91
+00:05:55,700 --> 00:05:56,966
+之前我们编译时使用了这个
+before we compile it with this
+
+92
+00:05:57,100 --> 00:05:59,700
+-fno-stack-protector选项
+dashf no stack protector option
+
+93
+00:05:59,966 --> 00:06:01,366
+现在要玩真的了
+now the gloves are off
+
+94
+00:06:01,366 --> 00:06:03,533
+我们开启栈保护器
+let's have the stack protector
+
+95
+00:06:08,166 --> 00:06:09,333
+编译一下
+here we compiled it
+
+96
+00:06:09,933 --> 00:06:11,099
+有一个工具叫做checksec
+there's a utility called checksec
+
+97
+00:06:11,100 --> 00:06:16,600
+我在视频检查时用过几次
+ that I've used several times on video checksec
+
+98
+00:06:19,066 --> 00:06:21,466
+如果你正确使用checksec
+checksec if you use it properly
+
+99
+00:06:22,933 --> 00:06:26,666
+它可以检查文件的安全属性并
+will check the security properties of a file and and
+
+100
+00:06:27,500 --> 00:06:29,100
+告诉你它们是什么
+tell you what they are 
+
+101
+00:06:29,200 --> 00:06:31,733
+在这里你可以看到栈金丝雀
+in here you can see now this stack canaries
+
+102
+00:06:31,733 --> 00:06:34,499
+该文件开启了栈金丝雀
+this file has stack canaries
+
+103
+00:06:34,566 --> 00:06:36,133
+已经发现了栈金丝雀
+stack canaries have been found
+
+104
+00:06:36,166 --> 00:06:38,999
+让我们来看看这意味着什么
+let's take a look at what this means
+
+105
+00:06:39,600 --> 00:06:40,666
+嗯
+um
+
+106
+00:06:42,933 --> 00:06:44,799
+我们反汇编一下它
+so let's uh disassemble it
+
+107
+00:06:47,800 --> 00:06:50,766
+滑倒上面，看看main函数
+and scroll up and look at the main function
+
+108
+00:06:52,133 --> 00:06:52,933
+好
+all right
+
+109
+00:06:53,500 --> 00:06:55,333
+main函数里多了些东西
+the main function has a couple of additions
+
+110
+00:06:55,300 --> 00:06:58,900
+在这里有一个很明显的
+one that you can kind of see right away is right here
+
+111
+00:06:59,000 --> 00:07:00,766
+堆栈检查失败 __stack_chk_fail
+this stack check fail
+
+112
+00:07:00,866 --> 00:07:02,466
+结果是
+and what happens is
+
+113
+00:07:03,333 --> 00:07:04,266
+我们从缓冲区的一个地方（rbp-0x8）读入
+we read from a place on the buffer 
+
+114
+00:07:07,700 --> 00:07:15,700
+就在栈帧的某个位置之前
+right before a place on the stack frame
+
+115
+00:07:15,733 --> 00:07:18,099
+在栈帧的最右边
+at the very right hand side of the stack frame
+
+116
+00:07:18,100 --> 00:07:22,600
+rbp指向位置的左边
+immediately to the left  of where the frame pointer is pointing to
+
+117
+00:07:22,700 --> 00:07:28,500
+rbp指向的位置保存着主调函数栈帧指针（上一个rbp）
+which is where the saved frame pointer of the caller function has been written to
+
+118
+00:07:29,300 --> 00:07:34,300
+从那里读入一个值到rcx中
+we read a value that's there into RCX. 
+
+119
+00:07:35,000 --> 00:07:37,566
+拿它和存在全局内存中的一个值 异或
+xor it against a value stored globally in memory
+
+120
+00:07:37,566 --> 00:07:41,066
+这是一种有点古老的访问内存的方法
+this is a bit of an archaic way to access memory 
+
+121
+00:07:42,200 --> 00:07:45,600
+就是所谓的段式（段式、页式、段页式）
+using what was called segmentation
+
+122
+00:07:46,166 --> 00:07:47,499
+这说来话长
+it's a whole history lesson
+
+123
+00:07:47,500 --> 00:07:50,900
+简单讲是在内存的某个隐秘角落
+but basically this is somewhere in memory in a secret spot
+
+124
+00:07:51,100 --> 00:07:58,200
+由这个FS寄存器索引，它不能直接访问
+indexed by this FS register that can't actually be access direct
+
+125
+00:07:58,300 --> 00:07:59,500
+只能将其用于内存查找
+but you can only use it for memory lookup
+
+126
+00:08:00,400 --> 00:08:08,100
+所以用它隐藏金丝雀值很好
+ so it's great for this to hide this canary value
+
+127
+00:08:08,100 --> 00:08:13,900
+不管这个FS寄存器指向内存那里
+anyways at whatever memories pointed to by this FS register
+
+128
+00:08:14,500 --> 00:08:17,900
+fs值加上0x28的位置，有一个秘密的金丝雀值
+plus hex 28 there's a secret canary value
+
+129
+00:08:17,900 --> 00:08:19,666
+它与RCX异或
+it xor with an rcx
+
+130
+00:08:20,166 --> 00:08:21,799
+如果它们相等
+and if they're equal
+
+131
+00:08:30,100 --> 00:08:32,766
+然后执行main + 5A
+then the execution goes to main plus 5A
+
+132
+00:08:35,200 --> 00:08:38,700
+就是1203这里，正常的函数尾声
+which is this 1203 which is the normal epilogue
+
+133
+00:08:38,766 --> 00:08:41,266
+如果它们不相等，我们就会陷入这个
+if they're not equal we fall through to this
+
+134
+00:08:41,266 --> 00:08:42,733
+栈检查失败
+stack check fail
+
+135
+00:08:42,766 --> 00:08:44,599
+让我给你们看看这是什么样子的
+let me show you what this looks like
+
+136
+00:08:50,666 --> 00:08:53,333
+发生了栈溢出，boom，栈检查失败
+this is an overflow boom this is stack check fail
+
+137
+00:08:53,333 --> 00:08:56,399
+检测到了栈溢出，中止了程序
+so stack smashing detected terminates the program
+
+138
+00:08:58,266 --> 00:08:59,099
+那么这个值是从哪里来的呢
+so where did this value come from
+
+139
+00:09:00,200 --> 00:09:09,600
+值是在这里写的，在开启栈金丝雀后的扩展序言中
+this value was written over here in the extended prologue with the stack canaries
+
+140
+00:09:09,666 --> 00:09:11,133
+从rax里加载的
+it came from rax
+
+141
+00:09:11,733 --> 00:09:15,899
+rax的值来自和检测时同一个秘密地点
+rax came from originally the same secret location
+
+142
+00:09:17,466 --> 00:09:18,466
+很直接
+pretty straightforward
+
+143
+00:09:18,400 --> 00:09:21,100
+基本上就是当程序启动
+basically the program starts up
+
+144
+00:09:21,166 --> 00:09:23,133
+有一个秘密位置初始化一个随机值
+there's a secret location that's initialized with a random value
+
+145
+00:09:23,100 --> 00:09:28,400
+该随机值被移动到栈中
+ that random value is moved to the stack 
+
+146
+00:09:28,500 --> 00:09:33,866
+如果它在栈上被溢出破坏
+then if it is then overflowed on the stack
+
+147
+00:09:34,066 --> 00:09:35,733
+然后随机值
+then the random value
+
+148
+00:09:37,966 --> 00:09:40,366
+然后对该值的检查将失败
+then the check for that value will fail
+
+149
+00:09:40,500 --> 00:09:44,400
+程序将中止执行
+and we will abort execution
+
+150
+00:09:44,533 --> 00:09:47,466
+让我们快速地在GDB里看一下
+let's take a look in GDB real quick
+
+151
+00:09:50,100 --> 00:09:50,900
+好
+okay
+
+152
+00:09:51,900 --> 00:09:53,666
+让我们在main下断点
+let's break in main
+
+153
+00:09:54,600 --> 00:09:55,400
+运行
+run
+
+154
+00:09:59,566 --> 00:10:01,366
+这是接下来的五条指令
+okay here's the next five instructions
+
+155
+00:10:01,366 --> 00:10:03,066
+让我们向前一步
+so let's step forward
+
+156
+00:10:03,700 --> 00:10:08,700
+好了，现在我们要从这个秘密地点读入值到rax
+okay so here we're about to read from this secret location to rax
+
+157
+00:10:09,266 --> 00:10:10,933
+这是现在的rax
+so here's rax right now
+
+158
+00:10:11,333 --> 00:10:14,399
+里面有个地址。这是现在的样子
+some address that was in there. here is what it is now
+
+159
+00:10:15,366 --> 00:10:18,599
+注意，栈金丝雀是一堆以0结尾的东西
+note the stack canary is a bunch of stuff ending in zero
+
+160
+00:10:18,600 --> 00:10:19,933
+当然这是小端序
+of course this is little endian
+
+161
+00:10:19,933 --> 00:10:21,499
+所以它实际上是以一个Null字节开始的
+so it actually starts with an Null byte
+
+162
+00:10:21,500 --> 00:10:24,600
+这很重要
+this becomes important in the future
+
+163
+00:10:26,966 --> 00:10:28,566
+当然了
+and then of course
+
+164
+00:10:29,266 --> 00:10:31,566
+这时它被写入栈
+here is where it got written to the stack
+
+165
+00:10:31,500 --> 00:10:34,800
+让我们看一下栈
+let's take a look at the stack
+
+166
+00:10:39,466 --> 00:10:41,533
+这是现在栈上的东西
+so here's what's on the stack right now
+
+167
+00:10:41,533 --> 00:10:44,166
+一堆乱七八糟的数据，这是我们的金丝雀
+a bunch of messy data and here's our canary
+
+168
+00:10:44,933 --> 00:10:47,699
+在栈中相当深
+while fairly deep in the stack
+
+169
+00:10:48,100 --> 00:10:52,266
+如果我们继续下去，最后我们会执行这个读取
+um if we just keep going eventually we do this read
+
+170
+00:10:56,000 --> 00:11:00,300
+然后当我们用一堆a来覆盖金丝雀
+and then when we overflow that canary with a bunch of A's
+
+171
+00:11:00,866 --> 00:11:02,766
+让我们再看看我们的栈
+let's take a look at our stack again
+
+172
+00:11:02,766 --> 00:11:05,199
+都是a。金丝雀不见了
+it's all As. the canary is gone
+
+173
+00:11:05,200 --> 00:11:06,366
+原来就在这里
+it was right here
+
+174
+00:11:06,400 --> 00:11:08,400
+我们往上翻，就在这里
+we scroll up right there
+
+175
+00:11:09,066 --> 00:11:10,199
+现在它消失了
+and now it is gone
+
+176
+00:11:11,466 --> 00:11:12,699
+我们继续
+let's keep going
+
+177
+00:11:14,066 --> 00:11:14,866
+在这里
+here
+
+178
+00:11:15,200 --> 00:11:18,300
+我们把值
+we move the value
+
+179
+00:11:19,700 --> 00:11:23,533
+金丝雀本该完好无损
+out of the stack where the canary should be intact
+
+180
+00:11:23,766 --> 00:11:24,866
+加载到rcx
+into  rcx
+
+181
+00:11:25,666 --> 00:11:27,133
+这是现在的RCX
+here's rcx now
+
+182
+00:11:27,800 --> 00:11:29,133
+这是个坏消息
+that's bad news
+
+183
+00:11:29,133 --> 00:11:31,366
+这本应该是金丝雀，但我们溢出了它
+that should be the canary right but we overflowed it
+
+184
+00:11:31,300 --> 00:11:36,500
+然后拿它和秘密地点加载的RCX异或 
+and xor RCX from this secret location
+
+185
+00:11:38,933 --> 00:11:40,499
+结果肯定不是零
+and that is very much not zero
+
+186
+00:11:40,500 --> 00:11:44,200
+如果两个值是相等的就该是0
+it would have been zero if it was equal of course and
+
+187
+00:11:45,666 --> 00:11:49,499
+现在 je 要检查零标志位
+now jump equals of course checks for the zero flag
+
+188
+00:11:49,500 --> 00:11:51,066
+零标志未设置
+the zero flag is not set
+
+189
+00:11:51,600 --> 00:11:53,766
+所以会调用 stack_chk_fail
+so we call stack check fail
+
+190
+00:11:54,400 --> 00:11:59,700
+并在打印此错误消息后退出程序
+and be aboard out of the program after printing this error message
+
+191
+00:11:59,900 --> 00:12:05,000
+这就是栈金丝雀的工作原理
+that is how a stack canary works
+
+192
+00:12:07,700 --> 00:12:09,166
+超级有趣的东西
+super interesting stuff
+
+193
+00:12:09,333 --> 00:12:11,066
+好的，那么
+okay so um
+
+194
+00:12:11,733 --> 00:12:14,166
+栈金丝雀有效吗
+Are stack canaries effective
+
+195
+00:12:14,500 --> 00:12:17,000
+事实证明是的
+um it turns out that yes
+
+196
+00:12:17,000 --> 00:12:20,300
+栈金丝雀非常有效
+stack canaries are extremely effective
+
+197
+00:12:20,666 --> 00:12:23,699
+等一下，我把这张幻灯片修复一下
+um one SEC let me fix this slide real quick
+
+198
+00:12:24,700 --> 00:12:25,666
+好了
+all right there we go
+
+199
+00:12:25,666 --> 00:12:28,099
+现在你可以看到完整张幻灯片了
+that's better now you can read the whole slide
+
+200
+00:12:28,100 --> 00:12:29,266
+正如我提到的
+so as I mentioned
+
+201
+00:12:29,700 --> 00:12:31,666
+栈金丝雀非常有效
+stack canaries are very effective
+
+202
+00:12:31,933 --> 00:12:34,299
+有一些保护措施
+there are certain mitigations
+
+203
+00:12:34,766 --> 00:12:36,899
+要绕过他们
+that to bypass them
+
+204
+00:12:37,500 --> 00:12:41,500
+你真的需要一个额外的漏洞
+you would you really require an entire additional vulnerability
+
+205
+00:12:41,566 --> 00:12:43,466
+或者非常幸运
+or to get extremely lucky
+
+206
+00:12:45,533 --> 00:12:47,299
+栈金丝雀就是这样一种保护措施
+stack canaries are such a mitigation
+
+207
+00:12:47,300 --> 00:12:49,266
+要绕过栈金丝雀
+to bypass a stack canaries
+
+208
+00:12:49,500 --> 00:12:53,900
+你要么直接用另一个漏洞泄露它
+you either need to straight up leak it with another vulnerability
+
+209
+00:12:53,933 --> 00:12:55,799
+这绝对不容易
+that's definitely not easy
+
+210
+00:12:55,800 --> 00:12:58,566
+因为这需要一个额外的漏洞
+that requires an entirely additional vulnerability
+
+211
+00:12:59,000 --> 00:13:01,100
+也许你可以用
+maybe you can use
+
+212
+00:13:01,166 --> 00:13:02,966
+你用来溢出覆盖的漏洞
+the same vulnerability that you use to do the overwrite
+
+213
+00:13:03,666 --> 00:13:06,666
+用一种稍微不同的方式来读取
+in a slightly different way to do the read 
+
+214
+00:13:07,200 --> 00:13:08,866
+但这要视情况而定
+but it's very situational
+
+215
+00:13:09,366 --> 00:13:12,266
+在某些情况下，你可以暴力破解金丝雀值
+in certain cases you can brute force a canary
+
+216
+00:13:12,866 --> 00:13:14,799
+如果漏洞程序会fork子进程
+if you have a forking process
+
+217
+00:13:15,100 --> 00:13:18,366
+许多许多网络服务都会fork子进程
+many many many network services are forking processes
+
+218
+00:13:18,366 --> 00:13:19,999
+有趣的是
+and interestingly enough
+
+219
+00:13:21,200 --> 00:13:24,700
+如果你用的是安卓手机，你手机上的每一个进程
+every process on your phone if you have an android phone
+
+220
+00:13:24,733 --> 00:13:27,166
+都是从同一个进程中fork出来的（zygote进程）
+forks off of one parent process
+
+221
+00:13:27,166 --> 00:13:29,333
+金丝雀只被初始化
+the canary is only initialized
+
+222
+00:13:29,300 --> 00:13:37,400
+秘密内存仅在进程启动时使用随机数据进行初始化
+that secret  memory region is initialized with random data only at startup of the process
+
+223
+00:13:37,400 --> 00:13:42,700
+它不会在每次函数执行时都重新随机化
+it is not re randomized on every function execution or anything like that
+
+224
+00:13:42,800 --> 00:13:47,600
+只是在进程启动时才随机化
+just at every startup time of the process it's randomized
+
+225
+00:13:47,700 --> 00:13:49,200
+如果你用的是安卓手机
+so if you have an android phone
+
+226
+00:13:49,400 --> 00:13:55,000
+在android手机上，每个进程都从一个父进程fork出来
+and every process forks off of a parent process on an android phone
+
+227
+00:13:55,000 --> 00:13:57,100
+这个父进程叫做受精卵（zygote）
+that parent processor called the zygote
+
+228
+00:13:57,100 --> 00:14:00,800
+你手机上每一个进程中的每一个金丝雀都是一样的
+every single canary in every single process on your phone is the same
+
+229
+00:14:01,500 --> 00:14:04,700
+如果你泄露了一个，你就全都知道了
+ if you leak one you know them all
+
+230
+00:14:04,800 --> 00:14:07,366
+但这是一种独特的情况
+but that's kind of a unique situation
+
+231
+00:14:07,400 --> 00:14:10,166
+我快速的讲一下
+I'm going to very quickly jump in
+
+232
+00:14:10,533 --> 00:14:15,266
+并向您展示网络服务中常用的fork大概是什么样的
+and show you how a network forking service works
+
+233
+00:14:15,200 --> 00:14:19,300
+当然，这个示例服务并没真正使用网络
+of course this service isn't a network forking service
+
+234
+00:14:19,333 --> 00:14:23,666
+我在这个forker.c 中实现了它
+I implemented it in this forker. c
+
+235
+00:14:24,366 --> 00:14:26,866
+forker程序有一个缓冲区
+and forker has a buffer
+
+236
+00:14:29,400 --> 00:14:31,266
+它会不断fork子进程
+and it'll continuously fork
+
+237
+00:14:31,266 --> 00:14:32,999
+如果是父进程
+if it's the parent 
+
+238
+00:14:33,000 --> 00:14:34,733
+它会等待子进程
+it'll wait on the child process
+
+239
+00:14:34,733 --> 00:14:35,799
+如果是子进程
+if it's the child
+
+240
+00:14:35,933 --> 00:14:38,666
+它会读入过多的东西到缓冲区
+it will read way too much into the buffer
+
+241
+00:14:38,766 --> 00:14:39,899
+导致溢出
+and overflow itself
+
+242
+00:14:39,900 --> 00:14:42,166
+编译时会开启金丝雀
+and we're gonna compile this with canaries
+
+243
+00:14:43,666 --> 00:14:44,599
+手套脱了（直面困难）
+gloves are off
+
+244
+00:14:47,566 --> 00:14:48,333
+好吧
+okay
+
+245
+00:14:48,333 --> 00:14:50,366
+Forker已编译
+forker is compiled
+
+246
+00:14:50,966 --> 00:14:53,299
+我们会执行并展示
+and we're going to run it and show
+
+247
+00:14:54,000 --> 00:14:59,600
+我们如何利用父进程fork子进程这一情况
+how we can actually use the fact that the parent forks a child off
+
+248
+00:14:59,600 --> 00:15:01,666
+这意味着子进程是一个独立的进程
+which means the child is an independent process
+
+249
+00:15:01,666 --> 00:15:02,566
+如果它死了
+if it dies
+
+250
+00:15:02,733 --> 00:15:05,399
+没问题，父进程会fork一个新的
+no problem the parent will just spawn a new one
+
+251
+00:15:06,000 --> 00:15:09,500
+当然，我们会在pwntools中展示
+and we're going to show in pwntools of course 
+
+252
+00:15:09,533 --> 00:15:11,566
+我们怎样才能
+how we can
+
+253
+00:15:12,333 --> 00:15:14,766
+抱歉，这是前面的
+sorry that's looking ahead 
+
+254
+00:15:14,766 --> 00:15:15,466
+我们可以怎样玩弄它
+how we can mess with it
+
+255
+00:15:15,466 --> 00:15:16,999
+PWN调试
+so pwn debug
+
+256
+00:15:17,666 --> 00:15:19,733
+pwn.gdb.debug
+pwn.gdb.debug
+
+257
+00:15:20,533 --> 00:15:23,566
+当然，在GDB中打开了我们的进程
+opens up our process in GDB of course
+
+258
+00:15:24,100 --> 00:15:28,866
+这样我们可以在main上打断点，而不是在我身上
+this is so that we can break at main not at me
+
+259
+00:15:30,933 --> 00:15:32,499
+我们到了main
+here we are at Main
+
+260
+00:15:34,700 --> 00:15:39,200
+我只想知道金丝雀的值
+I just want to get the value of that canary
+
+261
+00:15:41,466 --> 00:15:43,999
+现在我们要把它读给rax
+so here we're about to read it into rax
+
+262
+00:15:44,000 --> 00:15:46,366
+这里写入RBP - 0x8
+here we are writing into RBP minus 0x8
+
+263
+00:15:48,866 --> 00:15:51,133
+这是金丝雀值
+ here's the canary value
+
+264
+00:15:52,533 --> 00:15:54,399
+让我们做一件事
+let's do one thing let's
+
+265
+00:15:54,466 --> 00:15:55,999
+这是它小端序的样子
+this is it in little endian
+
+266
+00:15:57,400 --> 00:15:59,200
+这是它大端序的样子
+this is it in big endian
+
+267
+00:15:59,200 --> 00:16:01,133
+所以它从第一个字节是零
+so it starts at the 1st byte is zero
+
+268
+00:16:01,400 --> 00:16:03,900
+52 Ed等等
+52 ed and so on
+
+269
+00:16:04,533 --> 00:16:06,266
+让我告诉你发生了什么
+let me show you what happens
+
+270
+00:16:06,700 --> 00:16:08,666
+因为孩子会fork
+because the child forks
+
+271
+00:16:11,066 --> 00:16:12,933
+我们可以不断地与它互动
+we can continually interact with it
+
+272
+00:16:12,933 --> 00:16:16,766
+当然可以，如果我们写
+we can of course if we do r.write
+
+273
+00:16:16,900 --> 00:16:21,900
+我们写入128个A
+and we write an A byte 128 times
+
+274
+00:16:22,500 --> 00:16:26,100
+然后我们执行r.read
+and then we do r.read
+
+275
+00:16:26,866 --> 00:16:27,966
+然后打印出来
+and print that
+
+276
+00:16:29,266 --> 00:16:30,766
+稍等，gdb这里继续一下
+hold on me to continue here
+
+277
+00:16:31,400 --> 00:16:34,933
+然后我们看到检测到栈破坏
+then we see stack smashing detected terminating
+
+278
+00:16:34,966 --> 00:16:37,666
+128字节当然会破坏栈
+so 128 of course smashes the stack
+
+279
+00:16:37,666 --> 00:16:39,733
+好的是我们可以反复做这件事
+the nice things we can do this repeatedly
+
+280
+00:16:40,133 --> 00:16:43,366
+因为这个父进程不断地fork子进程
+because the process continually forks
+
+281
+00:16:43,300 --> 00:16:49,100
+父进程会生成新的子进程来处理我们的输入
+the parent is spinning up new children to handle our input
+
+282
+00:16:49,866 --> 00:16:51,466
+现在我们可以开始利用这个了
+so now we can start messing with this
+
+283
+00:16:51,466 --> 00:16:54,266
+所以好的，16字节太多了吗
+so let's say okay  is 16 too much
+
+284
+00:16:54,266 --> 00:16:57,099
+不，还没覆盖到金丝雀
+ no we haven't over it in the canary yet
+
+285
+00:16:57,266 --> 00:16:58,666
+那32字节呢
+what about 32
+
+286
+00:16:59,000 --> 00:17:01,600
+是的，我们用二分搜索对金丝雀进行覆盖
+yes we over the canary we do a binary search
+
+287
+00:17:01,666 --> 00:17:03,333
+0x18字节呢
+what about hex 18
+
+288
+00:17:03,533 --> 00:17:05,799
+这是，嗯
+this is um um
+
+289
+00:17:06,133 --> 00:17:07,466
+我蒙住了
+my mind just one blank
+
+290
+00:17:07,566 --> 00:17:08,799
+24字节
+24 bytes
+
+291
+00:17:09,566 --> 00:17:10,199
+哦，还不是
+oh still not
+
+292
+00:17:10,200 --> 00:17:13,000
+金丝雀可能
+ so probably the canary
+
+293
+00:17:13,000 --> 00:17:14,500
+在这后面8字节
+is  the eight bytes after this
+
+294
+00:17:14,900 --> 00:17:21,700
+假设这里是一个a字节
+so let's say a just an a byte here
+
+295
+00:17:22,400 --> 00:17:23,166
+boom
+boom
+
+296
+00:17:23,166 --> 00:17:25,699
+破坏了金丝雀，覆盖了它
+broke the canary overwrote it
+
+297
+00:17:25,900 --> 00:17:31,100
+坏消息，如果我们用B呢，还是坏消息
+bad news what about if we do B  still bad news
+
+298
+00:17:31,166 --> 00:17:31,666
+但是我们知道
+but we know
+
+299
+00:17:31,666 --> 00:17:33,366
+我们知道金丝雀的第一个字节是多少
+we know what the 1st byte of the canary is right
+
+300
+00:17:33,366 --> 00:17:35,599
+金丝雀的第一个字节是0
+the 1st byte of the canary is a 0
+
+301
+00:17:36,266 --> 00:17:37,399
+这里的这个字节
+this byte right here
+
+302
+00:17:37,733 --> 00:17:40,266
+如果我们在里面写一个0
+if we write a 0 into it
+
+303
+00:17:43,200 --> 00:17:46,366
+当当当当，是因为金丝雀的值没有改变
+golden because the canary's value didn't change
+
+304
+00:17:47,100 --> 00:17:49,600
+金丝雀校验不检查金丝雀是否被覆盖
+the canary check doesn't check if the canary was over written
+
+305
+00:17:49,600 --> 00:17:52,700
+它实际上只检查金丝雀是否变了
+it actually checks has the canary been changed
+
+306
+00:17:53,000 --> 00:17:54,933
+如果它被相同的值覆盖
+if it was overwritten with the same value
+
+307
+00:17:55,066 --> 00:17:58,399
+检查一样通过，我们可以利用这点
+it's a pervably happy check and we can use this
+
+308
+00:17:59,933 --> 00:18:02,999
+逐字节暴力破解
+to gradually brute force value after value
+
+309
+00:18:03,000 --> 00:18:05,600
+让我们从1开始，不是
+let's start with one nope
+
+310
+00:18:06,533 --> 00:18:07,333
+2
+two
+
+311
+00:18:07,500 --> 00:18:09,733
+不是，我要作弊了，但我不需要作弊
+nope I'm gonna cheat but I don't have to cheat
+
+312
+00:18:09,733 --> 00:18:12,133
+我可以一直数到0x52
+I could count all the way up to hex 52
+
+313
+00:18:16,066 --> 00:18:17,266
+我们又破解了一字节
+we got another one
+
+314
+00:18:17,666 --> 00:18:18,966
+那么第三个字节呢
+what about the 3rd byte
+
+315
+00:18:22,566 --> 00:18:23,599
+不是
+not one
+
+316
+00:18:24,666 --> 00:18:25,599
+不是两
+not two
+
+317
+00:18:26,333 --> 00:18:28,166
+让我们随机猜EB
+let's take a random guess EB
+
+318
+00:18:28,800 --> 00:18:29,600
+不是
+nope
+
+319
+00:18:30,100 --> 00:18:31,466
+我记错了，是ed
+I miss from out of the E d
+
+320
+00:18:33,466 --> 00:18:34,266
+是的
+yes
+
+321
+00:18:34,933 --> 00:18:37,766
+fork令人惊奇的
+the amazing thing is in a forking process
+
+322
+00:18:37,766 --> 00:18:39,533
+不光是暴力破解金丝雀值
+this doesn't just apply through the canary
+
+323
+00:18:39,533 --> 00:18:42,799
+利用它可以逐字节泄露任何数据
+it's any data I can leak out bite by byte
+
+324
+00:18:42,800 --> 00:18:45,800
+fork之前栈的整个状态
+the entire state of the stacked before the fork occurred
+
+325
+00:18:46,000 --> 00:18:51,100
+因为我可以一直查询同一个进程的子进程
+because I can keep querying the same children of the same process
+
+326
+00:18:51,200 --> 00:18:52,300
+一遍又一遍
+over and over and over
+
+327
+00:18:53,400 --> 00:18:54,166
+非常酷
+very cool stuff
+
+328
+00:18:54,100 --> 00:18:58,100
+还有一种方式也是非常情境化的
+there's another way that's also very situational that 
+
+329
+00:18:59,533 --> 00:19:02,666
+如果你的堆栈布局得当，你可以绕过金丝雀
+you can bypass a canary if your stack is laid out just right
+
+330
+00:19:02,600 --> 00:19:09,100
+当然，现代编译器会有意地以安全的方式布局堆栈
+and modern compilers will intentionally lay out the stack  in the secure way of course
+
+331
+00:19:09,166 --> 00:19:11,966
+但对于攻击者来说是错误的（不利于成功利用漏洞）
+but for an attacker the wrong way
+
+332
+00:19:12,366 --> 00:19:14,499
+但是如果栈的布局恰到好处
+but if the stack is layout just right for example
+
+333
+00:19:14,500 --> 00:19:22,000
+因为它的数据结构恰巧是这样
+because it is a data structure that happens to be like this
+
+334
+00:19:23,800 --> 00:19:29,900
+你在栈上有一个计数器，利用缓冲区溢出可以溢出覆盖它
+and you have an counter on the stack that your buffer overflows into
+
+335
+00:19:30,066 --> 00:19:33,333
+这个程序本来会从0数到128
+so this program will count from 0 to 1 28
+
+336
+00:19:33,533 --> 00:19:36,133
+然后从那个偏移量读入缓冲区
+and read at that offset into the buffer
+
+337
+00:19:36,133 --> 00:19:38,699
+一次一个字节
+one byte at a time 
+
+338
+00:19:38,700 --> 00:19:40,866
+这种情况在复制数据时一般会发生
+this happens especially when copying data
+
+339
+00:19:40,866 --> 00:19:42,499
+相比读数据来说
+more than when reading
+
+340
+00:19:43,533 --> 00:19:45,599
+这只是一个简易版本
+this is just a minimized version
+
+341
+00:19:46,100 --> 00:19:48,166
+当缓冲区溢出时
+at some point as you overflowed this buffer
+
+342
+00:19:48,166 --> 00:19:50,966
+你会开始写I计数器
+you'll start writing into the i counter
+
+343
+00:19:50,966 --> 00:19:52,466
+一旦你开始写I计数器
+once you start writing the i counter
+
+344
+00:19:52,466 --> 00:19:55,066
+你可以直接改变你要写的地方
+you can directly change where you're writing
+
+345
+00:19:55,600 --> 00:20:01,100
+例如，您可以跳过金丝雀直接写返回地址
+you can jump to write beyond the canary at the return value for example
+
+346
+00:20:01,300 --> 00:20:03,333
+你需要非常幸运
+this you need to get very lucky
+
+347
+00:20:03,800 --> 00:20:04,933
+一般来说
+generally speaking
+
+348
+00:20:06,266 --> 00:20:08,499
+运气可没这么眷顾我们
+luck does not favor us this much
+
+349
+00:20:08,500 --> 00:20:11,533
+但还是有办法绕过金丝雀的
+but there are ways to get around the canary
+
+350
+00:20:11,500 --> 00:20:15,900
+要么是视情况的，要么是需要一个新的漏洞来泄露值
+there just either situational or require a new vulnerability to leak it out
+
+351
+00:20:16,000 --> 00:20:17,333
+之后的视频中
+and then later videos
+
+352
+00:20:17,300 --> 00:20:21,100
+我们会研究这个新的漏洞会是
+we will actually look into what that new vulnerability might or
+
+353
+00:20:21,400 --> 00:20:23,566
+这样的漏洞可能是什么样的
+what such vulnerabilities might look like
+
+354
+00:20:23,966 --> 00:20:24,766
+到时见
+see you then

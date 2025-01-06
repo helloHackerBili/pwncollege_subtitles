@@ -1,0 +1,2789 @@
+1
+00:00:00,733 --> 00:00:02,666
+我们谈谈内存管理
+let's talk about memory management
+
+2
+00:00:03,533 --> 00:00:04,599
+特别是
+and specifically
+
+3
+00:00:05,000 --> 00:00:09,400
+内核的内存管理
+memory management as the kernel relates to memory management
+
+4
+00:00:10,300 --> 00:00:13,533
+回忆一下传统的计算机架构
+recall the traditional computer architecture
+
+5
+00:00:13,900 --> 00:00:15,600
+有一个CPU
+we have a CPU
+
+6
+00:00:16,100 --> 00:00:18,000
+有内存
+we have memory
+
+7
+00:00:18,500 --> 00:00:20,366
+和磁盘有交互
+there's some sort of interaction with disk
+
+8
+00:00:20,500 --> 00:00:21,833
+和网络等等有交互
+with a network etc etc
+
+9
+00:00:21,866 --> 00:00:25,466
+这个到底是什么样子
+but what does this really really look like
+
+10
+00:00:25,700 --> 00:00:27,066
+在电脑里
+well in a computer
+
+11
+00:00:28,566 --> 00:00:32,599
+有一根、两根或更多的内存条
+there's one stick or two sticks or have some finest sticks of RAM 
+
+12
+00:00:32,766 --> 00:00:35,566
+但却可能有成百上千个进程
+but there can be hundreds and hundreds of processes
+
+13
+00:00:35,666 --> 00:00:39,166
+每个进程都有一个虚拟内存空间
+and each process has a virtual memory space
+
+14
+00:00:39,666 --> 00:00:45,499
+你们可能对这张基础课程的幻灯片很熟悉
+that you might find familiar with this slide from the fundamentals lectures 
+
+15
+00:00:45,733 --> 00:00:49,199
+它实际出自Linux基础：0x03进程加载
+from the actually linux process loading lectures now
+
+16
+00:00:50,733 --> 00:00:56,099
+你现在看起来有点
+where you know as you've now seem quite a bit
+
+17
+00:00:57,066 --> 00:01:00,066
+每个进程都在某处加载了二进制文件
+every process has the binary loaded somewhere
+
+18
+00:01:00,100 --> 00:01:02,700
+在某处加载了库，等等
+the libraries loaded somewhere etc etc etc
+
+19
+00:01:04,066 --> 00:01:06,733
+但是你只有一个物理内存
+but again you have only one physical memory 
+
+20
+00:01:06,766 --> 00:01:11,266
+对于非位置无关代码的情况
+and you can only have one physical address of 0x400100
+
+21
+00:01:11,500 --> 00:01:15,233
+你只能有一个0x400100地址
+in the case of a non position independent code
+
+22
+00:01:16,100 --> 00:01:20,166
+那么如何将多个程序加载到内存中
+so how would you load multiple programs into memory 
+
+23
+00:01:20,233 --> 00:01:22,333
+且是以一种他们不会互相冲突的方式
+in a way that they wouldn't clobber each other
+
+24
+00:01:22,600 --> 00:01:24,700
+一个解决方案当然是采用位置无关代码
+one solution of course position independing code
+
+25
+00:01:24,866 --> 00:01:25,733
+这就是库用的方法
+this is what libraries do
+
+26
+00:01:25,766 --> 00:01:27,199
+你可以在任何地方加载库
+you can load libraries anywhere
+
+27
+00:01:27,333 --> 00:01:28,966
+他们自己去找好地址
+they figure the heck out
+
+28
+00:01:30,900 --> 00:01:33,466
+但这仍然不能互相隔离开
+but that still doesn't give you isolation
+
+29
+00:01:33,600 --> 00:01:37,366
+一个库很容易就能乱动另一个库
+one library can mess with another library pretty easily
+
+30
+00:01:39,933 --> 00:01:42,966
+所以我们提出了虚拟内存的概念
+so we came up with the concept of virtual memory
+
+31
+00:01:43,033 --> 00:01:43,899
+实际上
+and actually
+
+32
+00:01:44,600 --> 00:01:46,333
+我得记一下
+now I have to make a note to myself 
+
+33
+00:01:46,366 --> 00:01:48,966
+以后在这里添加一些历史背景
+to add some historical context here
+
+34
+00:01:49,066 --> 00:01:54,066
+虚拟内存这个概念出现在60年代
+virtual memory this concept came out around the 60s
+
+35
+00:01:54,666 --> 00:02:01,633
+我看到的最早的文献记录提到
+is where the literature is that I first started seeing these musings on 
+
+36
+00:02:01,800 --> 00:02:04,600
+嘿，也许我们应该确保一个进程
+hey maybe we should make sure that a process
+
+37
+00:02:04,766 --> 00:02:08,733
+一个进程不能破坏另一个进程的内存空间，等等
+one process can't clobber memory space of another process and so forth
+
+38
+00:02:09,166 --> 00:02:16,599
+虚拟内存为不同进程提供了对物理内存的不同视图
+and virtual memory provides views for different processes into physical memory
+
+39
+00:02:16,866 --> 00:02:20,399
+物理内存是一根长长的RAM棒
+the physical memory is one big long stick of RAM
+
+40
+00:02:21,133 --> 00:02:24,866
+虚拟内存是各进程对物理内存的视图
+and the virtual memory is views that every process has into it
+
+41
+00:02:24,933 --> 00:02:30,199
+内核配合CPU
+and the kernel in collaboration with architecture and features of the CPU
+
+42
+00:02:30,600 --> 00:02:35,666
+维护虚拟地址和物理地址之间的映射关系
+maintains mappings between the virtual addresses and the physical addresses
+
+43
+00:02:36,533 --> 00:02:38,099
+怎么做的呢
+so how might you do this
+
+44
+00:02:38,100 --> 00:02:40,500
+一个简单的方法是说，好吧，嘿
+well one easy way is say okay hey 
+
+45
+00:02:40,600 --> 00:02:45,500
+每个进程有，假设4KB的内存
+every process gets let's say 4 KB of memory 
+
+46
+00:02:45,500 --> 00:02:48,800
+从0到FFF
+0x from 0 to fff
+
+47
+00:02:49,600 --> 00:02:52,766
+它们的整个虚拟内存空间
+and their entire virtual memory space
+
+48
+00:02:53,166 --> 00:02:58,299
+以某个物理地址为基址，映射到物理内存上
+gets mapped in somewhere from some base into physical memory
+
+49
+00:02:58,400 --> 00:03:00,300
+比如
+so you say okay I know that 
+
+50
+00:03:00,300 --> 00:03:04,066
+P1加上0x1000
+P1 I just add 0x1000 
+
+51
+00:03:04,200 --> 00:03:05,933
+或者P2加上0x1000
+or P2 I just add a 0x1000
+
+52
+00:03:06,000 --> 00:03:07,566
+就是它在虚拟内存中的位置
+and that's where it is in virtual memory
+
+53
+00:03:07,800 --> 00:03:09,733
+这样地址转换就很简单
+and so the translations are easy
+
+54
+00:03:09,800 --> 00:03:12,300
+进程能跑，等等
+the processes work etc etc etc
+
+55
+00:03:12,600 --> 00:03:15,733
+但如果进程2需要更多内存呢
+but then what if process 2 needs more memory 
+
+56
+00:03:16,133 --> 00:03:20,166
+我们的解决方案是
+well our solution was hey
+
+57
+00:03:21,300 --> 00:03:23,400
+我们允许内存
+we allow for memory
+
+58
+00:03:24,133 --> 00:03:28,833
+在进程的虚拟内存空间中，是连续的
+continuous memory in the virtual memory space of a process 
+
+59
+00:03:29,066 --> 00:03:33,199
+但在进程的物理内存空间中，可以是不连续的
+to be non contiguous in the physical memory space of a process
+
+60
+00:03:33,500 --> 00:03:37,766
+这里一页占0x1000字节
+so on this page by page basis of 0x1000 bytes
+
+61
+00:03:38,333 --> 00:03:40,699
+在物理内存中，都是连续的
+everything is contiguous in physical memory
+
+62
+00:03:40,866 --> 00:03:42,733
+但是在虚拟内存中每个页面
+but in virtual memory each page 
+
+63
+00:03:42,866 --> 00:03:43,333
+抱歉
+sorry
+
+64
+00:03:43,333 --> 00:03:48,766
+在物理和虚拟内存中，对于一个页面的0x1000字节，所有内容都是连续的
+everything's contiguous for this 0x1000 bytes for one page in both physical and virtual memory
+
+65
+00:03:48,900 --> 00:03:50,900
+但对于连续的虚拟内存页
+but continuous virtual pages 
+
+66
+00:03:51,000 --> 00:03:55,766
+可能完全随机地放在可用的物理内存中
+might be completely randomly set aside in physical memory as available
+
+67
+00:03:55,833 --> 00:03:56,933
+我们必须这样做
+and we had to do this 
+
+68
+00:03:56,933 --> 00:03:58,199
+因为如你所见
+because as you saw here
+
+69
+00:03:58,333 --> 00:04:01,733
+进程2申请更多内存
+process two requested more memory
+
+70
+00:04:02,100 --> 00:04:05,533
+而它正好挨着进程3的内存
+and it was right up against the memory of process 3
+
+71
+00:04:05,600 --> 00:04:07,100
+所以我们无法让它保持连续
+so we couldn't just keep it continuous
+
+72
+00:04:07,100 --> 00:04:08,666
+我们可以移走进程3的内存
+we could have moved process 3 
+
+73
+00:04:08,800 --> 00:04:10,200
+再扩展进程2的内存
+expanded process 2
+
+74
+00:04:10,533 --> 00:04:11,899
+但这很耗时
+but that's expensive
+
+75
+00:04:12,066 --> 00:04:13,899
+所有这些内存整块复制之类的都很耗时
+all of this memory moving and stuff 
+
+76
+00:04:14,100 --> 00:04:15,800
+不太好
+just not not so great 
+
+77
+00:04:15,800 --> 00:04:18,200
+所以现在我们有这个问题
+so now we have this problem 
+
+78
+00:04:18,300 --> 00:04:20,133
+我们必须要记录这些鬼东西
+where hey we have to track all of this shit
+
+79
+00:04:20,366 --> 00:04:22,566
+我们得弄清楚
+we have to figure out hey hey
+
+80
+00:04:23,166 --> 00:04:28,666
+进程1的第1页实际上在物理内存中的这里
+page 1 of process 1 is actually here in physical memory 
+
+81
+00:04:28,766 --> 00:04:32,266
+进程1的第二页在这里，等等
+page 2 of process 1 is here and so forth
+
+82
+00:04:32,366 --> 00:04:38,499
+很久以前
+and so sometime way back when lost in the historical record
+
+83
+00:04:41,500 --> 00:04:43,600
+我们接到消息称，有人实现了1级页表
+we have a report that someone's done with level 1
+
+84
+00:04:43,666 --> 00:04:44,233
+我们一起看看
+let's see
+
+85
+00:04:44,866 --> 00:04:45,799
+（音量警告）
+
+86
+00:04:46,133 --> 00:04:49,566
+有人实现了1级页表，恭喜
+boom one solve of level 1 congratulations
+
+87
+00:04:50,266 --> 00:04:51,066
+（总部？）
+HQ(headquarter？)
+
+88
+00:04:52,300 --> 00:04:53,533
+大惊喜
+big surprise 
+
+89
+00:04:53,800 --> 00:04:55,866
+好了，比赛开始了
+all right the race is on
+
+90
+00:04:59,200 --> 00:05:01,133
+很久以前
+sometime way back when
+
+91
+00:05:01,500 --> 00:05:04,800
+甚至还在进程出现时
+in the birth of the process even
+
+92
+00:05:05,000 --> 00:05:07,400
+我们就创造了页表的概念
+we created this concept of page tables
+
+93
+00:05:07,700 --> 00:05:08,900
+思路是
+and the idea is
+
+94
+00:05:09,000 --> 00:05:10,100
+对于每个内存页
+for every page
+
+95
+00:05:10,100 --> 00:05:16,833
+它是一个连续的，4KB的内存块
+which is a contiguous chunk of 0x1000 of 4,096 bytes 4 KB 
+
+96
+00:05:17,200 --> 00:05:21,600
+我们在页表中，记录
+we track in the page table 
+
+97
+00:05:21,866 --> 00:05:25,766
+内存页的物理地址
+the physical address of that page 
+
+98
+00:05:26,400 --> 00:05:28,133
+一个页表
+and each page table
+
+99
+00:05:28,766 --> 00:05:32,399
+因为现在开始，我们用页讨论内存
+because we have now started talking about memory in terms of pages
+
+100
+00:05:32,533 --> 00:05:35,766
+实际上，我们一直在用页讨论内存
+and we have actually been talking about memory in terms of pages this whole time
+
+101
+00:05:35,966 --> 00:05:36,999
+这并非偶然
+and that's not an accident
+
+102
+00:05:37,400 --> 00:05:41,633
+每个页表有512个记录项
+each page table holds 512 entries 
+
+103
+00:05:41,733 --> 00:05:42,133
+为什么
+why
+
+104
+00:05:42,166 --> 00:05:45,566
+因为4KB除以8B（页表占一页）
+because 0x1000 divided by 8 
+
+105
+00:05:45,766 --> 00:05:54,399
+现在每个地址8字节，64位
+right now we have 8 byte addresses 64 bit 
+
+106
+00:05:54,566 --> 00:05:55,899
+结果是512
+is 512
+
+107
+00:05:55,933 --> 00:05:57,699
+这就是页表能容纳的记录项数目
+that's how many entries fit in one page
+
+108
+00:05:57,866 --> 00:06:02,966
+页表占用一页，既有经验上的原因
+and a page table takes up one page for spiritual reasons 
+
+109
+00:06:03,200 --> 00:06:05,766
+也是出于性能上的考量
+but also implementation performance reasons
+
+110
+00:06:06,500 --> 00:06:16,500
+总之，一个页表能记录512个页
+so this allows us to hold 512 pages in the page table 
+
+111
+00:06:16,633 --> 00:06:21,733
+每个页面包含4KB内存
+each page contains 0x1,000 4KB of memory
+
+112
+00:06:21,966 --> 00:06:24,333
+总共加起来有2MB
+that adds up to 2 MB
+
+113
+00:06:24,433 --> 00:06:28,066
+每个进程，用一个页表，可管2MB内存
+so now each process with a page table can have 2MB of memory
+
+114
+00:06:28,200 --> 00:06:33,833
+这2MB内存，在物理内存中，不必连续
+and this memory doesn't have to be contiguous in the physical memory
+
+115
+00:06:33,866 --> 00:06:36,133
+但它在虚拟地址空间中是连续的
+but it's contiguous in the virtual address space
+
+116
+00:06:36,166 --> 00:06:36,833
+酷
+amazing 
+
+117
+00:06:37,566 --> 00:06:38,699
+但有一个问题
+but there's a problem
+
+118
+00:06:39,700 --> 00:06:42,000
+我们需要的内存，当然超过了2MB
+of course we need more than 2 MB of RAM
+
+119
+00:06:42,066 --> 00:06:44,066
+光libc就超过2MB内存了
+libc needs more than 2 MB of RAM
+
+120
+00:06:44,266 --> 00:06:45,333
+比如
+like you know
+
+121
+00:06:45,533 --> 00:06:47,266
+就算只有一个helloworld
+even if we just have a hello world
+
+122
+00:06:47,533 --> 00:06:50,566
+它占用的内存都超2MB了
+that has a memory footprint nowadays of more than 2 MB of RAM
+
+123
+00:06:50,666 --> 00:06:51,899
+不是一直这样的
+it wasn't always like that
+
+124
+00:06:52,100 --> 00:06:53,566
+我们以前很注意使用的内存大小
+we used to be careful with our memory
+
+125
+00:06:53,800 --> 00:06:54,933
+但现在不的了
+but now we're not 
+
+126
+00:06:55,033 --> 00:06:56,299
+这都怪康纳
+and I blame Connor
+
+127
+00:06:56,400 --> 00:06:57,100
+不，我只是开个玩笑
+no I'm just kidding 
+
+128
+00:06:57,166 --> 00:07:00,166
+我们肯定需要2MB以上的内存
+but we definitely need more than 2MB of RAM come on
+
+129
+00:07:02,366 --> 00:07:05,666
+Linux内核本身就占用了大约700MB的内存
+the Linux kernel itself takes up like 700 MB of RAM
+
+130
+00:07:05,666 --> 00:07:06,533
+这是荒谬的
+it's ridiculous
+
+131
+00:07:07,700 --> 00:07:11,466
+可能不总是，全都加载在内存中，等等
+I mean that's probably not all loaded into memory at all times etc etc etc
+
+132
+00:07:11,466 --> 00:07:14,933
+但若你看一下未压缩的VMLinux映像
+but if you look at the uncompressed VMLinux image
+
+133
+00:07:15,000 --> 00:07:15,566
+它非常大
+it's pretty big
+
+134
+00:07:16,766 --> 00:07:18,933
+Chrome也很庞大
+Chrome is gigantic too
+
+135
+00:07:19,000 --> 00:07:20,300
+别让我打开Chrome
+don't get me starting Chrome
+
+136
+00:07:20,366 --> 00:07:21,533
+显然我们需要不止2MB
+obviously we need more than 2MB
+
+137
+00:07:21,633 --> 00:07:28,599
+那么有着无穷智慧的架构设计师做了什么呢
+so what did the architecture designers in their infinite wisdom do
+
+138
+00:07:28,700 --> 00:07:30,666
+他们说，这个页表
+well they said hey well this page table thing
+
+139
+00:07:31,666 --> 00:07:32,533
+效果很好
+works pretty well
+
+140
+00:07:32,600 --> 00:07:35,233
+要是在页表里放页表呢
+what if I put a page table in your page table
+
+141
+00:07:35,500 --> 00:07:38,133
+这样就可以在内存页中分页
+so you could page while you page
+
+142
+00:07:44,300 --> 00:07:45,733
+我们就这么做了
+we did exactly that
+
+143
+00:07:45,833 --> 00:07:47,799
+我们创造了页目录的概念（PD）
+we created the concept of page directories
+
+144
+00:07:47,800 --> 00:07:49,800
+我说的“我们”是指社会
+and by we I mean society
+
+145
+00:07:50,066 --> 00:07:56,333
+页目录PD中的记录项指向页表PT
+and page directories have entries that point to page tables 
+
+146
+00:07:56,433 --> 00:07:59,599
+页表PT中记录着页的物理地址
+that have entries that point to pages in physical memory
+
+147
+00:07:59,900 --> 00:08:03,966
+顺便说一下，这个指针是页表的物理地址
+and this pointer is the physical address of a page table by the way 
+
+148
+00:08:04,100 --> 00:08:06,566
+这样就可以很好地解决了（虚拟内存不足的问题）
+so it can just all be nicely resolved
+
+149
+00:08:08,300 --> 00:08:12,333
+一个页目录包含512个记录项
+a page directory contains 512 page directory entries 
+
+150
+00:08:12,533 --> 00:08:16,599
+因为每一项占8字节
+because every entry is 8 bytes and
+
+151
+00:08:17,066 --> 00:08:19,166
+一个页目录占一页
+a page directory takes up one page
+
+152
+00:08:19,300 --> 00:08:21,666
+因为内存是以页来管理的
+because memories managed in pages
+
+153
+00:08:22,533 --> 00:08:23,299
+这意味着
+which means 
+
+154
+00:08:23,300 --> 00:08:27,466
+512 * 2MB = 1GB的可寻址虚拟内存
+512 times 2 MB is 1 GB of addressable virtual memory
+
+155
+00:08:27,600 --> 00:08:29,266
+谁还需要更多呢
+who would need anything more 
+
+156
+00:08:29,800 --> 00:08:31,500
+这样会有一些固定开销
+this has some overhead
+
+157
+00:08:31,500 --> 00:08:34,500
+每2MB的内存，我们需要一个页表
+for every 2 MB of memory we need a page table
+
+158
+00:08:35,133 --> 00:08:36,533
+页表占用一页
+with Page Table takes up a page
+
+159
+00:08:36,666 --> 00:08:39,133
+所以每2MB内存需要4KB
+so it takes 4 KB for every 2 MB of RAM
+
+160
+00:08:39,300 --> 00:08:42,766
+另外，页目录本身占用4KB
+plus it takes 4 KB for the page directory itself
+
+161
+00:08:42,900 --> 00:08:45,300
+这有点不舒服
+that starts getting a little bit uncomfortable
+
+162
+00:08:45,400 --> 00:08:51,500
+每1GB需要2MB左右的固定内存开销
+that's like 2 MB of memory overhead for every GB
+
+163
+00:08:51,600 --> 00:08:55,500
+不夸张，但不舒服
+not insane but people get nervous
+
+164
+00:08:55,600 --> 00:09:00,666
+于是他们说，可以用一个特殊的标志来减少一点开销
+so they said okay hey we can reduce the overhead a little bit with a special flag
+
+165
+00:09:00,800 --> 00:09:03,600
+能注意到，地址末尾都是000
+and you'll notice all of these last few bytes are all zeros 
+
+166
+00:09:03,633 --> 00:09:06,366
+因为我们是以页为单位
+because of course we're addressing pages
+
+167
+00:09:06,466 --> 00:09:12,199
+所以每个记录项有12位可用于标记
+so there's plenty of space 12 bits per entry here for flags
+
+168
+00:09:13,966 --> 00:09:15,199
+通过设置一个标记
+by setting a flag 
+
+169
+00:09:15,300 --> 00:09:17,300
+页目录的记录项
+a page directory entry
+
+170
+00:09:18,066 --> 00:09:19,699
+可以不再指向页表
+instead of referring to a page table 
+
+171
+00:09:19,833 --> 00:09:22,299
+而是指向一个所谓的大页
+can just refer to what's called a large page
+
+172
+00:09:22,500 --> 00:09:25,866
+2MB的连续物理内存
+2 MB of contiguous physical memory
+
+173
+00:09:28,166 --> 00:09:28,733
+酷
+cool 
+
+174
+00:09:29,533 --> 00:09:31,966
+现在我们解决了这个问题
+so now we solve the problem 
+
+175
+00:09:32,100 --> 00:09:34,200
+虚拟内存增加到1GB
+we can go up to 1 GB
+
+176
+00:09:34,366 --> 00:09:38,633
+如果你生活在2000年，那会很棒
+which would be great if you were living in the year 2000 
+
+177
+00:09:38,833 --> 00:09:39,766
+比如《杰森一家》
+like the Jetsons 
+
+178
+00:09:39,933 --> 00:09:42,733
+杰森一家可能只有页目录
+the Jetsons probably only had page directories
+
+179
+00:09:43,133 --> 00:09:45,499
+但我们不是杰森一家
+but we are not the Jetsons
+
+180
+00:09:45,866 --> 00:09:49,266
+不管我们有多想成为杰森一家
+no matter how much we want to be the Jetsons 
+
+181
+00:09:49,700 --> 00:09:50,400
+我们不能
+we can't
+
+182
+00:09:50,766 --> 00:09:52,199
+我们甚至没有会飞的汽车
+we don't even have flying cars
+
+183
+00:09:52,333 --> 00:09:53,399
+也许我们有飞行汽车的话
+maybe we have flying cars
+
+184
+00:09:53,566 --> 00:09:55,066
+可能放入1GB内存就够
+we could fit into a GB of RAM
+
+185
+00:09:55,300 --> 00:09:56,533
+但我们没有会飞的汽车
+but we don't have flying cars 
+
+186
+00:09:56,566 --> 00:09:58,499
+所以
+so instead
+
+187
+00:10:00,200 --> 00:10:02,600
+我们在PD里放PD
+we put a page directory in your page directory
+
+188
+00:10:02,666 --> 00:10:04,766
+所以你可以分页，分页再分页
+so you could page while you page while you page
+
+189
+00:10:05,166 --> 00:10:05,966
+boom
+boom
+
+190
+00:10:06,200 --> 00:10:08,366
+我们创建了一个页目录页表PDPT
+we created a page directory page table
+
+191
+00:10:08,366 --> 00:10:10,299
+我说的“我们”是指社会
+and by we i mean Society again
+
+192
+00:10:11,266 --> 00:10:16,199
+它包含512个PD指针
+that contains 512 page directory pointers 
+
+193
+00:10:16,333 --> 00:10:21,066
+总共512GB的可寻址内存
+addressing a total of 512 GBs of RAM
+
+194
+00:10:21,400 --> 00:10:24,433
+当然，这有大量的固定开销
+now of course this has insane amounts of overhead 
+
+195
+00:10:24,733 --> 00:10:25,099
+每一个
+every
+
+196
+00:10:27,100 --> 00:10:27,900
+哦，等一下
+oh one second
+
+197
+00:10:27,900 --> 00:10:28,700
+让我
+let me
+
+198
+00:10:29,600 --> 00:10:30,500
+不，不是
+no not yeah
+
+199
+00:10:30,766 --> 00:10:38,333
+每个PD有开销
+every page directory represents overhead
+
+200
+00:10:38,400 --> 00:10:41,000
+每个PT有开销等等
+and every page table represents overhead and so forth
+
+201
+00:10:41,133 --> 00:10:43,933
+但如果看百分比，那就微不足道了
+but if it's percentage wise it's minuscule
+
+202
+00:10:43,933 --> 00:10:45,266
+但人们还是说
+but people still said okay
+
+203
+00:10:45,266 --> 00:10:47,166
+如果你对这些开销感到不舒服
+well hey if you're nervous about that overhead
+
+204
+00:10:47,333 --> 00:10:48,199
+别担心
+don't worry 
+
+205
+00:10:48,200 --> 00:10:52,366
+通过在PDPT的记录项中，设置特殊标志
+by setting a special flag in the page directory page table entry
+
+206
+00:10:53,500 --> 00:10:56,900
+它可以指向一个巨页
+it can refer to what's called a huge page
+
+207
+00:10:57,200 --> 00:10:58,866
+从大页（2MB）到现在的巨页（1GB）
+we went from large page now to huge page
+
+208
+00:10:58,966 --> 00:11:04,366
+它是1 GB的连续内存空间
+which is a 1 GB continuous space of memory
+
+209
+00:11:05,400 --> 00:11:10,066
+而不再指向PD
+instead of a page directory
+
+210
+00:11:10,733 --> 00:11:12,466
+很酷
+cool very cool 
+
+211
+00:11:16,500 --> 00:11:17,933
+正如有人提到的
+as someone mentioned
+
+212
+00:11:18,266 --> 00:11:24,166
+512GB可能够在Chrome中打开第二个标签页了
+512 GBs might now be enough to open a second tab in Chrome
+
+213
+00:11:24,300 --> 00:11:25,766
+但如果你想打开第三个呢
+but what if you want to open a third tab
+
+214
+00:11:25,766 --> 00:11:26,799
+就完了
+you're fucked
+
+215
+00:11:27,200 --> 00:11:30,900
+在原来PDPT的时代
+in the old days of page directory page tables
+
+216
+00:11:31,266 --> 00:11:32,166
+你就完蛋了
+you're screwed
+
+217
+00:11:32,500 --> 00:11:33,800
+你要再打开另一个标签页呢
+how are you gonna open another tab 
+
+218
+00:11:33,866 --> 00:11:37,366
+人们说，好吧，你想要更多的内存
+well people said okay you want more RAM 
+
+219
+00:11:37,400 --> 00:11:38,600
+你想要更多的内存
+you want more RAM
+
+220
+00:11:38,800 --> 00:11:40,100
+那就给你更多的内存
+you can have more RAM
+
+221
+00:11:41,100 --> 00:11:42,133
+我们把
+we're going to put
+
+222
+00:11:42,400 --> 00:11:46,100
+PDPT放到PDPT中
+a page directory page table in your page directory page table
+
+223
+00:11:46,200 --> 00:11:48,700
+你就可以分页、分页、分页再分页
+so you can page while you page while you page while you page
+
+224
+00:11:49,166 --> 00:11:56,266
+这把我们带到了现代世界的四级分页
+and this brings us to the modern world of four levels of paging structures
+
+225
+00:11:58,666 --> 00:12:02,099
+这创建了PML4
+that created the page map level 4
+
+226
+00:12:02,566 --> 00:12:08,666
+其中记录了512个PDPT
+which contains 512 pdpt entries 
+
+227
+00:12:09,033 --> 00:12:12,366
+每个记录项指向一个PDPT
+which point to a page directory page table
+
+228
+00:12:12,433 --> 00:12:13,933
+PDPT中记录着PD
+which point to page directories
+
+229
+00:12:13,933 --> 00:12:15,499
+PD再记录着PT
+which point to page tables
+
+230
+00:12:16,133 --> 00:12:21,599
+让我们现在，理论上可以处理256TB的内存
+allowing us to address a theoretical 256 TB of RAM now 
+
+231
+00:12:22,733 --> 00:12:26,399
+我不知道是否有256TB内存的电脑
+I'm not aware if computers that have 256 TB of RAM
+
+232
+00:12:26,900 --> 00:12:29,000
+但你可以在亚马逊上买到
+but you can get RAM computers from Amazon
+
+233
+00:12:29,000 --> 00:12:30,800
+有好几TB内存的电脑
+that have multiple TB of RAM
+
+234
+00:12:30,800 --> 00:12:32,133
+所以这不仅仅是理论上
+so this isn't just theoretical
+
+235
+00:12:32,133 --> 00:12:34,866
+这已经在实践中有用了
+this is used in practice 
+
+236
+00:12:35,033 --> 00:12:36,266
+这很重要
+it's important stuff
+
+237
+00:12:36,400 --> 00:12:37,800
+如果你仔细想想
+if you think about it
+
+238
+00:12:38,333 --> 00:12:43,599
+现在看起来有点高的内存
+and think about some amount of storage space that seems a little high
+
+239
+00:12:43,866 --> 00:12:45,399
+比如256TB
+like 256 TB
+
+240
+00:12:45,733 --> 00:12:47,699
+可能在十年内
+probably in a decade
+
+241
+00:12:47,866 --> 00:12:53,033
+将变成有一点点高
+that will be an amount of memory RAM that seems just a little high
+
+242
+00:12:53,100 --> 00:12:57,000
+20年内，将变成有点低了
+and two decades is gonna be an amount of RAM that seems low
+
+243
+00:12:57,133 --> 00:12:58,933
+曾经就是这样的
+and that's how it was before 
+
+244
+00:12:59,166 --> 00:13:04,099
+以前1GB的内存看起来很疯狂
+at some point a GB of RAM seemed like insanity 
+
+245
+00:13:04,200 --> 00:13:05,066
+在Yan高中时
+in high school
+
+246
+00:13:05,266 --> 00:13:07,299
+有一阵经济上的
+there was a crazy economical
+
+247
+00:13:07,866 --> 00:13:11,533
+一个疯狂的情况，内存条变得很便宜
+like a crazy situation where RAM became insanely cheap
+
+248
+00:13:11,966 --> 00:13:12,999
+我买了1GB
+I bought a GB
+
+249
+00:13:13,000 --> 00:13:19,766
+我为家里的计算机，买了好几条512MB的内存条
+I bought GBs of RAM in 512MB sticks for all the computers in my family
+
+250
+00:13:21,133 --> 00:13:30,466
+我给主工作站装了1.5GB内存，这很疯狂
+and I loaded my main workstation with 1.5 GBs of RAM which was insane
+
+251
+00:13:31,166 --> 00:13:32,966
+完了，Windows 98无法开机
+and Windows 98 refused to boot
+
+252
+00:13:33,100 --> 00:13:34,766
+想想看
+so think about that
+
+253
+00:13:43,500 --> 00:13:45,733
+我不知道有Mac电脑支持上TB的内存
+I didn't know that you could get TB of RAM in the Mac
+
+254
+00:13:45,733 --> 00:13:47,299
+2040年的mac Pro
+only the 2040 mac Pro
+
+255
+00:13:48,366 --> 00:13:49,333
+是的，实话
+yes exactly 
+
+256
+00:13:49,333 --> 00:13:50,599
+好的
+so okay anyways
+
+257
+00:13:52,366 --> 00:13:54,399
+这真的非常令人沮丧
+so yeah that was really actually very frustrating 
+
+258
+00:13:54,466 --> 00:13:56,199
+因为Linux运行得很好
+because Linux worked just fine
+
+259
+00:13:56,533 --> 00:13:58,566
+但突然，我就不能切到windows上玩游戏了
+but suddenly I couldn't play games anymore
+
+260
+00:13:58,666 --> 00:14:02,799
+所以我最后把内存降到了768MB
+so I ended up actually downgrading to 768 mags of RAM 
+
+261
+00:14:02,833 --> 00:14:05,266
+这是当时windows在我电脑上支持的最大内存
+which was the most that Windows could take on my hardware
+
+262
+00:14:05,266 --> 00:14:05,866
+这真的很烦人
+it was really annoying
+
+263
+00:14:05,966 --> 00:14:08,266
+总之，这就是现代世界
+anyway so this is the modern world
+
+264
+00:14:08,266 --> 00:14:09,899
+这就是你们生活在的世界
+this is the world you all live in
+
+265
+00:14:10,600 --> 00:14:13,166
+是PML4的世界
+is the world of PML4
+
+266
+00:14:14,133 --> 00:14:16,866
+更糟糕的是，我马上就会讲到
+and it gets even worse but I'll get to that in a second
+
+267
+00:14:17,733 --> 00:14:21,799
+PML4非常棒
+so PML level4 is pretty awesome
+
+268
+00:14:21,900 --> 00:14:23,000
+这个
+what does this
+
+269
+00:14:24,066 --> 00:14:26,466
+我们是如何索引到这些PT上的
+how do we actually index into all of these tables
+
+270
+00:14:26,466 --> 00:14:28,533
+虚拟地址到底怎么用
+what does a virtual address actually do
+
+271
+00:14:28,600 --> 00:14:30,466
+这里有个虚拟地址
+so I put this virtual address
+
+272
+00:14:31,133 --> 00:14:34,233
+这是cat /proc/self/maps时，看到的栈地址
+this is a stack address when I did cat /proc/self/maps
+
+273
+00:14:34,333 --> 00:14:36,466
+就是个栈地址
+just some some stack address
+
+274
+00:14:36,500 --> 00:14:39,533
+我们来看看它是如何
+let's take a look at how it actually gets translated
+
+275
+00:14:41,000 --> 00:14:45,333
+转换成物理地址的
+into a physical address 
+
+276
+00:14:45,800 --> 00:14:53,400
+我们取12位作为页内偏移（英文口误，非PT）
+we take 12 bits as an index into the page table
+
+277
+00:14:53,500 --> 00:14:55,366
+然后每次取9位
+and then 9 bits at a time
+
+278
+00:14:56,166 --> 00:14:57,466
+表示从0到512
+from 0 to 512 
+
+279
+00:14:57,633 --> 00:15:04,999
+作为四级分页的，各级别的索引
+as indexes into the different levels of the 4 level paging structure
+
+280
+00:15:05,133 --> 00:15:06,566
+第一个9位
+the first 9 bits
+
+281
+00:15:07,500 --> 00:15:09,200
+最左边的9位
+the left most 9 bits here
+
+282
+00:15:09,900 --> 00:15:11,900
+是PML4中的索引
+are an index into the PML4 
+
+283
+00:15:12,033 --> 00:15:12,766
+到这里
+into here
+
+284
+00:15:14,066 --> 00:15:15,899
+接下来的9位
+then the next 9 bits
+
+285
+00:15:16,566 --> 00:15:18,466
+是PDPT中的索引
+are an index into the PDPT
+
+286
+00:15:18,800 --> 00:15:20,000
+用来选择PD
+to select the PD
+
+287
+00:15:20,400 --> 00:15:22,933
+再接下来的9位是PD中的索引
+the next 9 bits are an index into the PD
+
+288
+00:15:23,000 --> 00:15:24,266
+用来选择PT
+to select the PT
+
+289
+00:15:24,466 --> 00:15:25,399
+即页表
+the page table
+
+290
+00:15:25,666 --> 00:15:28,766
+再下面的9位是PT中的索引
+and then the next 9 bits are an index into the page table 
+
+291
+00:15:28,766 --> 00:15:29,866
+用来选择实际内存页
+to select the actual page
+
+292
+00:15:30,133 --> 00:15:33,266
+接下来的12位是页内偏移
+and then the next 12 bits are an index into the page
+
+293
+00:15:33,666 --> 00:15:36,766
+从0到0xFFF
+from 0 to 0xFFF
+
+294
+00:15:38,333 --> 00:15:43,866
+所以当你在程序中访问内存时
+so when you access some memory in your program 
+
+295
+00:15:43,933 --> 00:15:46,466
+mov RBX，解引用RBX
+mov rax, dereference RBX
+
+296
+00:15:47,100 --> 00:15:50,366
+这实际上解引用了4次
+this actually does 4 different memory dereferences
+
+297
+00:15:50,700 --> 00:15:54,866
+才拿到实际的内存页
+to bring you the actual page
+
+298
+00:15:56,600 --> 00:15:58,300
+再做最终的解引用
+and let you do that dereference
+
+299
+00:15:58,800 --> 00:16:01,433
+现在回想一下进程是隔离开的
+now recall that processes are isolated
+
+300
+00:16:01,566 --> 00:16:02,799
+所以事情变得更疯狂了
+so it gets even crazier 
+
+301
+00:16:02,800 --> 00:16:03,966
+因为你猜怎么着
+because hey guess what
+
+302
+00:16:04,133 --> 00:16:05,333
+每个虚拟地址空间
+each virtual address space 
+
+303
+00:16:05,500 --> 00:16:08,733
+每个进程都有自己的PML4
+each process has its own PML4
+
+304
+00:16:09,900 --> 00:16:13,100
+那么如何指定PML4的位置呢
+so how do you actually specify where the PML4 is
+
+305
+00:16:13,100 --> 00:16:15,066
+因为目前有了这么个链条
+because so far we've had this circular thing 
+
+306
+00:16:15,200 --> 00:16:16,800
+PT在哪里
+because where the PT is 
+
+307
+00:16:16,900 --> 00:16:19,400
+是由PD项指定的
+is specified by the PD entry
+
+308
+00:16:19,466 --> 00:16:20,499
+PD在哪里?
+where the PD is 
+
+309
+00:16:20,500 --> 00:16:22,600
+是由PDPT项指定的
+is specified by the pdpt entry
+
+310
+00:16:22,733 --> 00:16:24,366
+PDPT在哪里
+where the pdpt is 
+
+311
+00:16:24,500 --> 00:16:26,133
+是由PML4项指定的
+is specified by the PML4 entry
+
+312
+00:16:26,200 --> 00:16:27,066
+PML4在哪
+where's the PML4 
+
+313
+00:16:27,133 --> 00:16:28,999
+这是由寄存器指定的
+well that is specified by a register
+
+314
+00:16:29,266 --> 00:16:30,766
+称为CR3寄存器
+called the CR3 register
+
+315
+00:16:30,866 --> 00:16:32,533
+它是一个特殊寄存器
+it is a special register
+
+316
+00:16:32,966 --> 00:16:35,166
+CR表示控制寄存器
+controlled register that's what CR stands for
+
+317
+00:16:35,366 --> 00:16:36,999
+它只能在0环中访问
+only accessible in ring 0
+
+318
+00:16:37,133 --> 00:16:44,966
+我在内核课上提到过
+I've mentioned it in the kernel lecture
+
+319
+00:16:45,866 --> 00:16:47,599
+内核的第一节课
+one of the earlier kernel lectures
+
+320
+00:16:47,733 --> 00:16:50,599
+但现在你能理解它是怎么用的了
+but now you know in depth how it's used
+
+321
+00:16:51,066 --> 00:16:53,299
+还有其他控制寄存器
+there are other control registers
+
+322
+00:16:53,900 --> 00:16:56,400
+其中一些设置了处理器选项
+some of them set processor options
+
+323
+00:16:56,400 --> 00:16:58,600
+其中一些被用于其他疯狂的事情
+some of them are used for other crazy things
+
+324
+00:16:58,700 --> 00:17:00,700
+x86中有很多疯狂的东西
+there's a lot of craziness in x86
+
+325
+00:17:00,700 --> 00:17:01,400
+这是难以置信的
+it's incredible
+
+326
+00:17:01,400 --> 00:17:03,266
+我学到了很多
+I learned quite a lot of it
+
+327
+00:17:03,266 --> 00:17:07,899
+去年专门为defcon创建了一个虚拟化相关的题目
+specifically to create a defcon challenge last year for virtualization 
+
+328
+00:17:08,033 --> 00:17:09,733
+我马上就会讲到
+which I'll talk about in a second
+
+329
+00:17:10,800 --> 00:17:14,300
+如果你想隔离开
+now so what if you want to isolate
+
+330
+00:17:14,400 --> 00:17:16,366
+不是说进程，而是虚拟机
+not processes but virtual machines 
+
+331
+00:17:16,466 --> 00:17:19,099
+因为你现在正在运行虚拟机
+because you're running virtual machines right now 
+
+332
+00:17:19,333 --> 00:17:21,299
+用的方式不同
+in actually different ways 
+
+333
+00:17:21,300 --> 00:17:22,400
+对于模拟器，这并不适用
+in emulation so this doesn't apply
+
+334
+00:17:22,466 --> 00:17:24,599
+但当你在电脑上运行虚拟机时
+but when you run virtual machines on your computer
+
+335
+00:17:25,300 --> 00:17:26,500
+通常是虚拟化
+typically you're virtualizing 
+
+336
+00:17:26,633 --> 00:17:27,766
+而不是在模拟
+you're not emulating
+
+337
+00:17:28,866 --> 00:17:31,899
+如何隔离虚拟机
+how do you isolate virtual machines 
+
+338
+00:17:31,933 --> 00:17:33,899
+每个虚拟机中的内核
+where every kernel in those virtual machines
+
+339
+00:17:34,300 --> 00:17:36,933
+都以为自己可以直接访问物理内存
+assumes that it has direct access to physical memory
+
+340
+00:17:37,133 --> 00:17:38,666
+你可以在虚拟机中运行DOS
+you can run DOS in a virtual machine 
+
+341
+00:17:38,766 --> 00:17:42,399
+DOS其实什么都不知道
+DOS doesn't know anything really
+
+342
+00:17:42,400 --> 00:17:44,133
+DOS很诚实
+DOS was honest 
+
+343
+00:17:44,300 --> 00:17:46,700
+它就是让你运行你的游戏
+it just let you run your games
+
+344
+00:17:46,866 --> 00:17:48,999
+不碍事
+and didn't get in the way
+
+345
+00:17:49,566 --> 00:17:54,566
+现在你强迫它在Windows 11中运行
+and now you're forcing it to run inside Windows 11 
+
+346
+00:17:54,733 --> 00:17:57,766
+或者更糟Mac OS，甚至是Linux
+or worse Mac OS or even worse Linux
+
+347
+00:17:58,100 --> 00:17:59,500
+这很疯狂
+it's insanity
+
+348
+00:18:00,366 --> 00:18:01,133
+那么会发生什么?
+so what happens 
+
+349
+00:18:01,266 --> 00:18:02,066
+好吧
+well hey 
+
+350
+00:18:02,700 --> 00:18:07,100
+你在页表之上，放了一个扩展页表
+you put an extended page table on top of your page table
+
+351
+00:18:07,200 --> 00:18:08,700
+所以你有一个4级的
+so you have a 4 level
+
+352
+00:18:08,700 --> 00:18:12,000
+一个完整的，额外的，4级页表
+an entire additional 4 level translation table
+
+353
+00:18:12,800 --> 00:18:17,466
+它用于将你虚拟机中的物理地址
+that is used to translate guest physical addresses in your virtual machine 
+
+354
+00:18:17,500 --> 00:18:20,233
+转换为宿主机的物理地址
+into host physical addresses in your virtual machine
+
+355
+00:18:20,533 --> 00:18:22,599
+这太他妈疯狂了
+and it's just fucking nuts
+
+356
+00:18:23,100 --> 00:18:23,366
+boom
+boom 
+
+357
+00:18:23,466 --> 00:18:24,933
+等一下
+actually one second 
+
+358
+00:18:25,000 --> 00:18:26,700
+我们回退2张ppt
+let's back up two slides
+
+359
+00:18:27,500 --> 00:18:29,133
+我忘说一件事
+I forgot to mention one thing
+
+360
+00:18:29,733 --> 00:18:31,466
+这个虚拟地址
+this virtual address
+
+361
+00:18:32,300 --> 00:18:35,366
+12位，9位，9位，9位，9位
+12 bits 9 bits 9 bits 9 bits 9 bits 
+
+362
+00:18:35,366 --> 00:18:37,333
+加起来是48位
+that adds up to 48 bits
+
+363
+00:18:37,766 --> 00:18:40,866
+这意味着即使在64位架构上
+that means that even on a 64 bit architecture
+
+364
+00:18:40,900 --> 00:18:44,566
+在当前的设计下，你只能用
+you can only address with this current design
+
+365
+00:18:44,566 --> 00:18:46,799
+他们以后可以引入5级
+hey they can introduce a level 5 later
+
+366
+00:18:47,933 --> 00:18:48,899
+但以目前的设计
+but with the current design 
+
+367
+00:18:48,900 --> 00:18:52,900
+你只能用48位的内存
+you can only address 48 bits of memory
+
+368
+00:18:53,066 --> 00:18:59,099
+所有的指针都必须在这48位内
+and your pointers all have to be contained in these 48 bits
+
+369
+00:18:59,166 --> 00:19:05,199
+架构上不支持处理高于48位的内存
+there's just no architectural way to address memory higher than 48 bits
+
+370
+00:19:05,533 --> 00:19:07,066
+这里所有的位
+all bits here
+
+371
+00:19:07,266 --> 00:19:11,899
+在你解引用时，必须要么全0，要么全1
+have to either be all 0 or all 1 when you do a dereference
+
+372
+00:19:15,266 --> 00:19:18,099
+如果它们都是1
+and if they're all 1 it just
+
+373
+00:19:21,700 --> 00:19:23,200
+如果它们都是1
+if they are all one
+
+374
+00:19:24,866 --> 00:19:28,866
+基本就是这个bit的符号扩展
+yeah it basically just has to be a sign extension of this single bit
+
+375
+00:19:28,866 --> 00:19:30,899
+它们会被忽略
+and then they're ignored otherwise
+
+376
+00:19:32,800 --> 00:19:35,100
+所以当你看到内核地址
+so when you see kernel addresses
+
+377
+00:19:35,400 --> 00:19:36,866
+有内核地址吗
+is there still a kernel address 
+
+378
+00:19:36,866 --> 00:19:37,499
+这就是
+here you have
+
+379
+00:19:37,500 --> 00:19:39,266
+当你看到这个内核地址FFF
+and when you see this kernel address FFF 
+
+380
+00:19:39,400 --> 00:19:42,466
+它是一个符号扩展后的48位地址
+it's just a sign extended 48 bit address
+
+381
+00:19:43,000 --> 00:19:45,433
+48位外的都是0（口误）
+where the top byte is 0
+
+382
+00:19:45,566 --> 00:19:46,599
+所以它是内核
+so it's a kernel
+
+383
+00:19:46,666 --> 00:19:48,933
+首位是1（英文口误），所以是内核地址
+a top bit is 0 so it's a kernel address
+
+384
+00:19:52,300 --> 00:19:53,000
+现在
+now 
+
+385
+00:19:53,300 --> 00:19:54,200
+如果前16位是混的
+yes so if they're a mix 
+
+386
+00:19:54,366 --> 00:19:56,466
+既有0，也有1
+kind of as if they're a mix of zeros and ones
+
+387
+00:19:56,533 --> 00:19:58,766
+就会报段错误
+you will end up with a segmentation fault
+
+388
+00:19:58,900 --> 00:20:00,666
+它不是一个合法的地址
+it's not a valid address
+
+389
+00:20:01,000 --> 00:20:03,966
+但为什么我们不在那里放东西呢
+but kind of saying why not let us store stuff there
+
+390
+00:20:04,000 --> 00:20:06,066
+某些平台可以
+certain platforms do 
+
+391
+00:20:06,066 --> 00:20:09,566
+这是ARM指针标签的原理
+this is how arm pointer tagging and
+
+392
+00:20:10,466 --> 00:20:13,266
+我不知道英特尔是否在研发他们自己的指针标签
+I don't know if intel is working on their own pointer tagging works
+
+393
+00:20:13,333 --> 00:20:16,666
+如果你查一下ARM指针标签
+so if you look at arm pointer tagging
+
+394
+00:20:20,733 --> 00:20:22,699
+ARM内存标签扩展
+arms memory tagging extensions 
+
+395
+00:20:23,000 --> 00:20:29,566
+能让你出于安全目的，使用地址的高2字节
+allow you to use the top byte for security storage
+
+396
+00:20:30,133 --> 00:20:31,933
+这个超级有用
+which is super super useful
+
+397
+00:20:32,566 --> 00:20:38,066
+什么是ARM指针完整性
+and what's the thing arm pointer integrity
+
+398
+00:20:42,666 --> 00:20:45,666
+PAC，指针访问控制
+yes PAC exactly Pointer Access Control
+
+399
+00:20:46,500 --> 00:20:50,800
+所有这些都是聪明的安全解决方案
+all of this stuff is clever security solutions
+
+400
+00:20:51,500 --> 00:20:57,466
+使用了指针中剩余的空闲位
+that use slack space that's still left around in the pointers
+
+401
+00:20:57,633 --> 00:21:00,266
+你也可以放入加密的签名
+so you can have like some sort of a cryptographic signature
+
+402
+00:21:00,400 --> 00:21:02,600
+你想放什么标签都可以
+you can have whatever tag you want
+
+403
+00:21:03,466 --> 00:21:06,066
+我们上周刚有一篇论文被接收了
+we just last week had a paper accepted 
+
+404
+00:21:06,066 --> 00:21:08,666
+我们使用了ARM的高字节忽略功能
+where we used Arm's top byte ignore feature 
+
+405
+00:21:08,833 --> 00:21:13,833
+基本上就是在指针中存储对象id
+to basically store object ids inside the pointers 
+
+406
+00:21:14,100 --> 00:21:25,533
+就能在代码访问限制对象前，完成验证
+so that we could validate them before code access objects that it wasn't supposed to access
+
+407
+00:21:29,100 --> 00:21:35,766
+实际上，对这些位的使用，的增多
+actually the increasing use of this memory space or the the extra bits for
+
+408
+00:21:38,166 --> 00:21:38,666
+什么来着
+what's it called 
+
+409
+00:21:38,800 --> 00:21:41,533
+出于安全性的使用
+for security
+
+410
+00:21:42,333 --> 00:21:43,866
+我猜这大概意味着
+I'm guessing probably means that 
+
+411
+00:21:44,000 --> 00:21:48,033
+我们不会用48位以上的可寻址内存了
+we might never get to over 48 bits of addressable memory
+
+412
+00:21:48,066 --> 00:21:49,166
+希望不要马上打脸
+please not easily
+
+413
+00:21:50,900 --> 00:21:52,600
+回到虚拟机隔离
+so virtual machine isolation
+
+414
+00:21:52,866 --> 00:21:54,033
+这是疯狂的
+it's insane 
+
+415
+00:21:54,033 --> 00:21:59,166
+每个虚拟机都有自己的扩展页表
+basically every virtual machine has its own extended page table
+
+416
+00:21:59,200 --> 00:22:02,000
+它是一个四层结构
+which is a four level structure
+
+417
+00:22:02,166 --> 00:22:06,766
+有EPT PML4，EPT PDPT，EPT PD和EPT PT
+it has an EPT PML4、EPT PDPT and EPT PD and EPT PT
+
+418
+00:22:07,566 --> 00:22:12,266
+它将客户机物理地址，转换成客户机虚拟地址（口误）
+that handles the translation of guest physical addresses into guest virtual addresses
+
+419
+00:22:12,533 --> 00:22:14,466
+也就是说，你最后会得到
+which means that you will end up with 
+
+420
+00:22:15,033 --> 00:22:15,599
+对不起
+sorry
+
+421
+00:22:15,933 --> 00:22:20,366
+将客户机物理地址，转成宿主机物理地址
+guest physical addresses into host physical addresses
+
+422
+00:22:21,066 --> 00:22:21,966
+也就是说
+which means that
+
+423
+00:22:21,966 --> 00:22:24,399
+会经过这个疯狂的二维查找过程
+you have this insane two dimensional lookup process
+
+424
+00:22:24,566 --> 00:22:28,533
+最开始查找客户机的PML4
+where you start looking up the PML4 of the guest
+
+425
+00:22:28,766 --> 00:22:31,066
+用客户机的EPT PML4
+and you use the PML4 of the guest
+
+426
+00:22:32,133 --> 00:22:34,933
+从客户机的CR3找到的EPT PML4
+from that CR3 register in the guest
+
+427
+00:22:37,300 --> 00:22:44,100
+查看客户机中CR3保存的物理地址
+you look up the physical address in the guest the guest physical address stored in CR3
+
+428
+00:22:45,500 --> 00:22:49,000
+用一系列EPT指针，找到PML4
+using the EPT pointers to figure out the PML4
+
+429
+00:22:49,766 --> 00:22:53,166
+找到宿主机中的PML4的物理地址
+that PML4's physical address in the host 
+
+430
+00:22:53,166 --> 00:22:54,199
+然后
+and then you
+
+431
+00:22:56,766 --> 00:23:00,366
+用虚拟地址，查找下面要用的PDPT
+you use the virtual address to look up the pdpt
+
+432
+00:23:00,900 --> 00:23:05,200
+客户机中的PDPT
+the pdpt physical address in the guest
+
+433
+00:23:05,333 --> 00:23:09,066
+然后用EPT系列指针，找到宿主机中的PDPT
+then resolve use the EPT to resolve that into its address in the host
+
+434
+00:23:09,066 --> 00:23:10,333
+这太疯狂了
+and it's just insane
+
+435
+00:23:10,333 --> 00:23:11,633
+这太疯狂了
+it's insane it's just crazy 
+
+436
+00:23:11,733 --> 00:23:12,733
+好吧不管怎样
+okay anyways
+
+437
+00:23:13,766 --> 00:23:14,999
+这要大量的查找
+that's a lot of lookups
+
+438
+00:23:15,000 --> 00:23:17,000
+难道这不会很慢吗
+isn't all of this slow as molasses
+
+439
+00:23:17,000 --> 00:23:20,000
+如果在内核里做这些的话，会很慢
+well it would be if you're doing all of this inside the kernel 
+
+440
+00:23:20,100 --> 00:23:21,666
+但实际上没有
+but you don't actually
+
+441
+00:23:21,866 --> 00:23:23,733
+有专门的硬件
+you have a specialized piece of hardware
+
+442
+00:23:23,733 --> 00:23:25,166
+称为内存管理单元
+called the memory management unit 
+
+443
+00:23:25,166 --> 00:23:26,599
+这些都是在硬件上完成的
+that does all of this in hardware
+
+444
+00:23:26,600 --> 00:23:28,533
+速度非常快
+and it's super fast
+
+445
+00:23:30,000 --> 00:23:31,266
+再用就更快了
+and then it's even faster 
+
+446
+00:23:31,266 --> 00:23:34,666
+因为只要它成功找到地址后
+because whenever it successfully resolves something
+
+447
+00:23:34,666 --> 00:23:36,499
+它就将其存储在缓存中
+it stores it in a cache 
+
+448
+00:23:36,666 --> 00:23:38,499
+称为快表（TLB）
+called the translation lookaside buffer
+
+449
+00:23:39,466 --> 00:23:41,333
+当然这意味着
+of course this means that
+
+450
+00:23:41,400 --> 00:23:44,166
+这开放了缓存侧的攻击面
+things become open to cache side channel attacks
+
+451
+00:23:44,200 --> 00:23:45,900
+等等等等
+and etc etc etc
+
+452
+00:23:48,000 --> 00:23:50,500
+这在其他架构上是如何工作的
+how does this work on other architectures
+
+453
+00:23:54,566 --> 00:23:56,899
+哦，抱歉，这应该，哦，没问题
+oh sorry this is suppose to okay
+
+454
+00:23:57,300 --> 00:23:59,133
+其它架构上是怎样的
+how does this work on other architectures
+
+455
+00:23:59,166 --> 00:24:00,233
+有点类似
+kind of similarly
+
+456
+00:24:00,600 --> 00:24:04,933
+AMD和Intel在某个时候合作发明了
+so AMD and Intel collaboratively at some point invented or
+
+457
+00:24:05,266 --> 00:24:08,533
+我记得是AMD为AMD64做了大量的工作
+I think AMD did the bulk of this for AMD64
+
+458
+00:24:08,600 --> 00:24:10,566
+发明了这个4级页面表
+invented this 4 level page table
+
+459
+00:24:12,100 --> 00:24:13,600
+ARM也有类似的东西
+arm has something similar
+
+460
+00:24:13,600 --> 00:24:16,333
+你们可以去看看ARM的文档
+you can go and actually read the arm documentation
+
+461
+00:24:16,466 --> 00:24:17,566
+但基本的思路是
+but the basic idea
+
+462
+00:24:18,000 --> 00:24:21,133
+ARM上有等同于CR3的寄存器
+there's a CR3 equivalent in arm of the
+
+463
+00:24:21,666 --> 00:24:21,999
+语气助词
+fuck 
+
+464
+00:24:22,000 --> 00:24:27,200
+叫 转换表 什么的 寄存器 0
+the Translation Table something Register 0 
+
+465
+00:24:27,266 --> 00:24:29,066
+它用于用户空间地址
+for the user space addresses
+
+466
+00:24:29,066 --> 00:24:33,699
+一般来说，TTBR1用于内核空间地址
+and typically the translation table something register 1 for kernel addresses
+
+467
+00:24:33,900 --> 00:24:38,600
+它们指向0级，还是3级
+those points to a level 0 or level 3
+
+468
+00:24:38,866 --> 00:24:41,666
+我不记得哪一个是最大的
+I don't remember which one is the the biggest
+
+469
+00:24:41,666 --> 00:24:42,699
+哪个是最小的转换表
+which one is the smallest translation table
+
+470
+00:24:43,200 --> 00:24:48,000
+然后指向1、2、3级等等
+which then point to level 1 2 3 etc etc
+
+471
+00:24:49,266 --> 00:24:52,933
+类似于PML4 PDPT PD和PT
+and it's analogous to PML4 PDPT PD and PT
+
+472
+00:24:54,200 --> 00:24:57,366
+当然，Linux既可在x86，也可在arm上运行
+of course Linux runs both on x86 and arm
+
+473
+00:24:58,000 --> 00:24:59,166
+所以它必须
+so it has to 
+
+474
+00:24:59,433 --> 00:25:00,699
+啊，BR代表基地址寄存器
+ah base register
+
+475
+00:25:00,733 --> 00:25:02,099
+多谢，用户：反乌托邦
+thank you dystopia
+
+476
+00:25:02,533 --> 00:25:05,266
+转换表基地址寄存器0
+the Translation Table Base Register 0
+
+477
+00:25:05,266 --> 00:25:06,933
+转换表基地址寄存器1
+Translation Table Base Register 1
+
+478
+00:25:08,566 --> 00:25:10,999
+Linux可以在所有这些架构上运行
+Linux runs on all of these things
+
+479
+00:25:11,000 --> 00:25:13,166
+所以他们发明了一个通用术语
+so they invented a generic terminology
+
+480
+00:25:13,300 --> 00:25:14,833
+这真的很愚蠢
+which is really silly 
+
+481
+00:25:14,900 --> 00:25:17,833
+因为很明显他们没料到第四级会出现
+because obviously they didn't expect level 4 to show up I guess 
+
+482
+00:25:17,833 --> 00:25:19,433
+但基本上有，页表
+but basically there's the Page Table
+
+483
+00:25:19,533 --> 00:25:21,333
+然后是，页中层目录
+then there's the Page Mid-level Directory 
+
+484
+00:25:21,333 --> 00:25:22,566
+和页上级目录
+and the Page Upper Directory
+
+485
+00:25:22,600 --> 00:25:25,466
+最后到第四级
+and then they ended up getting a fourth level 
+
+486
+00:25:25,566 --> 00:25:27,799
+他们说，好吧，比“上级”高的是什么
+and they're like all right what's higher than upper 
+
+487
+00:25:27,800 --> 00:25:29,833
+就叫 全局 吧
+so they've been global 
+
+488
+00:25:29,933 --> 00:25:31,166
+页面全局目录
+page global directory
+
+489
+00:25:32,866 --> 00:25:34,933
+Linux实现了这些概念
+Linux implement these concepts 
+
+490
+00:25:35,066 --> 00:25:39,866
+但没实现内存查找和缓存之类的
+but it doesn't implement the memory lookup and caching and stuff 
+
+491
+00:25:39,966 --> 00:25:42,666
+它需要一个硬件MMU
+it requires a hardware MMU
+
+492
+00:25:43,366 --> 00:25:49,333
+如果你疑惑过，为什么Linux不像Arduino
+so if you ever wonder why Linux doesn't run unlike Arduino natively
+
+493
+00:25:49,933 --> 00:25:51,366
+至少是主流的Linux不像
+at least mainline Linux
+
+494
+00:25:51,700 --> 00:25:52,733
+这就是为什么
+that's why 
+
+495
+00:25:53,166 --> 00:25:56,799
+但也有像uCLinux这样的Linux分支
+but there are forks of Linux like uCLinux 
+
+496
+00:25:56,900 --> 00:25:58,500
+不需要MMU
+that do not require MMU
+
+497
+00:26:01,800 --> 00:26:03,866
+我为什么要告诉你这些疯狂的事
+why am I telling you all of this insanity
+
+498
+00:26:03,966 --> 00:26:05,166
+我说这些
+I'm telling you this
+
+499
+00:26:05,800 --> 00:26:06,600
+是因为
+because
+
+500
+00:26:07,300 --> 00:26:08,333
+在内核中
+by being in the kernel 
+
+501
+00:26:08,433 --> 00:26:10,699
+你可以打破进程隔离
+you can break process isolation 
+
+502
+00:26:10,900 --> 00:26:13,666
+你可以用非常糟糕的方式破坏它
+you can break it in real bad ways
+
+503
+00:26:15,100 --> 00:26:16,433
+如果你有代码执行
+so if you have code execution
+
+504
+00:26:16,833 --> 00:26:17,366
+你的目标
+your goal
+
+505
+00:26:17,366 --> 00:26:18,433
+以前
+and it used to be that 
+
+506
+00:26:18,433 --> 00:26:21,399
+你甚至不需要代码执行，来打破进程隔离
+you didn't even need to have code execution to break process isolation
+
+507
+00:26:21,400 --> 00:26:22,333
+如果你是root
+if you're a root
+
+508
+00:26:22,466 --> 00:26:23,733
+你可以打开/dev/mem
+you could open /dev/mem 
+
+509
+00:26:23,800 --> 00:26:27,300
+并直接访问物理内存
+and literally directly access physical memory 
+
+510
+00:26:27,300 --> 00:26:28,300
+这很有趣
+and it was fun
+
+511
+00:26:28,300 --> 00:26:29,133
+你可以搜索内存
+you could search around 
+
+512
+00:26:29,233 --> 00:26:31,499
+你可以打开vim
+you could open up vim 
+
+513
+00:26:31,566 --> 00:26:32,633
+输入一些文字
+and put in some text 
+
+514
+00:26:32,766 --> 00:26:34,466
+然后在物理内存中搜索它
+and then search for it in physical memory
+
+515
+00:26:35,700 --> 00:26:37,200
+就通过/dev/mem
+by opening /dev/mem
+
+516
+00:26:38,400 --> 00:26:39,633
+这样的日子一去不复返了
+those old days are gone 
+
+517
+00:26:39,733 --> 00:26:42,433
+这是一个非常大的安全问题
+that's a very big security no no 
+
+518
+00:26:42,533 --> 00:26:44,066
+头脑正常的人都不会这么做
+no one in their right mind would do that 
+
+519
+00:26:44,300 --> 00:26:45,466
+/dev/mem仍然存在
+/dev/mem still exists 
+
+520
+00:26:45,533 --> 00:26:48,699
+能让你访问某些内存映射的硬件
+to allow you to access certain memory map hardware
+
+521
+00:26:49,266 --> 00:26:50,199
+输入输出设备
+input output devices 
+
+522
+00:26:50,300 --> 00:26:57,533
+但它不再允许你访问物理内存
+but it doesn't allow you to access physical memory
+
+523
+00:26:57,600 --> 00:26:59,300
+现在如果你想访问物理内存
+now if you want to access physical memory 
+
+524
+00:26:59,300 --> 00:27:01,100
+你必须是内核
+you have to be the kernel
+
+525
+00:27:02,233 --> 00:27:03,699
+而你能成为内核
+and you will be the kernel
+
+526
+00:27:03,766 --> 00:27:07,833
+因为你将在这整个模块中，实现内核中的代码执行
+because you'll achieve code execution in the kernel throughout this module
+
+527
+00:27:08,066 --> 00:27:12,799
+内核有两个非常有用的宏
+the kernel has two very useful macros that you can play around with
+
+528
+00:27:13,000 --> 00:27:15,600
+一个宏接受一个物理地址
+one macro takes a physical address
+
+529
+00:27:16,333 --> 00:27:18,599
+并将其转换为内核虚拟地址
+and converts it into a kernel virtual address
+
+530
+00:27:18,733 --> 00:27:19,766
+为什么这是可能的
+why is this possible
+
+531
+00:27:19,866 --> 00:27:23,366
+因为内核映射了整个物理内存空间
+because the kernel maps the entire physical memory space
+
+532
+00:27:23,433 --> 00:27:24,766
+你没有那么多的物理内存
+you don't have that much physical memory
+
+533
+00:27:25,133 --> 00:27:28,866
+我有64 GB或者128 GB
+I have 64 GBs or something or 128
+
+534
+00:27:29,000 --> 00:27:29,500
+这是
+it's 
+
+535
+00:27:30,166 --> 00:27:31,199
+不，这个有64GB
+no this one has 64 
+
+536
+00:27:31,266 --> 00:27:32,766
+所以我有64GB
+so I have 64 GBs
+
+537
+00:27:32,900 --> 00:27:35,933
+有64个巨页
+that's 64 huge pages 
+
+538
+00:27:36,133 --> 00:27:37,066
+映射起来不难
+it's not hard to map 
+
+539
+00:27:37,433 --> 00:27:40,933
+所以你把它映射到
+so you map it into
+
+540
+00:27:41,800 --> 00:27:44,166
+抱歉
+excuse me a
+
+541
+00:27:47,900 --> 00:27:52,333
+内核内部的虚拟内存空间，以便于访问
+into a virtual memory space inside the kernel for ease of access
+
+542
+00:27:52,433 --> 00:27:53,466
+内核是这样做的
+the kernel does this
+
+543
+00:27:54,166 --> 00:27:56,999
+所以它可以转换物理地址
+and thus it can convert between physical
+
+544
+00:27:57,366 --> 00:28:00,333
+从任何给定的物理地址，转成虚拟地址
+from any given physical to a virtual address
+
+545
+00:28:00,333 --> 00:28:05,566
+然后还能让自己的虚拟内存在物理内存中保持连续
+and then it also keeps its own virtual memory contiguous in physical memory
+
+546
+00:28:05,633 --> 00:28:06,799
+所以它也可以转换回来
+so it can also convert back
+
+547
+00:28:06,800 --> 00:28:08,466
+给定一个内核虚拟地址
+given a kernel virtual address
+
+548
+00:28:08,533 --> 00:28:12,099
+它可以返回用户空间虚拟地址
+it can give you back the user space virtual address
+
+549
+00:28:12,100 --> 00:28:16,266
+它不能为非内核地址做这个
+now it can't do that for non kernel addresses as a giant pain in the ass
+
+550
+00:28:16,566 --> 00:28:20,099
+我为CTF挑战实现了它
+I've implemented it for CTF challenges
+
+551
+00:28:20,466 --> 00:28:22,599
+你需要实现你自己的内存查找
+you have to basically implement your own memory lookup stuff 
+
+552
+00:28:22,666 --> 00:28:25,533
+因为内核会像正常人一样，用MMU
+because the kernel uses MMU like a reasonable person
+
+553
+00:28:25,600 --> 00:28:27,333
+它不需要自己解析这些
+it doesn't need to parse these things manually
+
+554
+00:28:32,133 --> 00:28:33,433
+这些宏非常简单
+these macros are super simple
+
+555
+00:28:33,500 --> 00:28:35,800
+实际上只是一个偏移
+there's literally just an offset 
+
+556
+00:28:35,933 --> 00:28:38,066
+他们说好的，嘿
+where they say okay hey 
+
+557
+00:28:38,200 --> 00:28:42,500
+对于vert_to_phys，它是这个地址减去0xffff...
+it's this address minus 0xffff blah blah blah for vert_to_phys
+
+558
+00:28:42,500 --> 00:28:45,200
+对于phys_to_virt，它是加上0xf...
+or plus 0xf blah blah for phys_to_virt
+

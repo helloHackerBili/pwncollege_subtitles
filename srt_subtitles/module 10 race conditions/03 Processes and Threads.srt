@@ -1,0 +1,1375 @@
+1
+00:00:00,733 --> 00:00:01,733
+你好黑客
+hello hackers
+
+2
+00:00:01,733 --> 00:00:03,233
+欢迎回到Pwn学院
+welcome back to Pwn College 
+
+3
+00:00:03,433 --> 00:00:04,999
+今天我们要讨论的是
+today we're talking about
+
+4
+00:00:05,066 --> 00:00:07,133
+进程和线程
+processes and threads
+
+5
+00:00:07,566 --> 00:00:09,733
+这当然是在竞态条件的背景下
+this is of course in the context of race conditions
+
+6
+00:00:09,866 --> 00:00:20,699
+但在你整个计算机科学之旅中都是非常有用的
+but the general information is quite useful in your journey of computer science
+
+7
+00:00:20,933 --> 00:00:23,666
+让我们来谈谈多线程
+let's talk about multi-threads
+
+8
+00:00:23,800 --> 00:00:25,966
+但先从进程开始
+but let's start with processes 
+
+9
+00:00:26,200 --> 00:00:29,933
+到目前为止，在这门课上我们讨论了进程
+so far in this class we talked about processes
+
+10
+00:00:30,300 --> 00:00:35,300
+目前一直接触的都是进程
+a process is what you've been dealing with this whole time
+
+11
+00:00:35,600 --> 00:00:37,900
+当你启动一个程序时
+when you start up a program 
+
+12
+00:00:37,899 --> 00:00:38,799
+当你启动一个程序时
+when you launch a program
+
+13
+00:00:38,800 --> 00:00:42,433
+它作为一个进程被加载到内存中
+it gets loaded to memory as a process
+
+14
+00:00:42,666 --> 00:00:43,633
+并被执行
+and gets executed 
+
+15
+00:00:43,833 --> 00:00:46,499
+进程有自己的虚拟内存
+processes have their own virtual memory
+
+16
+00:00:46,500 --> 00:00:50,500
+它有栈，堆，代码段，各种各样的东西
+this has the stack the heap the binary all sorts of good stuff
+
+17
+00:00:51,200 --> 00:00:53,800
+有自己的寄存器
+has its own registers
+
+18
+00:00:55,066 --> 00:00:58,933
+它有自己的文件描述符和进程ID
+it has its own file descriptors a process ID
+
+19
+00:00:59,166 --> 00:01:01,133
+还有各种安全属性
+and then various security properties
+
+20
+00:01:01,300 --> 00:01:03,466
+如uid gid seccomp规则等
+uid gid seccomp rules 
+
+21
+00:01:03,600 --> 00:01:07,833
+到目前为止，这些都接触过了
+and you've messed around with all of these things so far in the course 
+
+22
+00:01:08,100 --> 00:01:11,366
+但这还不是它真正的样子
+well this isn't the reality actually 
+
+23
+00:01:11,533 --> 00:01:18,199
+实际上，进程是由一个或多个线程组成的
+the reality is that processes are made up of one or more threads
+
+24
+00:01:18,200 --> 00:01:25,800
+进程内的线程共享虚拟内存和文件描述符等等
+and the threads within a process share the virtual memory and file descriptors and so forth
+
+25
+00:01:25,800 --> 00:01:28,600
+但他们都有自己的寄存器
+but they all have their own registers
+
+26
+00:01:30,000 --> 00:01:35,800
+或者更确切地说，当他们被调度到后，有独自的寄存器上下文
+or rather their own register context when they run get scheduled on a CPU to run
+
+27
+00:01:36,000 --> 00:01:40,100
+他们有自己的寄存器上下文，不与其他线程共享
+they have their own registers that they don't share with other threads
+
+28
+00:01:40,533 --> 00:01:41,933
+他们有自己的栈
+they have their own stack
+
+29
+00:01:42,166 --> 00:01:47,899
+如果有需要，他们也可以访问彼此的栈
+now they can access each other stacks if they were crazy and doing that for some reason
+
+30
+00:01:48,600 --> 00:01:50,400
+因为他们都在同一个虚拟内存中
+because they're all in the same virtual memory
+
+31
+00:01:50,400 --> 00:01:53,733
+但是他们在虚拟内存中的地址不同
+but they are in different places in the virtual memory
+
+32
+00:01:53,766 --> 00:01:56,499
+他们有自己的线程ID
+they have their own thread ID
+
+33
+00:01:57,100 --> 00:02:03,000
+主线程的线程ID和进程ID(PID)相同
+the main thread has the same thread ID as the process ID the PID of the process
+
+34
+00:02:03,133 --> 00:02:07,066
+但是其他线程都有自己的线程id和
+but the other threads all have their own thread ids and
+
+35
+00:02:07,200 --> 00:02:09,700
+他们有自己的安全属性
+actually they have their own security properties
+
+36
+00:02:09,800 --> 00:02:14,000
+实际上每个线程都有自己的uid、gid 和 secomp 规则
+their user ID their group ID Secomp rules are actually per thread
+
+37
+00:02:14,100 --> 00:02:15,366
+这很不可思议
+which is pretty incredible
+
+38
+00:02:17,166 --> 00:02:18,399
+当你开启一个进程
+and when you start a process
+
+39
+00:02:18,400 --> 00:02:20,766
+当然它有自己的主线程
+of course it has its main thread
+
+40
+00:02:20,766 --> 00:02:23,899
+然后当你在这个进程中启动其他线程
+and then as you spin up other threads in that process
+
+41
+00:02:24,666 --> 00:02:28,799
+进程将具有多种类型的线程
+the process will have multiple kind of sibling threads
+
+42
+00:02:29,200 --> 00:02:30,000
+好的
+all right
+
+43
+00:02:30,800 --> 00:02:32,000
+我们如何创建线程
+how do we create threads 
+
+44
+00:02:32,166 --> 00:02:35,466
+有几个不同的高级库
+well there are several different high level libraries that
+
+45
+00:02:36,866 --> 00:02:40,066
+你可以用来创建线程
+you should probably use if you want to create a thread
+
+46
+00:02:40,466 --> 00:02:44,266
+一个例子是pthread，它实际上非常简单
+an example is pthread it's actually very simple
+
+47
+00:02:45,400 --> 00:02:47,866
+调用pthread_create
+you call pthread_create
+
+48
+00:02:49,500 --> 00:02:53,900
+给它一个地址来存储返回的线程结构
+give it somewhere to store a resulting thread structure
+
+49
+00:02:53,933 --> 00:02:56,266
+然后给它一个要运行的函数
+and give it a function to run
+
+50
+00:02:56,433 --> 00:02:57,699
+和所需的参数
+ and an argument to run it with
+
+51
+00:02:58,300 --> 00:03:00,900
+超级简单，几乎和函数调用一样简单
+super simple almost as simple as a function call
+
+52
+00:03:03,100 --> 00:03:09,400
+在新线程中使用所提供参数调用你提供的函数
+it basically runs that function with argument you provide in a new thread
+
+53
+00:03:10,566 --> 00:03:14,333
+这个程序将创建两个线程
+so this program will create two threads
+
+54
+00:03:14,333 --> 00:03:16,099
+每个线程将打印其详细信息
+each thread will print out its details
+
+55
+00:03:16,100 --> 00:03:18,333
+主线程将打印出它的详细信息
+the main thread will print out its details
+
+56
+00:03:18,400 --> 00:03:20,966
+然后它会执行pthread_join
+and then it will do pthread_join
+
+57
+00:03:20,966 --> 00:03:23,799
+它等待这个线程执行结束
+well this simply just waits for this thread to terminate
+
+58
+00:03:24,066 --> 00:03:25,966
+它等待这个线程执行结束
+this waits for this thread to terminate
+
+59
+00:03:26,333 --> 00:03:28,133
+一切都很好
+and everything is good
+
+60
+00:03:28,133 --> 00:03:30,699
+记住这些是独立的线程
+now keep in mind these are individual threads
+
+61
+00:03:30,700 --> 00:03:34,000
+他们类似轻量级进程
+they are kind of like processes light in reality
+
+62
+00:03:34,100 --> 00:03:36,700
+轻量级进程是共享一堆信息的进程
+they are basically processes that share a bunch of information
+
+63
+00:03:36,733 --> 00:03:39,599
+我们马上就会讲到
+as we'll talk about in a second 
+
+64
+00:03:39,733 --> 00:03:41,366
+让我们快速看一下
+so let's take a quick look
+
+65
+00:03:43,666 --> 00:03:46,066
+在这里我实现了这个程序
+here I implemented that program
+
+66
+00:03:46,266 --> 00:03:48,533
+哦哦，等等技术问题
+oh oh hold on technical issues
+
+67
+00:03:49,366 --> 00:03:50,733
+好了，我们回来
+all right we are back
+
+68
+00:03:51,733 --> 00:03:54,499
+这里我们有一个线程
+so here we have the thread
+
+69
+00:03:56,900 --> 00:03:58,800
+这个线程实现
+that thread implementation basically
+
+70
+00:03:59,666 --> 00:04:00,999
+创建两个子线程
+creating two child threads
+
+71
+00:04:01,000 --> 00:04:03,500
+当然，除此之外还有主线程
+and then of course we have our main thread
+
+72
+00:04:04,333 --> 00:04:06,066
+编译它
+let's compile it 
+
+73
+00:04:06,266 --> 00:04:11,199
+当然，要编译它，我们需要将它链接pthread库
+of course to compile it we need to link it against the pthread library
+
+74
+00:04:11,200 --> 00:04:15,600
+这不是，额，是一个标准库，但不是libc库
+this is a non or it is a standard library but it's not libc
+
+75
+00:04:15,666 --> 00:04:17,133
+所以它不会自动链接进去
+so it's not automatically linked in
+
+76
+00:04:17,666 --> 00:04:20,099
+当然，通常会有一堆警告
+of course there's usual a bunch of warnings
+
+77
+00:04:20,266 --> 00:04:21,166
+如果我们运行
+if we run
+
+78
+00:04:22,266 --> 00:04:23,933
+我们启动两个线程
+we spin up two threads
+
+79
+00:04:24,000 --> 00:04:27,000
+主线程打印它的信息
+and then the main thread prints out its information
+
+80
+00:04:27,100 --> 00:04:29,766
+每个线程都打印自己的信息
+and each thread prints out its information
+
+81
+00:04:29,766 --> 00:04:31,799
+现在来看看
+now check it out 
+
+82
+00:04:32,100 --> 00:04:35,900
+我们先启动了线程1
+we spun up thread 1 first 
+
+83
+00:04:36,133 --> 00:04:37,566
+然后我们启动线程2
+and then we spun up thread 2
+
+84
+00:04:37,600 --> 00:04:40,566
+但是线程2先被打印
+but in our printout thread 2 gets printed first
+
+85
+00:04:40,833 --> 00:04:42,933
+线程1第二个被打印
+ and thread 1 gets printed second
+
+86
+00:04:42,933 --> 00:04:44,699
+实际上，如果你多运行几次
+actually if you run this several times
+
+87
+00:04:44,766 --> 00:04:46,999
+会有很多不同的结果
+there will be lots of different configurations
+
+88
+00:04:47,000 --> 00:04:50,800
+这里，线程1在主线程之前打印
+so here thread 1 actually printed before the main thread
+
+89
+00:04:51,333 --> 00:04:53,333
+这里线程2先打印
+here thread 2 printed first
+
+90
+00:04:53,900 --> 00:04:56,366
+线程之间的执行顺序不能保证
+execution order between threads is not guaranteed
+
+91
+00:04:56,433 --> 00:04:58,666
+除非你明确地控制它
+ unless you explicitly control it
+
+92
+00:04:59,700 --> 00:05:06,400
+这实际上与进程之间的执行顺序相同
+that is actually the same as execution order between processes
+
+93
+00:05:06,500 --> 00:05:10,300
+正如我们之前讨论过的
+and as we discussed in earlier in the module
+
+94
+00:05:10,366 --> 00:05:12,299
+当然，这是不确定的
+of course that can be nondeterministic
+
+95
+00:05:12,300 --> 00:05:13,633
+所以你必须非常小心
+so you have to be very careful 
+
+96
+00:05:13,766 --> 00:05:20,699
+由于这种不确定的执行顺序，会产生bug
+and bugs arise because of this nondeterministic execution order
+
+97
+00:05:20,966 --> 00:05:21,766
+好吧
+all right
+
+98
+00:05:22,466 --> 00:05:23,266
+所以
+so
+
+99
+00:05:23,866 --> 00:05:25,333
+让我们继续
+let's roll forward
+
+100
+00:05:26,266 --> 00:05:27,499
+我们可以再深挖一些吗
+can we go lower
+
+101
+00:05:27,500 --> 00:05:30,600
+我们看过了如何使用pthread创建线程
+so we looked at how to create threads using pthread
+
+102
+00:05:30,666 --> 00:05:32,133
+我们可以（用别的方法）创建线程吗?
+can we create threads
+
+103
+00:05:32,700 --> 00:05:36,000
+显然，pthread是一个库，而不是一个系统调用
+obviously pthread is a library it's not a system call
+
+104
+00:05:36,066 --> 00:05:37,566
+所以底层发生了什么
+so what happens under the hood
+
+105
+00:05:37,566 --> 00:05:42,399
+底层调用了clone系统调用
+well under the hood there's a system call called clone
+
+106
+00:05:42,600 --> 00:05:44,900
+从本质上讲，clone继承自fork
+clone is the successor of fork essentially 
+
+107
+00:05:45,033 --> 00:05:48,899
+它是一个更强大、更灵巧的fork
+it is fork with a lot more power a lot more finesse
+
+108
+00:05:49,000 --> 00:05:53,400
+它允许您创建子进程
+it allows you to create child processes
+
+109
+00:05:54,200 --> 00:05:58,900
+可以细致的控制父子进程间共享的资源
+and carefully control what is shared between the parent and the child
+
+110
+00:06:01,333 --> 00:06:03,199
+在这个特殊的案例中
+in this specific case
+
+111
+00:06:03,533 --> 00:06:07,799
+pthread_create就是使用的clone系统调用
+this is the clone system call that pthread_create uses
+
+112
+00:06:07,933 --> 00:06:10,266
+用strace跟踪一下
+I will actually strace this
+
+113
+00:06:11,000 --> 00:06:12,366
+来证明给你看
+just to prove it to you
+
+114
+00:06:12,666 --> 00:06:14,699
+这里是clone
+here is this clone
+
+115
+00:06:15,100 --> 00:06:16,600
+它创建线程2调用的clone
+that's the clone for thread 2
+
+116
+00:06:16,600 --> 00:06:17,866
+这是创建线程1调用的clone
+this the clone for thread 1
+
+117
+00:06:18,133 --> 00:06:22,333
+这些是传递给clone的各种参数
+these are the various options passed to clone that
+
+118
+00:06:22,866 --> 00:06:25,566
+pthread_create用于创建线程
+pthread_create uses to create threads
+
+119
+00:06:25,566 --> 00:06:30,033
+你可以用man查看
+you can of course man clone to get all of the information
+
+120
+00:06:30,166 --> 00:06:31,866
+这些选项的功能
+ on what all of these different options do
+
+121
+00:06:32,033 --> 00:06:33,133
+这有很多
+and there's quite a lot
+
+122
+00:06:34,100 --> 00:06:37,300
+我将列举一些常见的，以供参考
+I'll go through some common ones just for your information
+
+123
+00:06:37,333 --> 00:06:38,966
+这是值得知道的好东西
+it's good stuff to know
+
+124
+00:06:39,900 --> 00:06:44,400
+这里最重要的部分是这些flag标志
+essentially the important part here is the flags
+
+125
+00:06:45,066 --> 00:06:47,133
+第一个标志CLONE_VM表示
+first flag CLONE_VM means
+
+126
+00:06:47,600 --> 00:06:50,266
+父子进程共享同一个虚拟内存
+we clone the virtual memory space between the parent and child
+
+127
+00:06:50,366 --> 00:06:54,499
+这和fork不一样
+this is different than with fork
+
+128
+00:06:54,833 --> 00:07:01,199
+使用fork子进程只是获得了父进程内存空间的副本
+ with fork the child gets a copy of the parent's memory space
+
+129
+00:07:02,333 --> 00:07:04,899
+使用clone的CLONE_VM参数
+with CLONE_VM on clone
+
+130
+00:07:05,666 --> 00:07:09,933
+表示父子进程将具有相同的内存空间
+the parent and child will have the same memory space
+
+131
+00:07:10,900 --> 00:07:13,800
+如果父进程映射一个内存页
+so if the parent maps a page
+
+132
+00:07:13,866 --> 00:07:16,099
+子进程也可使用这个内存页，反之亦然
+it'll be available to the child and vice versa
+
+133
+00:07:16,200 --> 00:07:18,733
+使用fork则不能
+with fork of course that's not the case
+
+134
+00:07:19,900 --> 00:07:23,966
+CLONE_FS 也一样，但它是针对文件系统的
+clone file system is the same but for file system
+
+135
+00:07:24,100 --> 00:07:25,300
+使用 CLONE_FS
+so with CLONE_FS 
+
+136
+00:07:25,366 --> 00:07:29,999
+如果父进程执行chroot，会影响到子进程
+if the parent does a chroot it'll affect the child 
+
+137
+00:07:31,233 --> 00:07:33,766
+一个线程会影响其他线程
+one thread will affect the other threads
+
+138
+00:07:35,200 --> 00:07:38,133
+CLONE_FILES是相同的，但是针对文件描述符的
+CLONE_FILES is the same but with file descriptor
+
+139
+00:07:38,300 --> 00:07:41,900
+CLONE_SIGHAND与此相同，但针对信号处理程序
+CLONE_SIGHAND is the same but with signal handlers
+
+140
+00:07:41,933 --> 00:07:43,766
+CLONE_THREAD告诉clone
+CLONE_THREAD tells clone that hey
+
+141
+00:07:43,866 --> 00:07:46,299
+结果将是一个线程
+this is going to be a thread 
+
+142
+00:07:47,766 --> 00:07:50,966
+克隆结果是父进程的一个线程
+the new child will be a thread of the parent
+
+143
+00:07:52,700 --> 00:07:54,800
+CLONE_SYSVSEM
+clone semaphore information
+
+144
+00:07:54,800 --> 00:07:58,333
+我一会儿会讲到什么是信号量
+I will talk about what semaphores are in a bit here
+
+145
+00:07:59,066 --> 00:08:01,466
+还有克隆
+and cloning
+
+146
+00:08:03,500 --> 00:08:07,333
+这些选项基本上是记录，额
+these options basically do record
+
+147
+00:08:07,333 --> 00:08:10,566
+这个选项在内存中设置了一个区域
+well this option sets up an area in memory 
+
+148
+00:08:10,733 --> 00:08:19,199
+叫线程本地存储 tls，专门用来给这个线程用的
+that is storage specifically created for the thread to use is called thread local storage
+
+149
+00:08:22,933 --> 00:08:25,166
+同一个进程中的不同线程
+different threads even in the same process
+
+150
+00:08:25,200 --> 00:08:28,200
+都有不同的线程本地存储
+will have a different thread local storage
+
+151
+00:08:28,400 --> 00:08:35,300
+这对于存储单个线程内部的全局变量很有用
+it's very useful to store kind of global but still thread specific information
+
+152
+00:08:37,100 --> 00:08:47,900
+这个表示创建线程时要记录线程id
+and this basically says when the thread is created store the thread ID
+
+153
+00:08:48,100 --> 00:08:51,166
+当线程执行完，要从内存中清掉
+when the thread is done cleared out from memory
+
+154
+00:08:51,433 --> 00:08:58,699
+基本是为像pthread之类的clone封装库记录的
+ its record keeping really for lib pthread and similar libraries that wrap around clone
+
+155
+00:08:58,733 --> 00:09:01,199
+还有些地址记录了一些信息存储位置
+and then some addresses on where to store information
+
+156
+00:09:01,466 --> 00:09:04,333
+另一个重要的东西是子线程的栈空间
+another important thing this child stack
+
+157
+00:09:05,566 --> 00:09:09,433
+这里是线程的新栈
+this is where the new stack for that thread 
+
+158
+00:09:09,666 --> 00:09:11,533
+我提到过线程有自己的栈
+I mentioned threads have their own stack 
+
+159
+00:09:11,666 --> 00:09:15,999
+因为他们需要能够执行自己的函数等等
+because they need to be able to execute their own functions and so forth
+
+160
+00:09:16,266 --> 00:09:17,866
+这些都需要栈
+all those things grow on the stack
+
+161
+00:09:17,866 --> 00:09:19,033
+才能互相协作
+they're gonna collaborate each others 
+
+162
+00:09:19,033 --> 00:09:20,033
+所以需要一个新的栈
+they get a new one
+
+163
+00:09:20,133 --> 00:09:22,266
+这就是栈所在的位置
+and this is where that stack is 
+
+164
+00:09:22,400 --> 00:09:25,400
+如果我们往回看
+if we actually jump back and do
+
+165
+00:09:25,966 --> 00:09:27,266
+查看strace结果
+look at our strace
+
+166
+00:09:27,466 --> 00:09:29,333
+就在这个clone之前
+right before this clone
+
+167
+00:09:29,366 --> 00:09:31,699
+有一个mmap和一个mprotect
+there's an mmap and an mprotect
+
+168
+00:09:32,200 --> 00:09:44,000
+mmap申请了一个栈空间，并返回了它的地址
+the mmap maps an extra stack in memory and gets back at this location
+
+169
+00:09:44,466 --> 00:09:47,366
+这个地址
+and that location of course gets passed
+
+170
+00:09:48,100 --> 00:09:50,666
+至少是这个内存页内的地址
+or at least a location within that page
+
+171
+00:09:50,666 --> 00:09:52,699
+被传给子线程做为栈
+gets passed in as the child's stack
+
+172
+00:09:53,100 --> 00:10:00,300
+并用mprotect置其为栈所需的读写权限
+and then that location is mprotected as readable and writeable as a stack should be
+
+173
+00:10:00,400 --> 00:10:04,066
+所以每个线程都有自己的栈
+so each thread gets its own stack created for it 
+
+174
+00:10:04,200 --> 00:10:08,200
+然后用clone分配给线程
+and then assigned using that clone system call
+
+175
+00:10:09,466 --> 00:10:11,299
+非常酷
+very cool stuff
+
+176
+00:10:12,300 --> 00:10:16,100
+clone还可以做其他事情
+I'll mention that clone can do other stuff
+
+177
+00:10:16,800 --> 00:10:17,800
+例如
+such as
+
+178
+00:10:18,600 --> 00:10:25,133
+提供容器所需的功能
+starting or providing capabilities that are required for containerization
+
+179
+00:10:25,300 --> 00:10:27,933
+例如使用CLONE_NEWNS标志
+using for example CLONE_NEWNS
+
+180
+00:10:27,966 --> 00:10:29,666
+它会创建一个新的命名空间
+which will create a new name space
+
+181
+00:10:29,800 --> 00:10:37,300
+这样可以将子进程放到docker容器中
+so then you can name space the child into a Docker container for example
+
+182
+00:10:37,766 --> 00:10:38,566
+好吧
+all right
+
+183
+00:10:39,166 --> 00:10:42,033
+我们讨论的底层接口有些有趣的事
+interesting thing while we're talking on the low level 
+
+184
+00:10:42,166 --> 00:10:43,899
+有差异存在于
+there are some discrepancies
+
+185
+00:10:44,200 --> 00:10:46,366
+你熟悉并喜爱的libc函数
+between the libc functions you know and love
+
+186
+00:10:46,366 --> 00:10:48,799
+与他们使用的系统调用之间
+and the system calls that they represent
+
+187
+00:10:48,800 --> 00:10:51,800
+这很重要
+and this has to do a lot with threading
+
+188
+00:10:52,066 --> 00:10:54,999
+这儿举些之后会遇到的例子
+right so a couple of examples that we'll run into
+
+189
+00:10:57,100 --> 00:11:02,333
+比如，用于设置进程安全性的setuid
+there is the setting of certain security processes such as setuid 
+
+190
+00:11:02,566 --> 00:11:10,499
+我们看个例子
+right so let's take a look at another example here
+
+191
+00:11:12,500 --> 00:11:24,100
+我又创建了一个使用pthread的文件
+I created another file that uses pthread
+
+192
+00:11:25,800 --> 00:11:30,600
+等一下，这里的done变量多余了
+hold on there's a confusing done parameter here that shouldn't be there
+
+193
+00:11:31,200 --> 00:11:34,666
+这是我们的示例文件
+all right so this is our example file
+
+194
+00:11:35,900 --> 00:11:37,866
+和前面一样创建两个线程
+we create two threads as before
+
+195
+00:11:38,100 --> 00:11:43,766
+这里将第一个线程的UID设置为1000
+but here the first thread will set a UID of 1000
+
+196
+00:11:44,533 --> 00:11:45,333
+好的
+right
+
+197
+00:11:47,366 --> 00:11:48,533
+这有什么用
+what this does 
+
+198
+00:11:48,666 --> 00:11:51,166
+虽然Linux单独跟踪
+even though Linux individually tracks
+
+199
+00:11:51,300 --> 00:11:52,700
+我之前说过的
+ as I said before
+
+200
+00:11:52,700 --> 00:11:59,700
+每个线程的用户ID、组ID和其他安全属性
+the user ID of every thread and the group ID and other security properties
+
+201
+00:12:00,166 --> 00:12:03,299
+但在POSIX标准中
+the standard called the POSIX Standard 
+
+202
+00:12:03,433 --> 00:12:05,299
+即 便携系统。。额
+the portable system
+
+203
+00:12:06,800 --> 00:12:07,933
+忘了
+my mind's drawing a blank
+
+204
+00:12:07,933 --> 00:12:10,333
+你可以在网上查找POSIX代表什么
+you can look up what POSIX stands for online
+
+205
+00:12:13,500 --> 00:12:22,500
+POSIX标准中setuid将设置进程中所有线程的用户ID
+the POSIX Standard  basically says that setuid will set the user ID of all threads in a process
+
+206
+00:12:24,300 --> 00:12:28,300
+如果你使用的是setuid库函数
+so if you use setiuid the library function
+
+207
+00:12:29,000 --> 00:12:31,366
+编译
+and we compile this
+
+208
+00:12:36,700 --> 00:12:38,100
+然后执行
+and we execute it
+
+209
+00:12:38,933 --> 00:12:42,266
+以root权限执行，这样才能使用setuid
+let's say as root so that setuid can function
+
+210
+00:12:45,766 --> 00:12:47,499
+可以看到我们是以root权限执行的
+we see the executor as root
+
+211
+00:12:47,500 --> 00:12:52,300
+但它将所有线程的uid都设置成了1000
+but it set all of the threads to UID 1000
+
+212
+00:12:53,400 --> 00:13:01,833
+如果我们把这个注释掉
+um if we instead comment this out
+
+213
+00:13:01,966 --> 00:13:04,399
+使用原始系统调用
+ and use the raw syscall
+
+214
+00:13:04,400 --> 00:13:08,200
+Syscall 105 表示 setuid 的系统调用
+syscall 105 is the system call for setuid
+
+215
+00:13:08,700 --> 00:13:14,700
+当然1000是我们想要设置的ID
+and of course 1000 is our ID that we want to set to
+
+216
+00:13:15,366 --> 00:13:17,499
+编译并运行它
+compile that and run it
+
+217
+00:13:18,266 --> 00:13:19,199
+你看
+and you see
+
+218
+00:13:20,400 --> 00:13:26,933
+只设置了该线程的用户ID
+that only the user ID of that thread was set 
+
+219
+00:13:27,166 --> 00:13:29,533
+注意这里的差异
+so be careful there's this discrepancy
+
+220
+00:13:33,366 --> 00:13:38,199
+显然，这可能会带来安全隐患
+ and it can have security implications obviously
+
+221
+00:13:38,300 --> 00:13:42,200
+因为某些线程不应该拥有被删除的特权
+because certain threads won't have privileges that are dropped
+
+222
+00:13:44,566 --> 00:13:45,266
+简单说一下
+real quick
+
+223
+00:13:45,500 --> 00:13:54,200
+libc是如何更改所有线程的UID的
+how does libc change the UID of all the threads
+
+224
+00:13:54,966 --> 00:13:55,799
+让我们来看一看
+let's take a look
+
+225
+00:13:56,566 --> 00:13:58,133
+我们再运行一次
+so again we run it 
+
+226
+00:13:58,133 --> 00:14:03,066
+它设置进程中所有线程的所有uid
+it sets all of the UIDs of all the threads in the process
+
+227
+00:14:03,066 --> 00:14:04,499
+如果用strace跟踪一下
+ if you strace it
+
+228
+00:14:04,533 --> 00:14:05,766
+能看到一些疯狂的东西
+there's some crazy stuff
+
+229
+00:14:05,933 --> 00:14:18,899
+进程中所有线程都触发了SIGRT_1信号
+there's this signal SIGRT_1 that gets triggered on every thread in the process
+
+230
+00:14:18,900 --> 00:14:27,300
+这就是libc在线程之间通信并设置所有用户id的方式
+and that's how libc kind of communicates between threads  and sets all of the user IDS
+
+231
+00:14:27,600 --> 00:14:30,966
+在exit中也存在差异
+all right a similar discrepancy actually exists in exit
+
+232
+00:14:31,300 --> 00:14:35,633
+如果在libc中调用exit
+if you call exit in libc
+
+233
+00:14:35,766 --> 00:14:37,833
+它会调用exit_group系统调用
+ it'll actually call the exit_group system call
+
+234
+00:14:37,833 --> 00:14:40,399
+并杀死进程中的所有线程
+ and kill all of the threads in your process
+
+235
+00:14:40,533 --> 00:14:43,199
+所有使用CLONE_THREAD标志创建的
+anything that was cloned I believe with CLONE_THREAD
+
+236
+00:14:45,866 --> 00:14:49,033
+但是如果你直接使用exit系统调用
+but if you use the exit system call directly
+
+237
+00:14:49,200 --> 00:14:51,400
+直接调用syscall
+again using syscall directly
+
+238
+00:14:52,133 --> 00:14:55,133
+它只会终止调用者线程
+it'll only terminate the caller thread
+
+239
+00:14:55,100 --> 00:15:01,300
+这是函数返回后的线程终结方式，即使使用的是pthread库
+that's how threads terminate in even when you're using pthread when that function returns
+
+240
+00:15:04,133 --> 00:15:05,166
+好吧
+all right
+
+241
+00:15:06,700 --> 00:15:11,500
+我们讨论一下线程终止
+let's talk about thread termination while we're on that topic
+
+242
+00:15:12,533 --> 00:15:14,866
+线程通常是长时间运行的
+threads are often long running
+
+243
+00:15:15,100 --> 00:15:17,866
+与长时间运行线程的常见通信方式
+so common practice for long running threads
+
+244
+00:15:17,966 --> 00:15:21,299
+是使用全局变量进行通信
+is to communicate using global variables
+
+245
+00:15:26,500 --> 00:15:28,700
+这有一个例子
+this is an example
+
+246
+00:15:29,500 --> 00:15:32,900
+我展示一下该怎样做
+let me show you how we might do this
+
+247
+00:15:33,366 --> 00:15:35,899
+我实现了这个pthread_loop.c
+so I implemented this pthread_loop.c
+
+248
+00:15:36,200 --> 00:15:40,100
+每个线程都在循环中
+it's an example that where every thread will loop
+
+249
+00:15:40,200 --> 00:15:42,766
+每秒输出一次它的线程信息
+and every second print out its thread information
+
+250
+00:15:43,166 --> 00:15:45,799
+主线程将等我按回车键
+and the main thread will wait for me to press enter
+
+251
+00:15:46,933 --> 00:15:50,066
+然后将全局变量done置为1
+and set a global variable called done
+
+252
+00:15:50,400 --> 00:15:52,300
+每个线程都会检查这个变量
+that every thread is checking
+
+253
+00:15:52,400 --> 00:15:55,200
+这是一种常见的设计
+this is a common design
+
+254
+00:15:55,566 --> 00:15:56,766
+也许是反？？
+maybe anti-pan 
+
+255
+00:15:56,866 --> 00:16:00,199
+但是是处理线程的一种常见方式
+but a common way that threads are handled 
+
+256
+00:16:00,833 --> 00:16:05,199
+最起码是在多线程初学者的代码中
+in definitely you know the sort of beginner threading code
+
+257
+00:16:06,600 --> 00:16:10,900
+他们会持续运行，直到某个全局状态让他们结束
+they'll keep running until some global state says that they are done
+
+258
+00:16:11,000 --> 00:16:14,100
+这个全局状态能被其他线程访问
+and this global state can be touched by other threads
+
+259
+00:16:14,566 --> 00:16:16,933
+让我给你看看这是什么样子
+let me show you what this looks like
+
+260
+00:16:24,866 --> 00:16:25,666
+好吧
+all right
+
+261
+00:16:26,300 --> 00:16:27,333
+我们编译
+we compiled it
+
+262
+00:16:29,266 --> 00:16:31,133
+这个一直在运行
+this keeps running
+
+263
+00:16:32,900 --> 00:16:34,533
+然后当我按回车键
+and then when I hit enter
+
+264
+00:16:35,900 --> 00:16:37,266
+他们结束了
+boom they're done
+
+265
+00:16:37,700 --> 00:16:38,500
+好的
+all right
+
+266
+00:16:39,166 --> 00:16:40,999
+现在有趣的是
+now the interesting thing here
+
+267
+00:16:42,000 --> 00:16:51,400
+在这里，只有一个线程会修改done变量
+is that in this case just one thread is touching this done variable
+
+268
+00:16:52,300 --> 00:16:58,100
+但可以想象如果多个线程共享一个全局状态
+but you can imagine if multiple threads are sharing a global state
+
+269
+00:16:59,700 --> 00:17:06,500
+而且他们的调度执行顺序是不确定的
+and multiple threads whose execution scheduling is nondeterministic
+
+270
+00:17:06,800 --> 00:17:09,866
+他们都会读写这个全局变量
+are reading from and writing to that global state 
+
+271
+00:17:10,033 --> 00:17:13,299
+那就会遇到和文件系统案例非常相似的问题
+then you have a very similar problem to the file system case
+
+272
+00:17:13,366 --> 00:17:15,199
+你创建了一个共享资源
+you just created a shared resource
+
+273
+00:17:15,366 --> 00:17:22,533
+又有多个同步不良的进程或线程
+that multiple badly synchronized processes essentially or threads in this case
+
+274
+00:17:22,633 --> 00:17:27,399
+多个进线程都可以随时修改这些共享资源
+which are basically processes that share a bunch of resources can touch all at once
+
+275
+00:17:28,333 --> 00:17:32,333
+接下来我们将研究如何滥用这一点
+of course next we look into how this can be abused
+

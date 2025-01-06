@@ -1,0 +1,695 @@
+1
+00:00:00,400 --> 00:00:02,000
+你好黑客
+hello hackers
+
+2
+00:00:02,266 --> 00:00:05,066
+欢迎来到PWN学院的新模块
+welcome to a new module in pwn college
+
+3
+00:00:05,000 --> 00:00:08,900
+今天我们要讲的是面向返回编程ROP
+today we're going to be talking about return oriented programming
+
+4
+00:00:08,966 --> 00:00:10,999
+我对这个模块很感兴趣
+I'm very excited about this module 
+
+5
+00:00:11,300 --> 00:00:14,566
+ROP是我很关注的话题
+ROP is a subject near and dear to my heart
+
+6
+00:00:15,200 --> 00:00:18,500
+很高兴能传递这些信息给你们
+and it'll be great to convey this information to you
+
+7
+00:00:18,500 --> 00:00:22,900
+希望能让你们和我一样对ROP感到兴奋
+ and hopefully make you as excited about ROP as I am
+
+8
+00:00:23,366 --> 00:00:24,166
+好
+alright
+
+9
+00:00:24,200 --> 00:00:27,733
+在我们深入了解什么是ROP之前，快速回顾一下
+quick recap before we dive into what is ROP
+
+10
+00:00:28,366 --> 00:00:29,566
+如果你还记得
+if you recall
+
+11
+00:00:30,300 --> 00:00:35,300
+在整个课程中，你一直在运行shellcode
+you've been throughout this course running shellcode
+
+12
+00:00:35,300 --> 00:00:42,000
+在shellcode模块中，你在各种不同的约束下创建shellcode
+in the shellcode module you created shellcode under various different constraints
+
+13
+00:00:42,066 --> 00:00:44,699
+上传，执行，拿到flag
+you upload it you execute it you got the flag
+
+14
+00:00:45,500 --> 00:00:47,733
+在组合模块（漏洞利用模块）中你结合了
+in the combination module you put together
+
+15
+00:00:47,900 --> 00:00:54,500
+能劫持控制流的内存损坏漏洞和shellcode注入
+memory corruption vulnerabilities that led to control flow hijacks with injected shellcode
+
+16
+00:00:54,966 --> 00:00:59,566
+在大多数情况下，我们假装
+and in most cases we pretended that
+
+17
+00:00:59,900 --> 00:01:07,833
+linux下基于无执行权限位实现的DEP
+the mitigation known as data execution prevention implemented via the no execute bit in Linux
+
+18
+00:01:08,433 --> 00:01:09,699
+它不存在
+ it did not exist
+
+19
+00:01:12,266 --> 00:01:13,699
+DEP
+data execution prevention of course
+
+20
+00:01:13,700 --> 00:01:17,100
+阻止你的shellcode在内存中的大多数地方执行
+prevents your shellcode from executing in most places in memory
+
+21
+00:01:17,133 --> 00:01:18,966
+如果你把它放到栈上
+if you put it on the stack
+
+22
+00:01:20,166 --> 00:01:21,299
+然后试着跳到栈
+and try to jump to the stack
+
+23
+00:01:21,300 --> 00:01:22,766
+你的程序只会崩溃
+your program will simply crash
+
+24
+00:01:22,766 --> 00:01:24,933
+因为栈是不可执行的
+because the stack is not executable
+
+25
+00:01:25,700 --> 00:01:29,600
+现在很少有程序有可执行栈
+there are very few programs that have an executable stack nowadays
+
+26
+00:01:29,700 --> 00:01:33,566
+大多数只有
+ it is mostly not required only real places 
+
+27
+00:01:35,100 --> 00:01:41,400
+在资源有限的特殊嵌入式机器上
+ outside of exotic embedded situations with small resource constrain machines
+
+28
+00:01:41,766 --> 00:01:46,299
+可能没有DEP功能
+ that might not have modern data execution prevention
+
+29
+00:01:46,466 --> 00:01:48,566
+即便如此，大多数也都支持DEP
+even then most things do
+
+30
+00:01:48,500 --> 00:01:52,600
+shellcode直接能用的唯一地方是
+the only place where shellcode directly still relevant is
+
+31
+00:01:56,700 --> 00:02:00,100
+在及时编译引擎
+in just in time compilation engines 
+
+32
+00:02:00,266 --> 00:02:04,333
+你在组合模块（漏洞利用模块）中也利用过了
+which you have now in the combination module also exploited
+
+33
+00:02:04,333 --> 00:02:06,066
+但这些都是视情况的
+but those are situational
+
+34
+00:02:06,066 --> 00:02:07,733
+如果你需要
+what if you're looking
+
+35
+00:02:08,600 --> 00:02:17,400
+能攻破JIT之外系统的方法呢
+to break the security of something that is not a just in time compilation system 
+
+36
+00:02:19,000 --> 00:02:23,200
+因此，如果你无法注入代码并执行它
+so if you are unable to inject code and execute it
+
+37
+00:02:23,200 --> 00:02:26,733
+那么我们就转向所谓的代码重用
+then we turn to what is called code reuse
+
+38
+00:02:27,366 --> 00:02:30,399
+这个概念其实很老了
+this concept is actually quite old
+
+39
+00:02:30,700 --> 00:02:35,800
+在32位x86的旧时代
+in the old days of 32 bit x86
+
+40
+00:02:36,266 --> 00:02:37,366
+很久以前
+way back when
+
+41
+00:02:38,700 --> 00:02:43,800
+我记得64位架构已经成为标准超过十年了
+I think 64 bit architecture has been the standard for well over a decade now
+
+42
+00:02:43,866 --> 00:02:45,366
+但在那之前
+but before then
+
+43
+00:02:46,300 --> 00:02:49,866
+在32位x86上，参数是在栈上传递的
+on 32 bit x86 arguments were passed on the stack
+
+44
+00:02:50,700 --> 00:02:55,666
+这有你熟悉的栈帧
+so you have your stack frame that might be familiar now 
+
+45
+00:02:55,666 --> 00:02:57,566
+有一个溢出漏洞的缓冲区
+you have a vulnerable buffer
+
+46
+00:02:57,500 --> 00:03:02,700
+有基指针32位x86上叫EBP
+you have your saved base pointer EBP on 32 bit x86
+
+47
+00:03:03,066 --> 00:03:05,299
+有返回地址，然后是
+ your return address and then
+
+48
+00:03:05,666 --> 00:03:08,599
+漏洞函数的参数
+arguments to the vulnerable function
+
+49
+00:03:09,066 --> 00:03:12,066
+对，直接就是
+right and and this is literally you know
+
+50
+00:03:13,766 --> 00:03:16,799
+参数1、参数2、参数3等等
+arg1 arg2 arg3 and so on
+
+51
+00:03:16,800 --> 00:03:18,666
+如果是现在的64位system
+and just like in modern days
+
+52
+00:03:18,600 --> 00:03:24,200
+这会放入RDI RSI RDX等等
+this would go into RDI on AMD 64 RSI RDX and so on
+
+53
+00:03:24,266 --> 00:03:27,699
+这就是当时的情况
+all right so this is how things worked back then
+
+54
+00:03:27,700 --> 00:03:29,200
+会将参数压入栈
+you would push arguments to the stack
+
+55
+00:03:29,200 --> 00:03:30,733
+然后调用这个函数
+and then you would call the function
+
+56
+00:03:31,266 --> 00:03:34,999
+这意味着如果有栈溢出
+and what this meant is if you had a stack overflow
+
+57
+00:03:35,300 --> 00:03:37,933
+你能溢出的不仅是返回地址
+you could overflow not only the return address
+
+58
+00:03:38,333 --> 00:03:39,733
+你还能溢出
+but you could overflow
+
+59
+00:03:42,766 --> 00:03:46,333
+你还可以伪造主调（相对被调）栈帧
+you could create what is called the call frame
+
+60
+00:03:46,400 --> 00:03:54,900
+向你重定向到的函数传递参数
+ create arguments for the code to which you redirected execution
+
+61
+00:03:55,300 --> 00:03:56,500
+在溢出之前
+so before execution 
+
+62
+00:03:56,733 --> 00:03:59,299
+返回地址后面紧跟着就是参数
+there would be their return address and arguments immediately
+
+63
+00:03:59,600 --> 00:04:01,200
+你可以创建umm
+next you could would create 
+
+64
+00:04:01,600 --> 00:04:06,700
+你能通过溢出漏洞创建一个
+ instead with the vulnerability you would create a
+
+65
+00:04:08,333 --> 00:04:11,466
+例如，你可以将程序重定向到system函数
+you'd redirect for example the program to system
+
+66
+00:04:12,000 --> 00:04:16,700
+当函数返回时，它将跳转到system函数
+this would when the vulnerable function return it would jump to system
+
+67
+00:04:16,800 --> 00:04:18,400
+就好像system被调用了
+as if system was just called
+
+68
+00:04:18,400 --> 00:04:22,500
+所以当然需要一些东西来假装是system函数的返回地址
+so of course you need something to pretend to be the return address from system
+
+69
+00:04:22,533 --> 00:04:25,199
+然后当system找它的参数时
+and then when system looked for its argument
+
+70
+00:04:25,500 --> 00:04:30,300
+它们就在你用溢出控制的栈上
+they would be right there on the stack controlled by you because of the stack overflow
+
+71
+00:04:30,933 --> 00:04:32,899
+这被称为ret2libc
+this is called return into libc
+
+72
+00:04:32,900 --> 00:04:36,200
+用libc中函数的地址覆盖返回地址
+you overwrite their return address with an address inside libc
+
+73
+00:04:36,300 --> 00:04:38,366
+特别是system函数的地址
+specifically the address of system
+
+74
+00:04:38,966 --> 00:04:40,066
+来实现你的目标
+to accomplish your goals
+
+75
+00:04:40,500 --> 00:04:49,000
+它是在90年代中期被一个叫Solar Designer的黑客发现的
+it was discovered in the mid 90s by hacker named Solar Designer
+
+76
+00:04:49,100 --> 00:04:55,100
+这个黑客实际上发现了相当多的利用技术
+this hacker actually discovered quite a lot of exploitation techniques
+
+77
+00:04:55,100 --> 00:04:59,500
+我们将在以后的模块中再次听到他的故事
+we will hear about him in a later module again
+
+78
+00:05:00,000 --> 00:05:03,533
+但在90年代中期
+but in the the mid 90s
+
+79
+00:05:04,300 --> 00:05:05,933
+他声名鹊起的原因之一
+one of his claims to fame
+
+80
+00:05:05,933 --> 00:05:08,766
+就是创造了 ret2libc
+was the creation of return to libc 
+
+81
+00:05:09,566 --> 00:05:13,299
+以一个??姿势基本上是在说，嘿，你知道
+in a ?? pose that basically said hey look you know 
+
+82
+00:05:13,300 --> 00:05:17,800
+我可以绕过这些流行的DEP
+I can bypass this sort of data execution prevention stuff that's coming around
+
+83
+00:05:17,800 --> 00:05:20,100
+我们在安全防御上还任重道远啊
+we need to go beyond that
+
+84
+00:05:20,500 --> 00:05:27,200
+但那是在32位x86时代
+but this was in back in the day in 32 bit x86
+
+85
+00:05:27,366 --> 00:05:30,899
+32位系统现在不怎么用了
+and that is just not what we are running anymore
+
+86
+00:05:31,000 --> 00:05:34,133
+现代64位架构不通过栈传参数了（对于x86_64少于6个参数的情况）
+modern architectures don't take arguments on the stack
+
+87
+00:05:34,133 --> 00:05:39,066
+在AMD 64中用RDI,RSI等寄存器传递参数
+in AMD 64 we have arguments going into RDI RSI etc
+
+88
+00:05:39,066 --> 00:05:40,399
+所以如果溢出栈
+if you overflow the stack
+
+89
+00:05:40,400 --> 00:05:42,466
+并重定向到system
+and redirect execution to system
+
+90
+00:05:43,900 --> 00:05:46,533
+你无法控制它实际执行的程序
+you can't control what it actually executes
+
+91
+00:05:46,700 --> 00:05:47,500
+好的
+right
+
+92
+00:05:47,900 --> 00:05:53,100
+但事实证明，你仍然可以做一些非常有用的事情
+but it turns out there are still very useful things you can do and 
+
+93
+00:05:53,300 --> 00:05:55,500
+事实上你已经做过了
+you've already in fact done them
+
+94
+00:05:55,700 --> 00:05:58,766
+就是在内存错误模块最开始
+are taken the 1st steps in the memory errors module
+
+95
+00:05:59,200 --> 00:06:02,733
+有一个可以重定向到的win函数
+there was a win function to which you redirected execution 
+
+96
+00:06:03,133 --> 00:06:10,733
+通过溢出缓冲区并覆盖返回地址来指向win
+by overflowing a vulnerable buffer and overwriting the return address to point to win 
+
+97
+00:06:17,366 --> 00:06:19,466
+这是在最开始
+this is the beginning
+
+98
+00:06:19,466 --> 00:06:22,699
+在这种情况下，你不需要传递参数
+in this case you didn't need to pass an argument
+
+99
+00:06:23,200 --> 00:06:24,000
+好的
+right
+
+100
+00:06:24,600 --> 00:06:27,300
+内存错误模块中后续题目里有
+there are in later levels of the memory errors module
+
+101
+00:06:27,533 --> 00:06:30,699
+一个棘手的win函数
+we had a tricky win function that would actually
+
+102
+00:06:31,033 --> 00:06:33,866
+需要传入一个参数1337
+you would need to pass in an argument of 1337
+
+103
+00:06:34,166 --> 00:06:37,366
+否则它会拒绝给你flag
+ or it would refuse to give you the flag
+
+104
+00:06:37,366 --> 00:06:38,166
+但
+but
+
+105
+00:06:38,600 --> 00:06:41,200
+很明显你发现了
+obviously you figured out that
+
+106
+00:06:41,200 --> 00:06:43,800
+实际上，如果你完全控制返回地址
+actually if you control the return address completely
+
+107
+00:06:43,900 --> 00:06:48,500
+你可以直接跳过这个检查
+you can just jump right past that check part way through the function
+
+108
+00:06:49,000 --> 00:06:53,000
+现在我们更进了一步，实现高级代码重用
+now we're taking  another step to kind of advanced code reuse
+
+109
+00:06:53,066 --> 00:06:55,366
+你已经重用了函数的一部分
+right so you reused part of a function
+
+110
+00:06:55,566 --> 00:06:56,999
+你可以再进一步
+you can go even further
+
+111
+00:06:57,700 --> 00:06:59,333
+其实你已经做到了
+and you have gone further 
+
+112
+00:06:59,666 --> 00:07:07,333
+在组合模块的toddler1习题中执行jit喷射攻击
+by performing a jit spray attack in the 1st putting it together module in toddler one
+
+113
+00:07:09,733 --> 00:07:11,799
+通过跳到一条指令的中间
+ by jumping partway into an instruction
+
+114
+00:07:12,200 --> 00:07:15,100
+一条好好的
+a nice looking instruction
+
+115
+00:07:15,600 --> 00:07:22,500
+由前一个模块讲的JIT编译器生成的指令
+generated in the case of the previous module by a just in time compiler
+
+116
+00:07:22,900 --> 00:07:24,900
+但是如果跳转到指令的中间
+but if you jump partly into that instruction 
+
+117
+00:07:25,200 --> 00:07:27,766
+指令位于1337000
+the instruction is located at 1337 000 
+
+118
+00:07:28,033 --> 00:07:29,899
+然后你跳转到137002
+and you jump to 137 002
+
+119
+00:07:29,900 --> 00:07:31,466
+从这里开始执行
+start executing from here
+
+120
+00:07:31,800 --> 00:07:33,800
+你实际上执行了一些完全不同的指令
+you actually execute something very different
+
+121
+00:07:33,800 --> 00:07:37,566
+在本例中，执行exit系统调用
+you execute in this case an exit syscall
+
+122
+00:07:40,400 --> 00:07:45,000
+这是又一步
+so that is yet another step
+
+123
+00:07:46,700 --> 00:07:49,000
+在这个模块中，我们将学习
+and in this module we will learn to take
+
+124
+00:07:49,800 --> 00:07:55,100
+剩下的步骤最后掌握面向返回编程
+the rest of the steps to toward what is known as return oriented programming
+
+125
+00:07:55,100 --> 00:07:58,600
+ROP是ret2libc的通用泛化
+it's a generalization of the technique of return to libc
+
+126
+00:07:58,666 --> 00:08:00,299
+可以返回到任何地方
+it returns to anywhere
+
+127
+00:08:01,866 --> 00:08:04,333
+它基本上能把你
+it basically allows you to take the capabilities
+
+128
+00:08:05,300 --> 00:08:10,100
+通过溢出栈来得到的能力
+that you achieve by overflowing the stack
+
+129
+00:08:10,300 --> 00:08:15,800
+包括通过返回地址跳转到指令中间
+including the return address is being able to jump part way into instructions
+
+130
+00:08:15,866 --> 00:08:17,366
+跳转到函数中间等
+part way into functions etc
+
+131
+00:08:17,733 --> 00:08:22,499
+一个接一个地链接起来
+and chain these returns one after another
+
+132
+00:08:23,000 --> 00:08:27,100
+来达到你想要达到的漏洞利用效果
+to achieve the goals that you want to achieve an exploitation
+
+133
+00:08:27,366 --> 00:08:29,766
+在这个模块中，你将学习所有这些
+in this module you'll learn all about this
+
+134
+00:08:30,066 --> 00:08:31,399
+你会掌握它
+you'll master it
+
+135
+00:08:33,100 --> 00:08:35,700
+你会真的
+and you'll truly
+
+136
+00:08:36,400 --> 00:08:41,900
+能够破坏一个程序
+be able to subvert a program
+
+137
+00:08:41,900 --> 00:08:46,100
+让它做一些它从来没有被设计过的事情
+make it do something that it was absolutely truly never designed to do
+
+138
+00:08:46,166 --> 00:08:49,666
+只是使用它自己的二进制代码
+by using its own binary code against it
+
+139
+00:08:50,000 --> 00:08:52,600
+让我们看看在模块的其余部分中是什么样子的
+let's see what that looks like in the rest of the module
+

@@ -1,0 +1,1685 @@
+1
+00:00:01,200 --> 00:00:02,400
+你好,学生
+hello students
+
+2
+00:00:02,400 --> 00:00:06,933
+我是Yan，今天我们要讨论二进制文件
+I'm Yan and today we're going to talk about binary files
+
+3
+00:00:07,066 --> 00:00:09,299
+这是基础系列的一部分
+this is an entry in our Fundamental Series
+
+4
+00:00:10,000 --> 00:00:15,266
+学习这门课
+to approach this class 
+
+5
+00:00:15,466 --> 00:00:18,299
+你应该已经掌握了该知识
+you should really already have this knowledge
+
+6
+00:00:18,466 --> 00:00:20,399
+如果你在这里存在一些空白
+in case there are gaps in your knowledge
+
+7
+00:00:20,533 --> 00:00:22,066
+希望该视频能填补上
+this should hopefully fill them in
+
+8
+00:00:22,100 --> 00:00:26,000
+但如果跟不上这个视频
+but if you are really lost throughout this whole video
+
+9
+00:00:26,200 --> 00:00:31,900
+请先看懂，再继续后面的课程
+please go back and make sure you know this material before taking this course
+
+10
+00:00:31,900 --> 00:00:33,566
+好了，我们开始吧
+all right let's roll
+
+11
+00:00:33,566 --> 00:00:35,899
+我们先说一下/bin/cat
+we're gonna be talking about /bin/cat
+
+12
+00:00:35,900 --> 00:00:42,900
+/bin/cat是Linux及类似系统中的程序，用于
+/bin/cat is again the Linux utility for, and related systems
+
+13
+00:00:45,966 --> 00:00:46,766
+怎么了
+what
+
+14
+00:00:50,466 --> 00:00:51,566
+什么情况
+what's going on
+
+15
+00:00:54,700 --> 00:00:55,866
+/bin/cat简单好用
+bin cat is nice and simple 
+
+16
+00:00:55,966 --> 00:00:58,399
+它就是向你输出东西
+it just echo stuff out at you
+
+17
+00:00:58,733 --> 00:00:59,533
+如果我们
+if we
+
+18
+00:01:02,266 --> 00:01:03,966
+实际上，我们不用/bin/cat
+we'll actually instead of bin cat
+
+19
+00:01:04,033 --> 00:01:06,400
+用我们自己写的cat代替一下
+be using our replacement little cat that we wrote
+
+20
+00:01:06,466 --> 00:01:09,066
+这样方便搞事情
+so you can mess around with it in clever ways
+
+21
+00:01:12,533 --> 00:01:15,533
+代替品先输出个字符串
+our replacement prints some silly string 
+
+22
+00:01:15,766 --> 00:01:26,433
+再输出给定的文件
+and then writes out the file that it was given to write out 
+
+23
+00:01:26,733 --> 00:01:31,166
+也可以给它其它文件
+you can also do other files
+
+24
+00:01:32,166 --> 00:01:34,166
+或标准输入
+and standard in
+
+25
+00:01:34,733 --> 00:01:35,799
+很酷的小工具
+very cool utility
+
+26
+00:01:35,866 --> 00:01:41,266
+总之，/bin/cat是一个程序
+anyways that /bin/cat is a program
+
+27
+00:01:43,600 --> 00:01:49,500
+是从C代码编译成的所谓的ELF文件
+that is compiled from C into what is called an ELF file
+
+28
+00:01:50,100 --> 00:01:52,933
+什么是ELF文件呢
+so what is an ELF file
+
+29
+00:01:55,133 --> 00:01:59,133
+ELF为可执行可链接格式
+an ELF file stands for Executable and Linkable Format
+
+30
+00:01:59,400 --> 00:02:05,666
+规定了程序是如何加载到内存并执行的
+defines a program as it will be loaded and executed in memory
+
+31
+00:02:05,866 --> 00:02:11,499
+它规定了程序在磁盘上的存储格式，以及启动方式
+so it defines it at rest on disk and enables its execution
+
+32
+00:02:12,533 --> 00:02:17,999
+ELF存储了一大堆程序信息
+ELF stores a whole bunch of data about a program
+
+33
+00:02:18,566 --> 00:02:22,133
+例如，为哪种架构编译的
+for example what architecture is compiled for
+
+34
+00:02:22,133 --> 00:02:25,199
+这是一个64位x86架构的ELF
+so this is a 64 bit ELF for x86
+
+35
+00:02:26,400 --> 00:02:30,000
+当然还有用于识别自身是ELF文件的数据等等
+and of course identifies itself as an ELF and so forth
+
+36
+00:02:30,200 --> 00:02:34,200
+在其他操作系统上
+on other operating systems
+
+37
+00:02:34,800 --> 00:02:38,533
+还有其他格式的可执行文件
+there are other formats for executable 
+
+38
+00:02:38,700 --> 00:02:40,400
+在Linux上是ELF
+so on Linux it's an ELF 
+
+39
+00:02:40,633 --> 00:02:42,633
+freeBSD也是
+freeBSD also 
+
+40
+00:02:44,766 --> 00:02:46,466
+在Windows上
+on Windows
+
+41
+00:02:47,166 --> 00:02:50,699
+可执行文件是所谓的PE文件
+executables are what are known as PE files
+
+42
+00:02:50,866 --> 00:02:52,166
+可移植可执行文件
+Portable Executables
+
+43
+00:02:52,166 --> 00:02:54,066
+在MacOS上是Mach-O
+on MacOS it's Mach-O
+
+44
+00:02:55,066 --> 00:02:55,833
+等等
+and so on 
+
+45
+00:02:56,033 --> 00:02:59,166
+ELF以及类似的文件格式
+so ELF and related formats there
+
+46
+00:02:59,166 --> 00:03:01,033
+或多或少都很相似
+they're all more or less similar 
+
+47
+00:03:01,266 --> 00:03:06,333
+它们都能让编译器或类似的东西
+they all allow a compiler or something 
+
+48
+00:03:06,500 --> 00:03:10,700
+创建并定义一个程序
+to create and define a program
+
+49
+00:03:13,333 --> 00:03:14,599
+我们继续
+let's move on
+
+50
+00:03:15,133 --> 00:03:17,066
+ELF都包含什么
+what does an ELF contain
+
+51
+00:03:17,200 --> 00:03:19,500
+ELF包含很多东西
+an ELF contains a bunch of stuff
+
+52
+00:03:19,600 --> 00:03:22,333
+主要可以分成ELF的两种视图
+but mostly contains two views into itself
+
+53
+00:03:22,500 --> 00:03:27,700
+一是它如何加载以及执行（内存视图）
+one of them is how it should be loaded and executed
+
+54
+00:03:27,900 --> 00:03:33,800
+二则更多是语义上的内部有哪些数据（文件视图）
+and another one is more semantic information about what the data inside it is
+
+55
+00:03:35,966 --> 00:03:37,899
+我们先谈谈第一个
+let's talk about the first one first
+
+56
+00:03:39,266 --> 00:03:41,099
+这些是程序头
+these are called program headers 
+
+57
+00:03:41,366 --> 00:03:44,699
+它们定义了所谓的segment
+and they define what are called segments
+
+58
+00:03:44,733 --> 00:03:52,599
+segment是ELF执行时加载到内存的部分
+segments is the parts of an ELF file that are loaded into the memory of a computer when that file is executed
+
+59
+00:03:52,800 --> 00:03:56,200
+主要有两种类型
+and there are two main types
+
+60
+00:03:56,400 --> 00:03:57,366
+我们看一下
+let's take a look
+
+61
+00:03:58,566 --> 00:04:02,533
+可以用readelf程序查看程序头
+so you can look at headers with the readelf utility
+
+62
+00:04:02,600 --> 00:04:04,000
+它能解析ELF
+you get it parse out an ELF 
+
+63
+00:04:04,133 --> 00:04:06,699
+告诉你所有你想知道的
+and tell you everything you wanted to know about it
+
+64
+00:04:07,533 --> 00:04:08,766
+我们看一下cat
+let's look at cat
+
+65
+00:04:10,266 --> 00:04:12,933
+我们的cat很简单
+our cat here is pretty simple
+
+66
+00:04:16,200 --> 00:04:17,333
+先滑到最上面
+scroll all the way up first
+
+67
+00:04:17,533 --> 00:04:18,566
+首先
+first things first
+
+68
+00:04:19,133 --> 00:04:26,066
+所有ELF都以7f 45 4c 46开头
+all ELF start with the bytes in hexadecimal 7f 45 4c 46 
+
+69
+00:04:26,266 --> 00:04:31,499
+你应该能认出，在ASCII编码中这是ELF
+you should be able to recognize that in ASCII coding this spells E L F
+
+70
+00:04:31,566 --> 00:04:34,066
+所以ELF文件开头为7F ELF
+so ELF starts with 7f E L F
+
+71
+00:04:35,333 --> 00:04:38,299
+实际上这就是识别ELF文件的方法
+this is actually how file recognizes that it's an ELF
+
+72
+00:04:39,000 --> 00:04:42,300
+然后还在ELF头中定义了很多东西
+then it defines a bunch of stuff in the header format
+
+73
+00:04:42,366 --> 00:04:44,699
+如我们说过的，它是64位的
+that it's 64 bit as we discussed etc
+
+74
+00:04:44,700 --> 00:04:47,166
+要说的一点是它的Entry Point（入口地址）
+one thing I'll point out is it defines its entry point
+
+75
+00:04:47,300 --> 00:04:53,200
+ELF加载到内存后，程序会在0x10e0处开始执行
+execution will begin after the ELF is loaded into memory  at 10e0
+
+76
+00:04:53,200 --> 00:04:58,600
+我会在该系列后面的部分讨论加载与执行
+I'll talk about the loading and execution in the later part of the fundamental series 
+
+77
+00:04:59,333 --> 00:05:01,266
+我们现在看看程序头
+but let's move on to the program headers
+
+78
+00:05:01,500 --> 00:05:05,300
+程序头定义了将加载到内存中的segment
+so program headers define segments that will be loaded in memory
+
+79
+00:05:07,400 --> 00:05:10,533
+这里有四个
+there are four of them here
+
+80
+00:05:11,233 --> 00:05:15,599
+第一个在文件的最开头
+this first segment starts at the very beginning of the file
+
+81
+00:05:15,600 --> 00:05:17,966
+这是偏移量，然后是文件大小
+so it's offset then file size
+
+82
+00:05:18,200 --> 00:05:23,900
+这表示从文件里的这个地址开始加载多少数据
+then this is from inside the file how much data will be loaded from which location
+
+83
+00:05:24,266 --> 00:05:25,899
+然后这个表示
+and then here it is
+
+84
+00:05:26,500 --> 00:05:31,500
+要占多少内存，以及存在哪里
+how much will be actually stored in memory and where
+
+85
+00:05:32,366 --> 00:05:33,166
+这个虚拟地址
+the virtual address 
+
+86
+00:05:33,400 --> 00:05:39,366
+我会在讲加载的视频中详细讨论
+and I'll talk more about this in the loading video
+
+87
+00:05:39,500 --> 00:05:50,166
+如今计算机软件里的虚拟地址是经过随机化处理的
+but the virtual address nowadays for modern software on modern computer is randomized in memory
+
+88
+00:05:50,166 --> 00:05:53,033
+使程序更安全一点
+to make the program a little more secure 
+
+89
+00:05:53,133 --> 00:05:55,266
+更能抵御某些类型的攻击
+and more resilient to certain classes of attack
+
+90
+00:05:56,900 --> 00:06:00,133
+这是到那个随机化基址的偏移量
+and this is an offset from that location 
+
+91
+00:06:01,100 --> 00:06:02,866
+在文件的开头
+so at the beginning of the file 
+
+92
+00:06:03,066 --> 00:06:06,233
+有0x700字节
+there are hexadecimal 700 bytes 
+
+93
+00:06:06,400 --> 00:06:11,100
+这是加载在最开头的0x700字节
+this is 700 base 16 that are loaded to the beginning
+
+94
+00:06:11,500 --> 00:06:20,900
+不管该文件最终加载到哪，之后的头0x700字section
+first 700 bytes of memory wherever this file is chosen to be located
+
+95
+00:06:21,300 --> 00:06:27,966
+然后在偏移值0x1000处
+then there is at an offset of hexadecimal 1000
+
+96
+00:06:28,166 --> 00:06:31,499
+即10进制的4KB处
+which is actually 4 kilobytes in decimal
+
+97
+00:06:36,966 --> 00:06:40,499
+4KB是一个内存页的大小
+also 4 kilobytes in that is the size of one page
+
+98
+00:06:40,500 --> 00:06:44,500
+我们将在后面的模块中讨论内存页和虚拟内存等
+we'll talk about pages and virtual memory and so forth in a later module
+
+99
+00:06:45,500 --> 00:06:51,300
+加载0x335字节数据，后面以此类推
+we load 335 in hexadecimal bytes and so on for the rest of these
+
+100
+00:06:51,300 --> 00:06:56,100
+要提一点的是，这些数据的权限是不同的
+one thing I'll mention is the permissions of this data are different
+
+101
+00:06:56,100 --> 00:07:00,300
+第一个被加载的数据是作为可读数据加载的
+so the first data that's loaded is just loaded in as readable data
+
+102
+00:07:00,800 --> 00:07:04,766
+这0x335B是加载为可读可执行的
+this hex 335 is loaded as readable and executable
+
+103
+00:07:05,733 --> 00:07:07,566
+还有一个是可读的
+and then there's one that's loaded as readable
+
+104
+00:07:07,766 --> 00:07:11,166
+和一个可读可写的
+and one that's loaded as readable and writeable
+
+105
+00:07:11,500 --> 00:07:14,766
+之后会发现这很重要
+this is important later you will see that
+
+106
+00:07:15,033 --> 00:07:20,299
+这些不同的segment包含不同类型的数据
+these different segments contain different types of data
+
+107
+00:07:21,000 --> 00:07:23,700
+有一点很重要
+it's important to mention that
+
+108
+00:07:23,800 --> 00:07:26,733
+这些程序头定义的segment
+these segments defined by program headers 
+
+109
+00:07:26,866 --> 00:07:33,399
+是信息源
+are the source of information
+
+110
+00:07:33,433 --> 00:07:36,799
+是基于此来加载ELF文件的
+the ground truth for loading this ELF file
+
+111
+00:07:38,400 --> 00:07:42,100
+你可以构建一个只有程序头的ELF文件
+you can build an ELF file that has nothing but program headers
+
+112
+00:07:42,100 --> 00:07:43,733
+它将是一个非常有问题的ELF文件
+it'll be a very broken ELF file
+
+113
+00:07:43,733 --> 00:07:46,366
+但一会要讲的
+but everything else I discuss from now on
+
+114
+00:07:46,766 --> 00:07:48,466
+它会崩溃，但能执行
+ it'll be broken but it will run
+
+115
+00:07:48,466 --> 00:07:50,399
+但一会要讲的
+everything else I'll discuss from now on
+
+116
+00:07:50,666 --> 00:07:53,333
+多多少少是可选的
+is more or less you know optional
+
+117
+00:07:53,800 --> 00:07:55,700
+它们的存在是为了便于执行
+fluff to make our lives easier
+
+118
+00:07:56,000 --> 00:07:56,700
+还有一件事
+one other thing 
+
+119
+00:07:56,900 --> 00:08:02,066
+这个INTERP程序头挺有意思的
+this interp header is a very interesting one
+
+120
+00:08:03,566 --> 00:08:06,466
+能在readelf输出的这里看到它
+you can see it right here in the output of readelf
+
+121
+00:08:06,733 --> 00:08:08,566
+INTERP表示
+and INTERP says okay
+
+122
+00:08:09,533 --> 00:08:12,399
+它不是用于加载的
+it's not a load directive
+
+123
+00:08:12,400 --> 00:08:14,533
+所以它不会向内存中加载任何东西
+so it doesn't load anything into memory
+
+124
+00:08:14,700 --> 00:08:16,133
+不会导致内存占用增长
+or causing anything grow this memory 
+
+125
+00:08:16,166 --> 00:08:18,699
+它表示在文件的0x318偏移处
+but it says that at hex 318 in the file
+
+126
+00:08:19,466 --> 00:08:23,799
+有0x1c字节的数据
+there is some data 1c in size
+
+127
+00:08:25,133 --> 00:08:25,933
+稍等
+one second
+
+128
+00:08:27,533 --> 00:08:28,299
+我回来了
+I'm back
+
+129
+00:08:28,300 --> 00:08:31,266
+对不起，我得让我的猫离开房间，它被困住了
+sorry I had to let my cat out of the room he was stuck
+
+130
+00:08:35,100 --> 00:08:38,100
+有0x1c字节的数据
+there's some data hex 1c in size 
+
+131
+00:08:38,200 --> 00:08:44,900
+指定用于或说助于将该ELF加载到内存的库
+that specifies the library that is going to load or help load our file into memory
+
+132
+00:08:45,033 --> 00:08:51,699
+讲可执行文件的加载时，我会详细讨论这个问题
+I'll talk about this at length when I talk about loading of these executables
+
+133
+00:08:53,300 --> 00:08:54,300
+但是现在
+but for now
+
+134
+00:08:54,400 --> 00:08:58,166
+我先在KaitaiStruct程序中向你展示
+let me show you in a program called Kaitai Struct
+
+135
+00:09:01,366 --> 00:09:02,599
+大概是什么样的
+what this looks like
+
+136
+00:09:02,600 --> 00:09:04,100
+这是KaitaiStruct
+so this is Kaitai Struct 
+
+137
+00:09:04,133 --> 00:09:07,666
+这是一个基于web的IDE
+it's a web based IDE for looking at
+
+138
+00:09:09,266 --> 00:09:15,233
+或说基于web的程序，用于查看文件的结构
+or web based program for looking at structured files
+
+139
+00:09:15,500 --> 00:09:21,100
+比如可执行文件的，或者png、zip等
+such as executables but also things like PNGs zip files etc
+
+140
+00:09:21,733 --> 00:09:24,899
+上传我们的cat文件
+so let's upload our cat file
+
+141
+00:09:25,700 --> 00:09:26,333
+打开它
+open it up 
+
+142
+00:09:26,500 --> 00:09:30,733
+它会以一个项打开
+it's opening it as a key
+
+143
+00:09:31,000 --> 00:09:33,666
+哦，这里有个ELF
+oh there's an ELF here's an ELF okay
+
+144
+00:09:33,800 --> 00:09:36,200
+将其解析为ELF
+so parsed it as an ELF
+
+145
+00:09:37,266 --> 00:09:38,999
+我们可以深入到
+we can drill into
+
+146
+00:09:39,566 --> 00:09:41,699
+这里是魔数（固定特征值）
+so again here is the magic numbers
+
+147
+00:09:41,700 --> 00:09:43,466
+你能在这个侧边看到16进制视图
+you can see a hex view on the side here
+
+148
+00:09:43,733 --> 00:09:46,399
+这是7f，然后是ELF
+here is 7f and then you see ELF
+
+149
+00:09:46,400 --> 00:09:47,200
+太棒了
+awesome
+
+150
+00:09:48,100 --> 00:09:51,100
+我们深入了解一下这个interp
+let's dig in to this interpreter
+
+151
+00:09:51,533 --> 00:09:54,499
+我们看到这个interp的偏移值是0x318
+we see this interpreter has an offset of 318
+
+152
+00:09:55,500 --> 00:09:59,200
+如果你滑倒0x318这里
+and if you scroll in 318 here
+
+153
+00:09:59,400 --> 00:10:06,733
+这正是加载器的路径
+we see this is exactly the path of the interpreter of the loader
+
+154
+00:10:06,833 --> 00:10:10,899
+它负责加载此文件及其依赖项
+that will be responsible for loading this file and its dependencies
+
+155
+00:10:13,766 --> 00:10:14,566
+酷
+cool
+
+156
+00:10:18,100 --> 00:10:23,900
+我们把目光从segment与程序头转向section头
+let's move on from segments and program headers to section headers
+
+157
+00:10:26,500 --> 00:10:28,133
+我刚意识到
+I just realized that 
+
+158
+00:10:28,833 --> 00:10:31,699
+这是之前的ppt，哦，没问题
+it was the previous slide the previous slide was good okay
+
+159
+00:10:31,733 --> 00:10:33,533
+等等，我把相机隐藏一下
+hold on I'm gonna hide my camera
+
+160
+00:10:33,633 --> 00:10:35,699
+这样你们就能清楚地看到幻灯片
+so you can see the slide properly
+
+161
+00:10:40,600 --> 00:10:43,766
+好的，我马上回来，别担心
+boom okay I'll be right back don't worry
+
+162
+00:10:43,800 --> 00:10:47,700
+好的，section头
+so section headers
+
+163
+00:10:48,700 --> 00:10:52,100
+section头代表ELF文件的另一种视角
+section headers represent a different view into an ELF file
+
+164
+00:10:52,666 --> 00:10:58,999
+这个视图有更多的语义信息
+it's a view that has a lot more semantic information
+
+165
+00:10:59,200 --> 00:11:02,300
+在加载过程中不太重要
+and is less important for the actual loading process
+
+166
+00:11:02,866 --> 00:11:03,366
+如我所说
+like I said
+
+167
+00:11:03,866 --> 00:11:07,399
+我见过根本没有section头的elf文件
+I've seen ELFs that don't have section headers at all
+
+168
+00:11:07,800 --> 00:11:12,300
+一般来说，用起来肯定不是很有趣
+generally speaking they are not very fun to work with
+
+169
+00:11:12,500 --> 00:11:16,400
+我不确定你是否可以在没有section头的情况下动态加载
+I'm not actually sure that  you could have it dynamically loaded without section headers
+
+170
+00:11:16,600 --> 00:11:17,900
+但这是有可能的
+but it might be possible
+
+171
+00:11:17,900 --> 00:11:18,700
+不管怎样
+anyways
+
+172
+00:11:19,900 --> 00:11:28,100
+section定义了segment中实际包含的内容
+sections define what the segments actually have inside them
+
+173
+00:11:28,166 --> 00:11:29,733
+不是从数据角度
+not from a data perspective 
+
+174
+00:11:29,866 --> 00:11:31,966
+而是从含义角度
+but from a meaning perspective
+
+175
+00:11:32,133 --> 00:11:34,799
+但含义一般对于
+but that meaning is only really important for the most part
+
+176
+00:11:34,966 --> 00:11:44,499
+逆向工具、调试工具、理解ELF以及ELF管理工具是很重要的
+to reversing tools debugging tools and introspection of the ELF and tools to manage ELFs
+
+177
+00:11:46,566 --> 00:11:49,466
+我们过一遍，我回来了
+so let's walk through I'm back 
+
+178
+00:11:49,666 --> 00:11:54,399
+我们过一下一些重要的
+let's walk through the important ones that
+
+179
+00:11:54,466 --> 00:11:55,266
+一些重要的section
+some important sections 
+
+180
+00:11:55,533 --> 00:11:57,266
+有.text段
+there's the text section
+
+181
+00:11:57,500 --> 00:12:00,633
+它里面是可执行代码
+it has the executable code 
+
+182
+00:12:00,833 --> 00:12:03,199
+不是英文之类的文本
+it's not text as an English text 
+
+183
+00:12:03,400 --> 00:12:05,233
+它是二进制的
+it is the binary 
+
+184
+00:12:05,733 --> 00:12:07,266
+是编译后的源码
+the compiled source code 
+
+185
+00:12:07,366 --> 00:12:11,099
+或者说是要执行的程序汇编代码
+or assembled assembly code of your program that will be executed
+
+186
+00:12:12,366 --> 00:12:14,299
+.plt和.got都是用于
+plt and got are used to 
+
+187
+00:12:14,400 --> 00:12:18,700
+解析和转接程序中使用的库调用（重定位）
+resolve and dispatched library calls that you use in your program
+
+188
+00:12:19,133 --> 00:12:21,933
+比如你的C程序调用了printf
+for example if your C program calls printf
+
+189
+00:12:22,200 --> 00:12:25,700
+plt中会为printf创建一段数据
+there will be a stub created for printf in plt 
+
+190
+00:12:25,900 --> 00:12:28,200
+它是一段代码
+which is a section of code 
+
+191
+00:12:28,200 --> 00:12:29,700
+我们马上会看看
+we'll take a look in a second
+
+192
+00:12:29,700 --> 00:12:34,000
+修改它，再在后续模块深入研究
+edit it at a high level and we'll look more in depth at this in future module
+
+193
+00:12:35,800 --> 00:12:37,066
+里面有一段代码
+there's a stub there
+
+194
+00:12:37,266 --> 00:12:39,566
+第一次调用printf时
+the first time you call printf 
+
+195
+00:12:39,800 --> 00:12:41,033
+会执行这段代码
+that stub will run
+
+196
+00:12:41,800 --> 00:12:47,000
+开始解析libc库中
+initiate the process of resolving where in the library in libc
+
+197
+00:12:47,400 --> 00:12:51,900
+在你加载的版本的libc中的printf的地址
+in the specific version of libc you have loaded and so forth printf is
+
+198
+00:12:52,100 --> 00:12:55,766
+它会找到printf地址，然后存在got中
+then it will find that address store it in the got
+
+199
+00:12:56,900 --> 00:13:01,900
+got用于保存找到的地址
+which will be used to catch that location
+
+200
+00:13:02,333 --> 00:13:04,266
+使库调用处理的更快
+to make this process faster 
+
+201
+00:13:04,433 --> 00:13:10,399
+所以plt和got一起用于解析和转接库调用
+together plt and got are sections that are used to resolve and dispatch library calls
+
+202
+00:13:11,933 --> 00:13:18,399
+还有运行时plt不关心这个section的名字叫got
+again at runtime the plt doesn't care about the name got of a section
+
+203
+00:13:18,600 --> 00:13:20,900
+直接硬编码了一个偏移值
+it just has an offset hard coded in
+
+204
+00:13:21,066 --> 00:13:24,199
+所以如果你正常加载，即定义了程序头的话
+so if you load them properly which is defined the segment headers
+
+205
+00:13:24,433 --> 00:13:25,633
+就能正常工作
+they'll work
+
+206
+00:13:26,933 --> 00:13:27,733
+数据
+data
+
+207
+00:13:30,966 --> 00:13:35,199
+这里有三种类型的数据section
+there are three types of data sections that are defined
+
+208
+00:13:35,366 --> 00:13:36,966
+一个是.data
+one is .data
+
+209
+00:13:37,233 --> 00:13:44,499
+它里面放着有初始值的全局可写数据
+it defines global writable data that has an initial value in the file
+
+210
+00:13:44,500 --> 00:13:47,700
+当把东西载入内存时，它已经有了一个初始值
+so when you load something into memory it already has an initial value
+
+211
+00:13:47,700 --> 00:13:54,600
+就比如说，你C代码中硬编码的
+this is if your C code has some sort of hard coded array in it for example 
+
+212
+00:13:54,766 --> 00:13:58,699
+全局可写的数组
+that you can then later edit a global array
+
+213
+00:13:58,700 --> 00:14:03,000
+.rodata类似，但用于只读数据
+.rodata is similar but for read only data
+
+214
+00:14:03,100 --> 00:14:07,900
+比如，我们写的cat
+so this is for example in our version of cat
+
+215
+00:14:09,766 --> 00:14:11,366
+我的shell怎么了
+what is going on with my shell
+
+216
+00:14:11,600 --> 00:14:13,600
+好的，等一下，我要
+okay hold on I'm gonna wow
+
+217
+00:14:14,700 --> 00:14:15,666
+我可能弄崩了啥
+I broke something
+
+218
+00:14:16,933 --> 00:14:18,166
+这就是cat
+so here's cat
+
+219
+00:14:19,300 --> 00:14:21,800
+能看到cat先输出了HAHA!
+you saw that cat prints ha ha
+
+220
+00:14:21,900 --> 00:14:22,700
+这很好
+that's this good 
+
+221
+00:14:22,766 --> 00:14:25,399
+它在输出任何东西前，先输出HAHA!
+right now it prints ha ha before it prints anything else
+
+222
+00:14:26,333 --> 00:14:28,499
+再执行cat的功能，输出给定文件
+does its cat thing
+
+223
+00:14:28,800 --> 00:14:34,700
+这个HAHA!就是存储在rodata中的只读数据
+this ha ha is read only data that will be stored in the rodata section
+
+224
+00:14:34,966 --> 00:14:37,133
+我们马上会用到它
+we will mess with that in a second
+
+225
+00:14:39,300 --> 00:14:48,400
+然后还有用于存储全局未初始化数据的bss
+and then there's the bss which is used for storing uninitialized readable data that's global
+
+226
+00:14:48,400 --> 00:15:00,133
+比如说，在c代码中定义的一个没有初始值的全局数组
+so an array defined in your C code that doesn't have an initial value
+
+227
+00:15:00,333 --> 00:15:06,099
+还有如果在C代码中定义一个巨大的没初值的数组
+the idea is if you define a giant array in your C code doesn't have initial value
+
+228
+00:15:06,100 --> 00:15:09,800
+那么该数组就没有理由占用ELF文件中的任何空间
+there's no reason for that array to take up any space in the ELF file
+
+229
+00:15:09,900 --> 00:15:12,400
+这只是在浪费文件大小
+it's just a waste of file size
+
+230
+00:15:12,500 --> 00:15:16,900
+所以与其从文件中加载bss数据到内存
+so instead that is rather than being loaded from the file
+
+231
+00:15:16,933 --> 00:15:19,133
+不如分配内存时全置为零
+it's just allocated with all zeros
+
+232
+00:15:23,700 --> 00:15:27,500
+我已经特别提到过，section头不是
+I specifically mentioned that already section headers are not
+
+233
+00:15:28,900 --> 00:15:32,100
+我去掉我的头像，这样就能看了文字了
+let me disappear so you can read this
+
+234
+00:15:33,533 --> 00:15:35,766
+section头不是ELF的必要部分
+section headers are not a necessary part of the ELF
+
+235
+00:15:36,300 --> 00:15:41,500
+实际上你遇到的ELF基本都有它们
+I mean realistically almost every ELF you'll ever interact with will have them
+
+236
+00:15:41,700 --> 00:15:43,833
+但它们不是必须存在的
+but they are not strictly necessary 
+
+237
+00:15:44,000 --> 00:15:48,300
+ELF可以没有section头
+an ELF can exist without section headers
+
+238
+00:15:48,466 --> 00:15:51,399
+它们只是元数据
+they are mostly just metadata all right
+
+239
+00:15:52,733 --> 00:15:54,433
+符号和符号解析
+symbols and symbol resolution 
+
+240
+00:15:54,566 --> 00:15:57,666
+我先关一下摄像，方便看这个链接
+again let me disappear for a second so you can see that link
+
+241
+00:15:58,500 --> 00:16:03,700
+elf中有符号，本质上就是名字
+ELFs have symbols which means names essentially 
+
+242
+00:16:03,800 --> 00:16:10,066
+它们使用的依赖于其它库的名字
+that they use names that rely to constructs of other libraries
+
+243
+00:16:10,166 --> 00:16:16,966
+比如其它库导出的函数和变量
+such as functions and variables exported by those libraries 
+
+244
+00:16:17,366 --> 00:16:23,699
+它们用这个名字来找到合适版本的库
+that they use to find libraries of correct versions
+
+245
+00:16:23,766 --> 00:16:25,733
+解析函数，等等
+resolve functions and then and so forth
+
+246
+00:16:25,866 --> 00:16:27,466
+这是一个非常复杂的过程
+this is a very convoluted process 
+
+247
+00:16:27,633 --> 00:16:28,799
+涉及多个表
+involving multiple tables 
+
+248
+00:16:29,000 --> 00:16:30,333
+其它表的表内偏移值
+offsets into other tables
+
+249
+00:16:30,566 --> 00:16:32,433
+字符串表等
+tables of strings etc
+
+250
+00:16:32,766 --> 00:16:37,633
+我强烈推荐这个博客系列
+I highly recommend this blog post series 
+
+251
+00:16:37,866 --> 00:16:41,099
+马上还有其它该系列的链接
+I'll have another link to there in a second
+
+252
+00:16:41,933 --> 00:16:47,399
+它详细深入地描述了
+but it really describes in very in depth detail
+
+253
+00:16:48,700 --> 00:16:49,966
+它的工作原理
+how all of this works 
+
+254
+00:16:50,200 --> 00:16:57,966
+如果你感兴趣的话可以看一看
+you can take a look if you're very interested
+
+255
+00:16:58,133 --> 00:17:04,499
+但在本课程中，不需要如此深入
+but you won't need to interact with ELF files in so much depth in this class
+
+256
+00:17:04,900 --> 00:17:10,000
+例如，这个图表摘自本系列博客文章
+this diagram for example is taken from this series of blog posts
+
+257
+00:17:10,633 --> 00:17:13,099
+如何与ELF交互
+how do you interact with your ELF
+
+258
+00:17:13,700 --> 00:17:17,800
+有很多很多的工具
+well there's a ton tons and tons of tools
+
+259
+00:17:17,933 --> 00:17:19,399
+你可以用它们来与你的ELF交互
+that you can use to interact with your ELF
+
+260
+00:17:19,566 --> 00:17:21,266
+我们已经见过的KaitaiStruct
+we already saw Kaitai Struct
+
+261
+00:17:21,333 --> 00:17:24,499
+我在里面点来点去，看了ELF的各个部分
+saw me clicking around and looking at parts of the ELF
+
+262
+00:17:25,333 --> 00:17:27,566
+用gcc制作elf文件
+you make the ELF with GCC 
+
+263
+00:17:27,566 --> 00:17:29,266
+你还看到了我用的readelf
+you saw me use readelf
+
+264
+00:17:29,500 --> 00:17:34,566
+我快速展示一下nm的用法
+let me show you real quick nm being used 
+
+265
+00:17:34,766 --> 00:17:40,166
+nm从ELF文件中读取符号的工具
+so this nm is a utility that reads symbols from the ELF file
+
+266
+00:17:40,200 --> 00:17:42,166
+比如-D
+so -D for example is 
+
+267
+00:17:42,266 --> 00:17:48,599
+用于查看所有动态导入的符号
+how to resolve to look at all of the dynamic imports
+
+268
+00:17:48,899 --> 00:17:55,499
+这些是这个程序运行时使用到的函数
+ so these are functions that the program will use at runtime
+
+269
+00:17:55,600 --> 00:17:57,866
+可以看到open put读取和写入
+you can see the open puts read and write
+
+270
+00:17:58,400 --> 00:18:06,466
+我将在以后的视频中讨论__libc_start_main
+__libc_start_main is something I'll talk about in the future video
+
+271
+00:18:06,733 --> 00:18:10,766
+它用于初始化或者说开始执行
+it's used to initialize or to begin execution
+
+272
+00:18:10,966 --> 00:18:12,066
+以后再谈它
+talk about it later
+
+273
+00:18:14,700 --> 00:18:17,866
+当然你可以查看更多的符号
+you can of course look at more symbols
+
+274
+00:18:17,866 --> 00:18:19,433
+这些是所有的符号
+these are all the symbols
+
+275
+00:18:19,433 --> 00:18:22,266
+包括该程序定义的符号
+including symbols that the binary define
+
+276
+00:18:22,466 --> 00:18:25,700
+比如我们可以找到main的地址
+so for example we can probably find the address of main
+
+277
+00:18:25,700 --> 00:18:27,066
+这是main的地址
+yeah so here's the address of main
+
+278
+00:18:27,066 --> 00:18:28,533
+就在11c9
+at this 11c9 
+
+279
+00:18:28,666 --> 00:18:30,433
+在入口地址后面不远处
+shortly after the entry point
+
+280
+00:18:30,833 --> 00:18:32,533
+我们之后会讨论为什么
+and we'll discuss why at a later time
+
+281
+00:18:35,066 --> 00:18:36,899
+patchelf是一个很酷的工具
+patchelf is a cool utility
+
+282
+00:18:37,900 --> 00:18:40,366
+它能用奇怪的方式修改ELF
+that can mess with your ELF in weird ways
+
+283
+00:18:40,800 --> 00:18:45,500
+你可以用它注入与所需加载的不同的库
+you can inject different libraries that are going to be needed to be loaded
+
+284
+00:18:46,300 --> 00:18:50,300
+更改我前面提到的INTERP加载器等
+change around that interpreter that I mentioned and so on
+
+285
+00:18:51,133 --> 00:18:53,066
+objcopy也很酷
+objcopy is pretty cool
+
+286
+00:18:53,800 --> 00:18:59,933
+objcopy可以让你导出、修改、导入section
+objcopy can allow you to export mess with and then import sections
+
+287
+00:19:00,100 --> 00:19:06,633
+我们导出所有cat的section
+so let's dump out this section of cat 
+
+288
+00:19:06,833 --> 00:19:10,466
+rodata，如果还记的，它表示只读数据
+the rodata if you recall that is the read only data
+
+289
+00:19:10,666 --> 00:19:15,266
+在这个rodata中有HAHA!
+and that rodata has this ha ha in it 
+
+290
+00:19:15,533 --> 00:19:19,066
+所以如果你cat一下刚刚导出的
+so if you look at what we just dumped out
+
+291
+00:19:21,366 --> 00:19:23,533
+它先输出HAHA!，接着rodata中的HAHA!
+it prints out the ha ha then it's the HaHa
+
+292
+00:19:23,700 --> 00:19:26,700
+还是用hexdump看一下吧
+let's take a look at the hexdump
+
+293
+00:19:28,200 --> 00:19:32,300
+这是rodata中的内容
+this is what was in the rodata section 
+
+294
+00:19:32,366 --> 00:19:35,533
+这是其它的只读数据
+because there was some other read only data
+
+295
+00:19:35,600 --> 00:19:39,466
+然后是我们字符串的ASCII码
+and then there was the string in ASCII of course
+
+296
+00:19:39,500 --> 00:19:40,933
+HAHA!
+ ha ha exclamation point
+
+297
+00:19:41,200 --> 00:19:42,266
+有趣的是
+interestingly
+
+298
+00:19:43,000 --> 00:19:44,300
+如果我们看一下
+if we look at
+
+299
+00:19:47,300 --> 00:19:50,200
+我们用vim打开，然后改成hello
+we grab vim and we change this to something like hello
+
+300
+00:19:50,933 --> 00:19:53,333
+这次不用--dump-section了
+and then instead of dump section 
+
+301
+00:19:53,500 --> 00:19:54,700
+我们用--update-section
+we do update section 
+
+302
+00:19:55,066 --> 00:20:03,099
+读入该文件，写到cat的rodata中
+to read in that file and write it into that section in cat
+
+303
+00:20:03,400 --> 00:20:05,500
+我们这就修改了这个程序
+we just modified this file
+
+304
+00:20:06,533 --> 00:20:08,999
+现在执行cat，它将先输出Hello
+if we do cat now it'll print hello
+
+305
+00:20:09,600 --> 00:20:11,600
+虽然源码中写的是HAHA!
+even though the original source code had ha ha
+
+306
+00:20:14,000 --> 00:20:15,133
+对于这段代码
+just as for this code
+
+307
+00:20:15,300 --> 00:20:18,666
+如果只是这样的一个简单修改，不需要漏洞利用
+you don't need to exploit if it's a simple edit like that
+
+308
+00:20:18,833 --> 00:20:21,766
+可以直接改二进制文件本身
+I could just modify the binary itself 
+
+309
+00:20:22,000 --> 00:20:25,433
+vi -b启用了二进制编辑模式
+vi -b enables binary mode 
+
+310
+00:20:25,433 --> 00:20:28,899
+且vim在编辑时，会禁用一些能弄乱二进制文件的东西
+and vim disable some things that might mess up the binary during editing
+
+311
+00:20:28,933 --> 00:20:33,566
+但这非常非常简单
+but this is super super simple 
+
+312
+00:20:33,700 --> 00:20:37,000
+比如，我可以查看hello在哪里
+like I can go and look at where hello is
+
+313
+00:20:37,600 --> 00:20:39,100
+然后改成BYE!!!
+and say bye
+
+314
+00:20:40,733 --> 00:20:41,533
+现在
+and now
+
+315
+00:20:42,800 --> 00:20:43,533
+它会输出BYE!!!
+it say bye 
+
+316
+00:20:43,533 --> 00:20:48,933
+当然，在section中改更友好
+but of course it's a little friendlier to do it on the section
+
+317
+00:20:49,000 --> 00:20:49,800
+一次改一个section
+one section at a time
+
+318
+00:20:49,800 --> 00:20:58,500
+我们后面也会用objcopy来帮助编写shellcode之类的
+we'll also use objcopy later for help when we're writing shellcode and stuff in later modules
+
+319
+00:20:58,666 --> 00:20:59,766
+最后一件事
+the final thing
+
+320
+00:21:00,566 --> 00:21:02,099
+这里的一堆符号
+there's a bunch of symbols here
+
+321
+00:21:02,100 --> 00:21:03,900
+它们有助于调试等等
+they help with debugging and so forth
+
+322
+00:21:03,900 --> 00:21:05,266
+但它们会占用空间
+but they take up space
+
+323
+00:21:05,800 --> 00:21:09,700
+可能会提供你不想让别人知道的关于程序的信息
+and might give people more information than you want them get at your binary
+
+324
+00:21:09,800 --> 00:21:15,400
+你可以用strip，去除它们
+you can use strip to strip them away to remove them
+
+325
+00:21:15,733 --> 00:21:16,766
+执行strip cat
+strip cat
+
+326
+00:21:17,666 --> 00:21:18,466
+没了
+it's gone
+
+327
+00:21:18,933 --> 00:21:19,733
+好的
+okay
+
+328
+00:21:21,000 --> 00:21:22,600
+strip有很多不同的参数
+strip has a ton of different options 
+
+329
+00:21:22,666 --> 00:21:24,699
+你可以用strip去除更多东西
+that you can strip out more and more things
+
+330
+00:21:24,700 --> 00:21:26,866
+比如去除整个section之类的
+remove whole sections and so forth
+
+331
+00:21:27,066 --> 00:21:28,933
+我们不深入研究
+we're not going to go into them
+
+332
+00:21:31,200 --> 00:21:32,200
+就这样
+and this is it
+
+333
+00:21:32,400 --> 00:21:38,500
+我再次强烈推荐这一系列深入研究ELF格式的文章
+again I highly recommend this series of posts digging into the ELF format
+
+334
+00:21:41,000 --> 00:21:43,900
+我希望本期视频是有用的
+and I hope that this was useful
+
+335
+00:21:44,100 --> 00:21:46,666
+希望现在你对ELF了如指掌了
+that you now know ELFs like the back of your hand
+
+336
+00:21:46,966 --> 00:21:48,933
+这对整个课程都有帮助
+and that it'll help throughout the course
+
+337
+00:21:49,966 --> 00:21:51,099
+下次见
+see you in the future
+

@@ -1,0 +1,14 @@
+01 Introduction
+    https://www.youtube.com/watch?v=Ide_eg-eQZ0&list=PL-ymxv0nOtqoxTT-GIMLKt_i4zPKi2HlI
+
+02 chroot
+    https://www.youtube.com/watch?v=C81lO7pG5aA&list=PL-ymxv0nOtqoxTT-GIMLKt_i4zPKi2HlI&index=2
+
+03 seccomp
+    https://www.youtube.com/watch?v=hrT1xvxGKS4&list=PL-ymxv0nOtqoxTT-GIMLKt_i4zPKi2HlI&index=3
+    
+04 Escaping seccomp
+    https://www.youtube.com/watch?v=h1L9mF6PHlQ&list=PL-ymxv0nOtqoxTT-GIMLKt_i4zPKi2HlI&index=4
+
+practice here
+    https://pwn.college/system-security/sandboxing/

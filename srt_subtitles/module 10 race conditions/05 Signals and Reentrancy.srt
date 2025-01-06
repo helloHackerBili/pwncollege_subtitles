@@ -1,0 +1,1590 @@
+1
+00:00:01,200 --> 00:00:02,500
+你好黑客
+hello hackers
+
+2
+00:00:02,700 --> 00:00:04,833
+欢迎收看PWN学院的视频
+welcome to another video in pwn college 
+
+3
+00:00:04,933 --> 00:00:08,133
+今天我们将结束竞争条件模块
+today we're wrapping up the race conditions module
+
+4
+00:00:08,333 --> 00:00:11,699
+最后讲一下信号量和重入
+with the signals and reentrancy video
+
+5
+00:00:14,100 --> 00:00:15,600
+回想一下
+think back to
+
+6
+00:00:16,900 --> 00:00:21,200
+在整个课程中对信号量的使用方式
+throughout this course where you've interacted with signals in one way or another
+
+7
+00:00:21,566 --> 00:00:26,833
+尤其是在介绍进程生命周期的基础课中
+but especially through to the fundamentals lecture about the process lifecycle
+
+8
+00:00:27,233 --> 00:00:30,799
+讨论了信号量的原理
+where I discussed how signals work 
+
+9
+00:00:31,133 --> 00:00:35,933
+如何发送信号给进程等等
+how they might be sent to a process etc 
+
+10
+00:00:36,066 --> 00:00:41,333
+如果你还记得，那节课讲的信号
+if you recall back in that lecture I talked about how a signal is 
+
+11
+00:00:41,633 --> 00:00:44,499
+从某种意义上说，基本上就是一种信息
+basically a message in some sense
+
+12
+00:00:45,166 --> 00:00:48,933
+一种在进程间传递的信息
+a message with an oomph from one process to another
+
+13
+00:00:49,100 --> 00:00:56,333
+进程可以通过kill系统调用向另一个进程发送信号
+a process can send a signal to another process by using the kill system call 
+
+14
+00:00:56,599 --> 00:00:58,633
+Kill系统调用有2个参数
+kill system call takes 2 argument
+
+15
+00:00:58,800 --> 00:01:00,500
+接收方进程id
+the recipient process id 
+
+16
+00:01:00,500 --> 00:01:02,000
+以及要发送的信号量
+and the signal to send
+
+17
+00:01:02,100 --> 00:01:05,066
+发送的信号量就是一个数值常数
+the signal to send is basically a numerical constant
+
+18
+00:01:06,000 --> 00:01:10,200
+它用于表示不同的信号
+that encodes a bunch of different types of signals
+
+19
+00:01:10,200 --> 00:01:12,300
+不同类型的信号有不同的
+and different types of signals have different
+
+20
+00:01:13,400 --> 00:01:18,633
+效果和语义
+effects and different semantic intense basically
+
+21
+00:01:18,900 --> 00:01:20,100
+例如
+for example
+
+22
+00:01:22,200 --> 00:01:26,333
+我可以发....
+I can send a ....
+
+23
+00:01:28,400 --> 00:01:32,600
+如果在shell上使用kill命令
+if you use the kill command on your shell. the kill utility
+
+24
+00:01:33,066 --> 00:01:35,099
+且没有指定要发送的信号
+and you don't specify a signal to kill 
+
+25
+00:01:35,100 --> 00:01:41,766
+它将发送SIGTERM信号给接收方进程
+it'll send what is called a SIGTERM signal  to the recipient process 
+
+26
+00:01:42,166 --> 00:01:46,199
+该信号的默认处理动作是终止进程
+the default action of this signal is to kill the process
+
+27
+00:01:46,266 --> 00:01:49,466
+另一方面，如果你发送SIGSTOP
+on the other hand if you send a SIGSTOP
+
+28
+00:01:49,566 --> 00:01:52,233
+它是少数无法更改处理动作的信号
+the only action it's impossible to change
+
+29
+00:01:52,300 --> 00:01:54,100
+它将停止接收方进程
+this action will be to stop that process
+
+30
+00:01:54,100 --> 00:01:57,600
+之后你可以用 SIGCONT 继续接收方进程
+and then you can continue it by sending a SIGCONT
+
+31
+00:01:59,166 --> 00:02:00,600
+有很多不同的信号
+there's a bunch of different signals
+
+32
+00:02:00,600 --> 00:02:03,900
+我讲一下信号 SIGALRM
+let me show you real quick one signal SIGALRM
+
+33
+00:02:06,000 --> 00:02:06,800
+如果我们
+if we
+
+34
+00:02:09,966 --> 00:02:11,866
+alarm_me.c
+alarm_me.c
+
+35
+00:02:12,266 --> 00:02:15,933
+有一个主程序
+and we have a main program
+
+36
+00:02:16,600 --> 00:02:20,400
+调用 alarm 设置超时时间，单位为秒
+you can call alarm to set a time out in seconds
+
+37
+00:02:20,500 --> 00:02:30,100
+超时后程序会收到 SIGALRM
+after which an alarm signal will trigger and be sent to your program
+
+38
+00:02:30,366 --> 00:02:34,199
+所以如果调用 alarm 然后开始死循环
+so if we make an alarm and then we loop forever
+
+39
+00:02:44,500 --> 00:02:45,700
+运行一下
+all right let's run it
+
+40
+00:02:47,866 --> 00:02:48,933
+一秒钟后
+after one second
+
+41
+00:02:49,466 --> 00:02:51,400
+输出了Alarm clock
+we get the printing alarm clock
+
+42
+00:02:51,400 --> 00:02:54,600
+并且程序终止了
+the printout alarm clock and the program terminates
+
+43
+00:02:54,600 --> 00:02:59,100
+这是 SIGALRM 的默认处理动作
+that is the default action of the SIGALRM clock
+
+44
+00:03:00,366 --> 00:03:02,299
+有很多不同的信号
+and there's a bunch of different signals
+
+45
+00:03:03,133 --> 00:03:04,699
+这个还不是最全的
+this isn't the exhausted list 
+
+46
+00:03:04,733 --> 00:03:10,899
+可以运行 kill -l  查看完整列表
+the exhaustive list you can run kill -l to print out all of the signals 
+
+47
+00:03:11,166 --> 00:03:20,099
+在你整个计算机科学生涯中能遇到的信号都在里面
+that you might have to deal with throughout your computer science career
+
+48
+00:03:20,900 --> 00:03:26,100
+可以在 google 等处查看其完整文档记录
+they're well documented on Google and probably many other places
+
+49
+00:03:26,900 --> 00:03:29,100
+让我们继续
+let's roll forward
+
+50
+00:03:29,133 --> 00:03:30,933
+这是信号列表
+so these are signals 
+
+51
+00:03:30,966 --> 00:03:32,333
+这是发送信号的方法
+this is how to send signals 
+
+52
+00:03:33,866 --> 00:03:36,266
+我一直在说信号的默认处理动作
+now I keep saying the default action of a signal
+
+53
+00:03:36,433 --> 00:03:39,699
+比如 SIGALRM 的默认动作是输出 Alarm clock
+such as signal alarm for example is to print alarm clock
+
+54
+00:03:39,733 --> 00:03:42,366
+实际上，你可以更改他们
+well it turns out you can change these actions
+
+55
+00:03:42,566 --> 00:03:44,600
+注册一个函数
+you can register a function
+
+56
+00:03:45,333 --> 00:03:47,766
+它会在接收到信号后运行
+that will be run when you receive a signal
+
+57
+00:03:47,766 --> 00:03:50,000
+你可以为每个信号注册一个函数
+you can register a function for every signal
+
+58
+00:03:50,000 --> 00:03:52,100
+除了 SIGKILL 和 SIGSTOP
+except for SIGKILL and SIGSTOP
+
+59
+00:03:52,200 --> 00:03:58,700
+这两个信号是无法捕捉到的（无法更改）
+those two signals are impossible to capture
+
+60
+00:04:01,666 --> 00:04:03,066
+注册一个信号处理程序
+you register a signal handler
+
+61
+00:04:03,066 --> 00:04:04,966
+当接收到信号后
+what happens when you trigger it
+
+62
+00:04:05,100 --> 00:04:10,800
+进程执行会立即暂停
+is that your process execution will immediately pause
+
+63
+00:04:11,200 --> 00:04:13,600
+然后信号处理程序将被调用
+and your signal handler will be invoked
+
+64
+00:04:13,600 --> 00:04:15,933
+看一下实际效果
+let's take a look at what this might look like
+
+65
+00:04:15,933 --> 00:04:18,733
+我给我们写了一个 alarm.c 程序
+I wrote us an alarm.c
+
+66
+00:04:19,100 --> 00:04:24,166
+注册了一个 SIGALRM 的处理程序
+that registers a signal handler for my alarm
+
+67
+00:04:24,500 --> 00:04:25,566
+处理程序会
+and it says
+
+68
+00:04:27,566 --> 00:04:29,899
+输出全大写的ALARM，而不是Alarm clock
+it'll print alarm in all caps instead Alarm clock 
+
+69
+00:04:30,000 --> 00:04:32,100
+然后退出，错误码为42
+and exit with the error code 42
+
+70
+00:04:34,933 --> 00:04:36,966
+编译
+let's compile that
+
+71
+00:04:37,466 --> 00:04:38,066
+运行
+run it 
+
+72
+00:04:38,300 --> 00:04:41,100
+1、2
+1 2 boom
+
+73
+00:04:42,400 --> 00:04:43,233
+好了
+and there we go 
+
+74
+00:04:43,400 --> 00:04:44,333
+退出代码是42
+exit code 42 
+
+75
+00:04:44,500 --> 00:04:50,600
+所以利用注册处理程序，几乎可以捕获任意信号
+so we can successfully capture almost any signal by registering a handler
+
+76
+00:04:51,600 --> 00:04:53,166
+有两种方法可以注册处理程序
+there are two ways to do it
+
+77
+00:04:53,600 --> 00:04:57,100
+最简单的方法是使用 signal 函数
+the easy way is to use the signal function
+
+78
+00:04:57,800 --> 00:05:04,100
+signal函数只要 signum 和 handler函数 两个参数
+signal is a function that just takes a signal number and a function
+
+79
+00:05:04,300 --> 00:05:06,900
+它会执行 handler函数，并传给它一个参数
+and it'll run that function with one argument
+
+80
+00:05:07,000 --> 00:05:08,966
+就是signal接收到的 signum
+which will be the signal number that's received
+
+81
+00:05:09,066 --> 00:05:11,400
+为什么要将 signum 传给 handler函数
+why does the signal number get into the function 
+
+82
+00:05:12,100 --> 00:05:15,100
+如果有一个函数能处理一堆不同的信号
+well in case you want to have one function that handles a bunch of different signals
+
+83
+00:05:15,200 --> 00:05:17,166
+这样它才知道在处理哪个信号
+so you can figure out what signal its handling
+
+84
+00:05:18,800 --> 00:05:23,600
+用 sigaction 注册信号处理程序是一个更复杂的方法
+there's a more complicated way to register signal handlers with sigaction
+
+85
+00:05:23,666 --> 00:05:25,766
+如果你感兴趣的话，可以看看手册
+you can read the manpage if you're interested
+
+86
+00:05:25,966 --> 00:05:30,399
+它能让你对信号处理方法有更多的控制
+it gives you a lot more control about how the signal will end up being handled
+
+87
+00:05:30,600 --> 00:05:33,300
+当然如果你只需要忽略一些信号，就不用麻烦了
+unless you just say okay actually just ignore certain signals
+
+88
+00:05:37,500 --> 00:05:39,566
+这条（Access）很重要
+why is this relevant well this is relevant because 
+
+89
+00:05:39,733 --> 00:05:50,166
+你能发送任意信号给任意 ruid 和你相同的进程
+you can send any signal to any process that has the same ruid as your process
+
+90
+00:05:50,433 --> 00:05:55,599
+发送方进程 ruid 为 X
+so a sender process with a ruid of X
+
+91
+00:05:55,900 --> 00:06:03,600
+它能发送任意信号到 ruid 为 X 的接收进程
+can send any signal to a recipient process with a ruid of X
+
+92
+00:06:03,900 --> 00:06:05,766
+即使接收进程的 euid 是 0（root）
+even if that euid is 0
+
+93
+00:06:05,766 --> 00:06:08,700
+设置了suid的程序也一样
+even for suid programs
+
+94
+00:06:08,800 --> 00:06:09,666
+这很酷
+which is really cool
+
+95
+00:06:09,833 --> 00:06:13,399
+这意味着，可能某处运行着一个suid进程
+this means that there could be a suid program running somewhere 
+
+96
+00:06:13,400 --> 00:06:16,766
+而你对其有了一点控制能力
+and at any point that you more or less control
+
+97
+00:06:17,300 --> 00:06:20,700
+你能让它突然收到意外的信号
+you can cause that program to suddenly and unexpectedly to hit
+
+98
+00:06:21,066 --> 00:06:23,266
+它对可能到来的信号没有一点点防备
+because it gets no warning that a signal is coming
+
+99
+00:06:23,400 --> 00:06:29,900
+能让程序的执行流突然转移到信号处理程序
+you can make that program suddenly divert control flow to the signal handler
+
+100
+00:06:30,600 --> 00:06:34,900
+如果你回想一下竞争条件模块
+and if you recall in the race condition module
+
+101
+00:06:35,566 --> 00:06:37,066
+展示错模块了，不好意思
+wrong module sorry or
+
+102
+00:06:37,966 --> 00:06:38,733
+哪儿去了?
+where'd it go
+
+103
+00:06:38,733 --> 00:06:39,199
+这个
+there it is 
+
+104
+00:06:39,466 --> 00:06:41,499
+在竞争条件课程中
+in the race condition lecture
+
+105
+00:06:41,500 --> 00:06:42,900
+有这么一个概念
+we had something like this
+
+106
+00:06:42,900 --> 00:06:44,733
+临界区
+we had a critical section
+
+107
+00:06:45,100 --> 00:06:49,400
+我们不想线程在其中有竞争情况
+that we wanted not to have competition between two threads in
+
+108
+00:06:50,766 --> 00:06:52,333
+我们假设
+basically our assumption was that
+
+109
+00:06:52,333 --> 00:06:54,766
+从这个锁开始到解锁
+from the beginning of this lock to the unlock
+
+110
+00:06:54,966 --> 00:06:57,266
+所有这些代码在运行时
+all this code would run and 
+
+111
+00:06:57,866 --> 00:06:59,533
+第二个线程
+a second thread
+
+112
+00:06:59,700 --> 00:07:02,200
+这个程序是多线程的
+this program is multi threaded
+
+113
+00:07:02,333 --> 00:07:05,266
+不会打断和破坏它
+wouldn't interrupt and clobber these results
+
+114
+00:07:06,466 --> 00:07:08,166
+这适用于多线程
+that works for threading 
+
+115
+00:07:08,400 --> 00:07:11,566
+但当收到一个信号后
+but a signal received here would still 
+
+116
+00:07:11,866 --> 00:07:16,799
+执行流仍将从临界区转移到信号处理程序
+redirect control flow from the middle of this critical section to the signal handler
+
+117
+00:07:16,900 --> 00:07:22,300
+所以处理信号是相当棘手的
+so it can be pretty tricky handling signals
+
+118
+00:07:23,900 --> 00:07:28,700
+我们该如何利用这种发信号给任意进程的能力呢
+so what can we do with this power to send signals to any process
+
+119
+00:07:29,200 --> 00:07:36,800
+如果程序写的不细心，我们可能会触发bug
+we can trigger bugs if the program is not programmed carefully
+
+120
+00:07:37,600 --> 00:07:38,400
+考虑一下
+consider
+
+121
+00:07:39,200 --> 00:07:42,800
+怪了，等一下，我更改过这张幻灯片
+that's weird hold on I updated this slide
+
+122
+00:07:43,700 --> 00:07:44,600
+这应该
+that should
+
+123
+00:07:45,766 --> 00:07:46,200
+好了
+there we go
+
+124
+00:07:46,200 --> 00:07:48,800
+我将timeout_handler改为了signal_handler
+I rename that timeout_handler to signal_handler
+
+125
+00:07:49,533 --> 00:07:51,766
+好吧，考虑一下这个程序
+all right consider this program
+
+126
+00:07:53,400 --> 00:07:54,833
+这个程序非常简单
+the program is super simple 
+
+127
+00:07:55,066 --> 00:07:57,799
+它运行一个循环
+it runs a loop and what it does is
+
+128
+00:07:57,800 --> 00:08:01,900
+循环中检查全局变量是否为0
+it will check if the global number is 0
+
+129
+00:08:02,000 --> 00:08:03,966
+如果是，它会加1
+if it is it'll increment it
+
+130
+00:08:03,966 --> 00:08:05,466
+然后减1
+and then it'll decrement it
+
+131
+00:08:05,500 --> 00:08:10,300
+减完后全局变量应该一直是0
+the global number will always be 0 at the end of this decrement supposedly 
+
+132
+00:08:10,533 --> 00:08:12,366
+如果不是零，我们就把它打印出来
+and if it's not zero we'll print it out
+
+133
+00:08:13,333 --> 00:08:16,100
+按理来说，应该一直不会输出
+so we should never see anything being printed
+
+134
+00:08:16,400 --> 00:08:20,900
+但是在程序进入这个循环之前
+but before the program runs into this loop
+
+135
+00:08:20,966 --> 00:08:22,666
+它注册了一个信号处理程序
+it'll register a signal handler 
+
+136
+00:08:23,000 --> 00:08:26,466
+用于处理 SIGUSR1
+that signal handler for SIGUSR1
+
+137
+00:08:27,133 --> 00:08:28,966
+这是用户自定义信号
+this is user defined signal 1
+
+138
+00:08:28,966 --> 00:08:31,066
+它是专门
+it's specifically there to
+
+139
+00:08:32,100 --> 00:08:37,433
+留给开发人员
+give the opportunity for a developer 
+
+140
+00:08:37,566 --> 00:08:42,633
+实现程序专用语义的信号
+to implement program specific signal semantics SIGUSR1
+
+141
+00:08:42,733 --> 00:08:45,500
+SIGUSR2也是这样
+and SIGUSR2 is another one like that
+
+142
+00:08:45,700 --> 00:08:47,333
+好吧，不管怎样
+all right anyways so
+
+143
+00:08:48,066 --> 00:08:49,800
+但实际上并没有什么不同
+but realistically it's not different
+
+144
+00:08:49,800 --> 00:08:53,266
+这个信号也可能是 SIGSEGV
+this could have might as well be SIGSEGV 
+
+145
+00:08:53,533 --> 00:08:56,599
+这是发生段错误时接收到的信号
+the signal that your program receives when it's segfaults
+
+146
+00:08:56,700 --> 00:08:58,600
+是的，你可以捕捉到那个信号
+yes you can catch that signal 
+
+147
+00:08:58,666 --> 00:08:59,899
+用它做一些事情
+and do clever things with it
+
+148
+00:09:00,700 --> 00:09:03,133
+例如调试崩溃的shellcode
+such as debug your shellcode when it crashes
+
+149
+00:09:03,200 --> 00:09:04,000
+好吧
+all right
+
+150
+00:09:05,366 --> 00:09:07,766
+SIGSEGV，我的意思是
+SIGSEGV uh what I mean um
+
+151
+00:09:09,066 --> 00:09:11,400
+当程序接收到 SIGUSR1 时
+so anyways when the program receives SIGUSR1
+
+152
+00:09:11,533 --> 00:09:12,966
+不管执行到哪里了
+no matter where it's executing
+
+153
+00:09:13,166 --> 00:09:17,099
+执行流将突然转移到信号处理程序
+control flow will suddenly and rudely be redirected to the signal handler
+
+154
+00:09:17,200 --> 00:09:18,400
+num将被设为0
+and num will be set to 0
+
+155
+00:09:18,400 --> 00:09:21,400
+一个显而易见的问题是
+so the obvious question is
+
+156
+00:09:21,566 --> 00:09:29,199
+如果正好在这个减1处接收到信号，会怎样
+what happens if the signal is received right at this decrement pointer
+
+157
+00:09:29,366 --> 00:09:31,566
+好吧，让我们看看
+all right let's take a look
+
+158
+00:09:32,300 --> 00:09:34,900
+我写了这个signal.c
+so I created this in signal.c 
+
+159
+00:09:35,200 --> 00:09:36,233
+在这里
+here we are
+
+160
+00:09:38,600 --> 00:09:40,066
+看起来没问题
+looks like it makes sense right
+
+161
+00:09:40,066 --> 00:09:41,500
+和我们讨论过的一样
+same thing that we discussed
+
+162
+00:09:41,533 --> 00:09:42,666
+编译
+let's compile
+
+163
+00:09:44,566 --> 00:09:45,366
+好的
+all right
+
+164
+00:09:46,333 --> 00:09:47,366
+运行它
+we run it
+
+165
+00:09:48,366 --> 00:09:50,533
+当然，它不会打印任何东西
+and of course it doesn't print anything
+
+166
+00:09:50,766 --> 00:09:53,166
+NUM为0
+NUM is 0
+
+167
+00:09:54,500 --> 00:09:55,900
+如何攻击它
+how do we attack this 
+
+168
+00:09:56,166 --> 00:10:02,699
+我们向它发送 SIGUSR1 来攻击
+we attack this obviously by sending a signal SIGUSR1 to this program
+
+169
+00:10:02,866 --> 00:10:04,133
+要发送很多
+and we send it a lot 
+
+170
+00:10:04,333 --> 00:10:10,199
+最终我们会遇到这种情况
+and eventually we will hit the scenario
+
+171
+00:10:10,966 --> 00:10:15,266
+num加1后
+where this runs to increment num
+
+172
+00:10:16,833 --> 00:10:20,133
+在num减1前
+and before this guy runs to decrement it 
+
+173
+00:10:20,133 --> 00:10:21,599
+num 被设为0
+num is reset to 0
+
+174
+00:10:21,600 --> 00:10:25,933
+这处减1，使 num 从0变成了-1
+this decrements num and turns it from 0 to negative 1
+
+175
+00:10:26,900 --> 00:10:30,800
+好吧，我们运行这个试试
+all right let's give that a try if we run this
+
+176
+00:10:31,900 --> 00:10:34,133
+在另一个窗口
+and then in another window 
+
+177
+00:10:34,766 --> 00:10:41,733
+我们获取这个程序的进程id
+we get the process id of this program
+
+178
+00:10:48,166 --> 00:10:50,366
+我们只需要发出一个信号
+and we just send a signal boom
+
+179
+00:10:50,933 --> 00:10:51,966
+什么也没发生
+nothing happened
+
+180
+00:10:51,966 --> 00:10:54,433
+为什么?因为没竞争赢
+why? because we didn't win the race 
+
+181
+00:10:54,633 --> 00:11:00,566
+也许是执行到其它指令时接收到的信号
+maybe it got received on a different instruction 
+
+182
+00:11:00,800 --> 00:11:06,166
+而不是在这个加1减1之间
+than the one that actually then between the increment and the decrement
+
+183
+00:11:06,233 --> 00:11:09,799
+这里只有大概3个汇编指令，运行的非常快
+there's probably three assembly instructions that run very fast
+
+184
+00:11:09,933 --> 00:11:13,933
+我们当然可以继续手动尝试
+we can of course keep trying manually 
+
+185
+00:11:16,300 --> 00:11:19,400
+这样成功的概率不大
+that's not gonna likely yield success 
+
+186
+00:11:19,500 --> 00:11:22,866
+当然，我们也可以像在其他竞争中那样
+or we can of course as we did in other races 
+
+187
+00:11:22,866 --> 00:11:24,299
+用循环
+just loop this
+
+188
+00:11:24,333 --> 00:11:25,899
+先sleep 5秒
+so I'm gonna put a sleep five 
+
+189
+00:11:26,033 --> 00:11:27,533
+方便切换窗口后看效果
+so I can switch over to the other window
+
+190
+00:11:27,533 --> 00:11:28,800
+数到五
+and then we'll count to five
+
+191
+00:11:28,966 --> 00:11:30,733
+随着运行
+and as this thing runs
+
+192
+00:11:30,833 --> 00:11:35,966
+我们会看到 num 变乱了
+we will start seeing the number get messed up 
+
+193
+00:11:36,133 --> 00:11:37,799
+好的，开始吧
+alright here we go
+
+194
+00:11:38,200 --> 00:11:41,300
+3 4 5
+3 4 5
+
+195
+00:11:41,733 --> 00:11:43,600
+我们的进攻开始执行
+and our attack is running
+
+196
+00:11:43,900 --> 00:11:45,200
+如你所见
+as you can see 
+
+197
+00:11:45,200 --> 00:11:49,800
+我们持续将 num 重置为0，然后减1
+ we keep resetting the number to 0 then it gets decremented
+
+198
+00:11:50,066 --> 00:11:51,999
+有时会看到 -2
+and sometimes you see negative 2 
+
+199
+00:11:52,066 --> 00:11:56,899
+因为在接收到下一个信号之前，这个循环恰好运行了两次
+because that loop happens to run twice before the next signal is received
+
+200
+00:11:57,200 --> 00:11:59,700
+我们关了它
+actually if we kill this
+
+201
+00:12:00,733 --> 00:12:02,733
+然后在这里加上sleep 1
+and if we put a sleep 1
+
+202
+00:12:03,333 --> 00:12:04,933
+如此这般，然后
+we do this and then 
+
+203
+00:12:05,166 --> 00:12:08,466
+还是设置为sleep 0.1秒吧
+actually let's do a sleep of 0.1
+
+204
+00:12:08,466 --> 00:12:10,800
+十分之一秒发送一次信号
+we sleep a tenth of a second between every signal
+
+205
+00:12:10,800 --> 00:12:14,133
+这样可以给它时间来减num
+it'll give it time to decrement that counter some more
+
+206
+00:12:14,700 --> 00:12:16,966
+我们来看看效果
+so let's see here we go
+
+207
+00:12:17,933 --> 00:12:20,533
+现在开始被我们的信号攻击
+now it's gonna be hitting us with our signal
+
+208
+00:12:20,733 --> 00:12:21,433
+我们开始吧
+there we go see 
+
+209
+00:12:21,500 --> 00:12:22,733
+在十分之一秒内
+so in a tenth of a second
+
+210
+00:12:22,733 --> 00:12:25,166
+我们减了5万次
+we managed to decrement 50,000 times
+
+211
+00:12:25,200 --> 00:12:26,933
+为什么会这样呢
+now why does this happen
+
+212
+00:12:28,566 --> 00:12:29,366
+当然
+of course
+
+213
+00:12:30,800 --> 00:12:37,600
+执行到这两条代码之间收到信号
+the signal hits between this line and this line or you know that set of instructions
+
+214
+00:12:37,700 --> 00:12:42,700
+Num被重置为0
+num gets reset to 0
+
+215
+00:12:43,000 --> 00:12:44,200
+然后再减1
+this gets decremented now
+
+216
+00:12:44,200 --> 00:12:45,200
+Num是 -1
+num is negative 1 
+
+217
+00:12:45,300 --> 00:12:47,433
+在下一个循环中，它不会被运行
+in the next loop around this will not get run 
+
+218
+00:12:47,600 --> 00:12:49,233
+因为num不等于0
+because num is not 0 
+
+219
+00:12:49,433 --> 00:12:50,599
+但它会运行
+this will get run
+
+220
+00:12:50,666 --> 00:12:51,933
+Num就是 -2  了
+num is negative 2
+
+221
+00:12:52,100 --> 00:12:54,700
+以此类推，它一直在减小
+and so on and so on it keeps shrinking
+
+222
+00:12:55,266 --> 00:12:57,800
+直到下一个信号到来，把它重置为零
+until the next signal hits and resets it back to zero
+
+223
+00:13:00,133 --> 00:13:04,699
+这就是针对信号处理程序的利用
+so that was an abuse of signal handlers
+
+224
+00:13:05,000 --> 00:13:08,866
+这个程序中没有多线程
+there's no threading in this program
+
+225
+00:13:09,200 --> 00:13:10,700
+但仍有竞赛
+but there's still a race
+
+226
+00:13:11,600 --> 00:13:13,066
+这很酷
+which is pretty cool
+
+227
+00:13:13,600 --> 00:13:15,066
+在现实世界的代码中
+and in real world code
+
+228
+00:13:15,300 --> 00:13:16,766
+这种事经常发生
+this stuff happens a lot
+
+229
+00:13:17,500 --> 00:13:23,700
+由不正确的信号处理程序引起的漏洞
+vulnerabilities rising from incorrect signal handlers
+
+230
+00:13:25,000 --> 00:13:28,366
+过去比现在普遍的多
+they used to be much more common than they are today
+
+231
+00:13:28,533 --> 00:13:30,499
+但并没有绝迹
+but they're still definitely not unheard of
+
+232
+00:13:30,766 --> 00:13:31,566
+好吧
+all right
+
+233
+00:13:32,600 --> 00:13:36,166
+还有一件事
+one other thing to mention
+
+234
+00:13:38,700 --> 00:13:45,000
+有一个和这些信号相关问题有密切联系的概念：重入
+these problems with signals are strongly connected to a concept called reentrancy
+
+235
+00:13:45,300 --> 00:13:47,833
+可重入函数是指
+right a reentrant function is basically 
+
+236
+00:13:47,933 --> 00:13:55,199
+即使被自身的实例中断也能正常运行的函数
+a function that will operate properly even when it is interrupted with an instance of itself
+
+237
+00:13:55,300 --> 00:13:58,300
+看一下这个 swap 函数
+so consider the swap function
+
+238
+00:13:58,700 --> 00:14:02,100
+swap函数接受两个参数
+the swap function takes two arguments
+
+239
+00:14:02,166 --> 00:14:03,066
+两个指针
+two pointers
+
+240
+00:14:03,066 --> 00:14:05,900
+它会交换这些指针的值
+and it'll swap the values of those pointers
+
+241
+00:14:05,900 --> 00:14:11,200
+它使用 tmp 全局变量来实现这一功能
+and it does that using a tmp global variable
+
+242
+00:14:12,200 --> 00:14:18,366
+tmp 保存 变量1
+that it will use for one of those values
+
+243
+00:14:18,566 --> 00:14:22,166
+然后用 变量2 覆盖 变量1
+then it'll write value 2 over value 1 
+
+244
+00:14:22,266 --> 00:14:23,799
+最后用 tmp 覆盖 变量2
+then it'll write tmp over value 2
+
+245
+00:14:23,966 --> 00:14:24,899
+标准交换流程
+standard swap
+
+246
+00:14:25,933 --> 00:14:27,300
+还有一个 call_swap 函数
+we have a call_swap function
+
+247
+00:14:27,300 --> 00:14:31,200
+它使用swap交换1和2
+that actually does swap between 1 and 2
+
+248
+00:14:31,900 --> 00:14:35,300
+执行完它后，x是2，y是1
+right so at the end of this X should be 2 y should be 1
+
+249
+00:14:35,533 --> 00:14:39,299
+但是这个函数是由main调用的
+but that function is called by main 
+
+250
+00:14:39,533 --> 00:14:42,099
+但它也被注册为一个信号处理程序
+but it's also registered as a signal handler
+
+251
+00:14:42,500 --> 00:14:51,500
+如果执行到05行前，接收到 SIGUSR1，会怎样
+now what happens here if right before line 5 we receive a SIGUSR1
+
+252
+00:14:52,100 --> 00:14:59,766
+call_swap的新实例会执行
+what will happen is the new instance of call_swap will run
+
+253
+00:15:00,500 --> 00:15:02,133
+因为它是信号处理程序
+because that's the signal handler
+
+254
+00:15:02,366 --> 00:15:04,533
+会调用一个swap的新实例
+it'll call a new instance of swap
+
+255
+00:15:05,733 --> 00:15:08,700
+旧swap还在，只是中断了
+swap is already running it just got interrupted
+
+256
+00:15:08,766 --> 00:15:12,533
+swap的新实例将运行并覆盖 tmp
+the new instance of swap will run and overwrite tmp
+
+257
+00:15:13,466 --> 00:15:15,966
+在这个演示程序中没什么大不了的
+right and in this toy program that's not a big deal
+
+258
+00:15:16,700 --> 00:15:17,933
+但总的来说
+but in general
+
+259
+00:15:18,466 --> 00:15:20,800
+重入是个大问题
+reentrancy is a big problem or
+
+260
+00:15:21,066 --> 00:15:25,066
+重入引起bug是现实存在的
+reentrancy bugs are a very real thing and
+
+261
+00:15:26,466 --> 00:15:27,566
+记住
+keep in mind 
+
+262
+00:15:28,900 --> 00:15:32,600
+如果程序调用了不可重入函数
+if your program calls a non-reentrant function
+
+263
+00:15:32,600 --> 00:15:34,600
+如果函数调用了不可重入函数
+if your function calls a non-reentrant function
+
+264
+00:15:34,933 --> 00:15:38,300
+那么调用方函数也是不可重入的
+then the caller function is also non-reentrant
+
+265
+00:15:38,800 --> 00:15:43,033
+因为如果在被调执行的时候，再次调用调用者
+because then if you call the caller while the callee is executing
+
+266
+00:15:43,133 --> 00:15:44,333
+它将会重入执行中的被调
+it'll reenter the callee
+
+267
+00:15:44,466 --> 00:15:46,366
+事实上，就是这种情况
+in fact that's exactly what happens in this scenario
+
+268
+00:15:47,266 --> 00:15:50,933
+重入是一个有趣的概念
+reentrancy as a concept is interesting
+
+269
+00:15:51,500 --> 00:15:53,333
+但不是一个很明显的概念
+and not a very obvious concept
+
+270
+00:15:53,333 --> 00:15:58,066
+我建议你看一下维基百科上的文章
+I'd recommend giving the wikipedi article a shot
+
+271
+00:15:58,266 --> 00:16:04,399
+以及相关的参考文献
+and related references that it will link you to
+
+272
+00:16:06,100 --> 00:16:11,133
+这引出了如何安全使用信号的问题
+so this brings us to this question of safe signal practices
+
+273
+00:16:12,300 --> 00:16:14,066
+我还拼错了practice，尴尬
+and I missspell practice that's embarrassing
+
+274
+00:16:14,066 --> 00:16:15,400
+稍等一下，我改一下
+one sec let me fix that
+
+275
+00:16:16,566 --> 00:16:18,800
+好了，安全信号实践
+all right safe signal practices
+
+276
+00:16:20,333 --> 00:16:22,666
+信号中最重要的是
+the biggest thing in signals
+
+277
+00:16:22,833 --> 00:16:26,899
+不要在信号处理程序中调用不可重入的函数
+don't call non-reentrant functions in your signal handlers
+
+278
+00:16:28,933 --> 00:16:33,499
+为什么? 因为你的处理程序可能会打断
+why? well because your handler might have interrupted 
+
+279
+00:16:33,733 --> 00:16:37,199
+执行中的不可重入函数
+previous iterations of those non-reentrant functions mid execution
+
+280
+00:16:37,500 --> 00:16:41,300
+或者又收到了另一个（不同）信号
+or another signal that's received
+
+281
+00:16:41,500 --> 00:16:44,300
+中断了你的信号处理程序
+might interrupt your signal handler's
+
+282
+00:16:44,300 --> 00:16:48,000
+调用的不可重入函数的执行
+non-reentrant invocation of those functions mid execution
+
+283
+00:16:48,766 --> 00:16:50,466
+或者取决于设置
+or depending on the settings 
+
+284
+00:16:50,733 --> 00:16:55,999
+sigaction函数更改处理函数的设置
+we talked about the more complex sigaction function to modify actions taken
+
+285
+00:16:56,266 --> 00:16:58,699
+导致信号
+ as a result of a signal
+
+286
+00:16:59,033 --> 00:17:06,566
+使用它，可以让信号处理程序
+ using this you can set a signal handler
+
+287
+00:17:06,800 --> 00:17:10,000
+能被触发它的相同信号打断
+to be able to be interrupted by the same signal that triggered it in the first place
+
+288
+00:17:10,000 --> 00:17:14,800
+默认情况下，一次只能处理一个相同的信号
+by default you can only handle one instance of a given signal at a time
+
+289
+00:17:14,900 --> 00:17:20,900
+如果你还在处理段错误时，又收到了一个段错误
+so if you handle segfault while you receive a segfault
+
+290
+00:17:22,133 --> 00:17:23,533
+那么第二个段错误将
+that second segfault
+
+291
+00:17:24,400 --> 00:17:25,666
+我不清楚段错误
+I don't know about segfault
+
+292
+00:17:25,666 --> 00:17:27,600
+不确定段错误是否会被处理
+I'm not sure how that would work 
+
+293
+00:17:27,800 --> 00:17:31,000
+但如果在处理 SIGUSR1 时，又收到一个 SIGUSR1
+but if you receive a SIGUSR1 while you're handling a SIGUSR1
+
+294
+00:17:31,100 --> 00:17:33,533
+默认情况下，第二个将被忽略
+by default the second one will be ignored
+
+295
+00:17:33,966 --> 00:17:37,500
+但是如果你用 sigaction 注册并设置好
+but if you register things carefully with sigaction
+
+296
+00:17:38,300 --> 00:17:40,000
+那么第二个信号不会被忽视
+the second one will not be ignored
+
+297
+00:17:40,133 --> 00:17:45,699
+会启动第二个信号处理函数实例
+a second instance of your signal handle will be launched
+
+298
+00:17:45,733 --> 00:17:48,500
+如果它是不可重入的，马上就要糟了
+and if it's not reentrant you are in before bad time
+
+299
+00:17:49,566 --> 00:17:50,266
+要注意一点
+One note
+
+300
+00:17:50,266 --> 00:17:54,000
+实际上malloc和free是不可重入的
+actually unexpectedly malloc and free are not reentrant
+
+301
+00:17:54,066 --> 00:17:55,666
+如果你仔细想想，这是有道理的
+this makes sense if you think about it
+
+302
+00:17:55,666 --> 00:18:00,899
+Malloc和free都涉及全局变量或全局结构
+malloc and free both touch a global value or a global structure
+
+303
+00:18:01,000 --> 00:18:04,000
+就是分配缓存
+that is the allocation cache
+
+304
+00:18:05,400 --> 00:18:08,933
+对它的修改是不可重入的
+that modification is not reentrant 
+
+305
+00:18:11,433 --> 00:18:14,566
+如果ptmalloc在修改缓存
+if ptmalloc is messing with that cache 
+
+306
+00:18:14,666 --> 00:18:18,599
+然后它在这时候被中断了
+and then it gets interrupted while it's messing with that cache
+
+307
+00:18:18,733 --> 00:18:19,933
+这是可能发生的
+that stuff can happen
+
+308
+00:18:20,800 --> 00:18:25,100
+如果对libc中有哪些可重入函数感兴趣
+if you're interested on what library functions in libc are reentrant
+
+309
+00:18:25,166 --> 00:18:26,700
+有一整个man页
+there's a whole manual page
+
+310
+00:18:26,800 --> 00:18:28,866
+如果在shell中执行 man signal-safety
+if you man signal-safety
+
+311
+00:18:28,933 --> 00:18:31,733
+你可以查看所有信号安全实践相关内容
+you can read all about safe signal practices
+
+312
+00:18:32,133 --> 00:18:34,700
+公共函数的含义
+and implications of using common functions
+
+313
+00:18:34,700 --> 00:18:36,333
+以及哪些函数可以安全使用
+and what functions are safe to use
+
+314
+00:18:36,933 --> 00:18:37,400
+好吧
+alright
+
+315
+00:18:37,400 --> 00:18:40,666
+希望我们已经学到了很多关于信号的知识
+hopefully we've Learned a lot about signals and
+
+316
+00:18:40,800 --> 00:18:42,500
+希望你能
+I'm looking forward to see you
+
+317
+00:18:43,066 --> 00:18:46,066
+在练习题中探索这个概念
+explore this concept through the practice problems
+
+318
+00:18:46,100 --> 00:18:46,900
+祝你好运
+good luck
+

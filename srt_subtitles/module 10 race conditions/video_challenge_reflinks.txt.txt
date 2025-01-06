@@ -1,0 +1,17 @@
+01 Introduction
+    https://www.youtube.com/watch?v=jXQ8Y5B2sc0&list=PL-ymxv0nOtqq2SWDP1K1pXCpT6nkmyiXh
+
+02 Races in the Filesystem
+    https://www.youtube.com/watch?v=dpsWLu8jxBg&list=PL-ymxv0nOtqq2SWDP1K1pXCpT6nkmyiXh&index=2
+
+03 Processes and Threads
+    https://www.youtube.com/watch?v=_hDP1wZKkaI&list=PL-ymxv0nOtqq2SWDP1K1pXCpT6nkmyiXh&index=3
+    
+04 Races in Memory
+    https://www.youtube.com/watch?v=jNIgU4kI6wY&list=PL-ymxv0nOtqq2SWDP1K1pXCpT6nkmyiXh&index=4
+
+05 Signals and Reentrancy
+    https://www.youtube.com/watch?v=bPWQFhsUkbs&list=PL-ymxv0nOtqq2SWDP1K1pXCpT6nkmyiXh&index=5
+    
+practice here
+    https://pwn.college/system-security/race-conditions/

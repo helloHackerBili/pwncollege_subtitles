@@ -1,0 +1,2395 @@
+1
+00:00:00,933 --> 00:00:04,266
+黑客们好，欢迎回到pwn学院
+hello hackers welcome back to pwn College
+
+2
+00:00:04,600 --> 00:00:09,800
+这是动态分配器误用模块的续集
+this is the next video in the dynamic allocator misuse Module
+
+3
+00:00:09,866 --> 00:00:12,666
+我们将讨论元数据和chunk
+we'll be talking about metadata and chunks
+
+4
+00:00:13,366 --> 00:00:16,266
+什么是元数据，什么是chunk
+so what is metadata and what are chunks
+
+5
+00:00:16,266 --> 00:00:17,933
+元数据你们已经见过了
+well metadata you've already seen
+
+6
+00:00:18,500 --> 00:00:22,200
+比如在讲Tcache时
+and in for example the Tcache lecture
+
+7
+00:00:23,066 --> 00:00:24,466
+正如你看到的
+as you saw in Tcache
+
+8
+00:00:24,766 --> 00:00:26,533
+当你释放一个chunk的时候
+when you free a chunk
+
+9
+00:00:27,400 --> 00:00:29,633
+chunk这个术语有点提前了
+there goes the term chunk I'm getting ahead of myself
+
+10
+00:00:29,766 --> 00:00:30,966
+当释放一个内存块时
+when you free an allocation
+
+11
+00:00:32,200 --> 00:00:36,400
+该内存块的数据区域
+the data region of that allocation where
+
+12
+00:00:37,700 --> 00:00:43,200
+应用开发人员存储数据的地方
+you as an application developer were storing data and so forth
+
+13
+00:00:43,600 --> 00:00:45,933
+也就是malloc返回的指针
+the pointer that was returned by malloc
+
+14
+00:00:48,333 --> 00:00:49,866
+指向的内存
+the part of memory that was pointing to
+
+15
+00:00:50,066 --> 00:00:52,933
+当内存块被释放时
+when the allocation was freed
+
+16
+00:00:53,333 --> 00:00:57,499
+用户数据区被tcache重用于存储元数据
+ that area was reused for tcache metadata
+
+17
+00:00:57,533 --> 00:00:59,933
+构建tcache使用的单链表
+to create that tcache singly linked list
+
+18
+00:01:01,900 --> 00:01:05,500
+这被称为chunk内元数据，或每个chunk的元数据
+it turns out this is called in chunk or per chunk metadata
+
+19
+00:01:05,500 --> 00:01:11,700
+这引出了一个问题。什么是chunk？
+and this brings up the question of what is a chunk well
+
+20
+00:01:12,100 --> 00:01:17,200
+malloc给你的内存地址
+turns out that what you see as memory addresses that malloc gives you and so forth
+
+21
+00:01:17,500 --> 00:01:21,100
+再次声明在本模块中
+ptmalloc and again here on this module
+
+22
+00:01:21,100 --> 00:01:22,866
+我们主要讨论的是
+we're talking predominantly about
+
+23
+00:01:24,000 --> 00:01:28,100
+Linux用户空间malloc实现：Ptmalloc
+Linux userspaces malloc implementation of this
+
+24
+00:01:28,833 --> 00:01:33,499
+这是大多数人在linux中使用的，glibc的malloc实现
+the one in glibc which is the standard C library that most people use in Linux
+
+25
+00:01:37,600 --> 00:01:39,700
+当你调用malloc
+when you call malloc
+
+26
+00:01:39,766 --> 00:01:42,299
+并传入一个size参数
+and you give it a size
+
+27
+00:01:42,300 --> 00:01:43,966
+它会给你一个内存地址
+it'll give you a memory address
+
+28
+00:01:43,966 --> 00:01:46,899
+在这个地址至少有size字节可用的内存
+at which there's at least that much the many bytes available
+
+29
+00:01:47,366 --> 00:01:49,799
+但它真正在内部管理的
+but what it really tracks internally
+
+30
+00:01:49,800 --> 00:01:52,300
+是称为chunk的数据结构
+is a data structure called a chunk
+
+31
+00:01:52,600 --> 00:01:57,800
+malloc返回的地址
+and this the address that you are given as a return from malloc
+
+32
+00:01:58,166 --> 00:02:01,766
+实际上是一个指向chunk内部的指针
+is actually a pointer part way into this chunk
+
+33
+00:02:01,766 --> 00:02:04,166
+第一次听可能有点奇怪
+so this is a little bit tricky to wrap your head around
+
+34
+00:02:04,866 --> 00:02:07,966
+一般使用某个对象时
+usually when you are interacting with objects
+
+35
+00:02:07,966 --> 00:02:10,333
+你会有一个指针指向这个对象开头
+you have a pointer to their very beginning
+
+36
+00:02:10,333 --> 00:02:12,599
+但在这里，malloc没有给你这样的指针
+in this case malloc doesn't give you that 
+
+37
+00:02:12,733 --> 00:02:17,066
+在malloc内部，它管理着chunk
+inside it tracks its allocations by their chunks
+
+38
+00:02:17,200 --> 00:02:20,900
+但它只返回给你
+but to you it just gives 
+
+39
+00:02:21,200 --> 00:02:25,466
+用户可见的那部分的内存地址
+the memory address the user facing part of that structure
+
+40
+00:02:25,966 --> 00:02:28,766
+chunk的其他部分记录大小信息
+the other things in that structure are sizes right
+
+41
+00:02:28,966 --> 00:02:31,933
+至少在它被使用时的样子（大小信息+用户数据）
+at least when the structure is being used
+
+42
+00:02:32,266 --> 00:02:33,766
+但在释放它的过程
+later on of course when you free it
+
+43
+00:02:33,766 --> 00:02:35,133
+就像我们在tcache中看到的那样
+as we saw with tcache
+
+44
+00:02:35,333 --> 00:02:38,533
+它使用的内存是，额
+this part actual used memory is is
+
+45
+00:02:40,400 --> 00:02:41,900
+原来给应用程序使用的内存
+the memory that was used by the application
+
+46
+00:02:41,900 --> 00:02:46,300
+现在被堆用来存储它的元数据
+is now used by the heap implementation  to store it's metadata
+
+47
+00:02:46,400 --> 00:02:51,600
+在用户内存之前，还存了2个东西
+but before that two things are stored
+
+48
+00:02:52,000 --> 00:02:55,200
+就在返回给你的地址之前
+the one thing right before the address that is returned to you
+
+49
+00:02:55,200 --> 00:02:56,866
+8个字节
+the 8 proceeding byte
+
+50
+00:02:56,933 --> 00:02:58,133
+那里存的就是大小
+there's the size
+
+51
+00:02:58,133 --> 00:02:59,599
+这就是
+so this is actually how
+
+52
+00:02:59,866 --> 00:03:02,599
+释放内存时
+when you free an allocation
+
+53
+00:03:02,900 --> 00:03:07,100
+堆是如何知道内存块有多大的（free的时候不需要传大小）
+how malloc knows how much memory was there
+
+54
+00:03:07,100 --> 00:03:10,900
+它只需要检查一下释放地址的前面
+it actually looks right before that address to figure that out
+
+55
+00:03:11,766 --> 00:03:12,866
+这是一个
+so that's one thing
+
+56
+00:03:13,000 --> 00:03:17,600
+另一个在这个大小前的也是大小
+the other thing right before that is actually the size if
+
+57
+00:03:18,700 --> 00:03:20,200
+这有点复杂
+there's a bit complicated 
+
+58
+00:03:20,366 --> 00:03:23,099
+如果前面的chunk没在使用
+if the chunk before is not in use
+
+59
+00:03:23,600 --> 00:03:29,400
+那么这个位置是前一个chunk的大小
+then in this location is the size of the previous chunk
+
+60
+00:03:29,400 --> 00:03:34,500
+就是上一次释放的内存块的大小
+the size of the chunk immediately proceeding the chunk that you were just returned
+
+61
+00:03:36,366 --> 00:03:41,699
+现在malloc保证至少有n字节的空间
+now malloc guarantees at least n bytes space
+
+62
+00:03:41,833 --> 00:03:43,699
+当你调用malloc n
+when you call malloc n
+
+63
+00:03:44,800 --> 00:03:48,733
+chunk的大小是16(十六进制10)的倍数
+but the chunk sizes they are multiples of 16 hex 10
+
+64
+00:03:48,900 --> 00:03:53,500
+所以malloc返回的内存会大于等于你请求的大小
+right so it'll actually pad up higher than what you requested
+
+65
+00:03:53,533 --> 00:03:55,199
+我们马上就会讲到
+actually as we'll go through in a second
+
+66
+00:03:55,200 --> 00:03:56,866
+它甚至比这更棘手
+it's even more tricky than this
+
+67
+00:03:56,900 --> 00:03:58,000
+但基本上
+but basically
+
+68
+00:03:58,400 --> 00:04:03,700
+你会得到一个大于等于请求大小的chunk
+you will receive a chunk that is greater than or equal to what you requested
+
+69
+00:04:03,900 --> 00:04:08,900
+这是malloc唯一能向你保证的
+that's the only contract that malloc has with you 
+
+70
+00:04:10,966 --> 00:04:12,666
+好了，让我们来看看它是如何工作的
+all right so let's take a look how this works
+
+71
+00:04:12,700 --> 00:04:16,133
+我创建了一个heap_size程序
+I created a heap_size program
+
+72
+00:04:19,100 --> 00:04:21,100
+来演示这个
+to play around with this
+
+73
+00:04:21,400 --> 00:04:26,100
+这个程序只有一个size命令行参数
+all right this program just follows I will take a size on the command line
+
+74
+00:04:26,333 --> 00:04:29,099
+分配两个size大小的chunk
+I allocate two chunks of that size
+
+75
+00:04:29,566 --> 00:04:31,133
+先释放了先分配的
+I free the earlier one
+
+76
+00:04:31,133 --> 00:04:34,499
+这样我们可以看到prev_size起作用了
+so we can see that previous size come into play
+
+77
+00:04:34,700 --> 00:04:38,400
+不过要真正的让它被free掉，从缓存中去除
+unfortunately to really get it free to fight the cacheing
+
+78
+00:04:38,600 --> 00:04:40,700
+必须像这样做
+I have to do this insane thing
+
+79
+00:04:40,866 --> 00:04:42,866
+分配一个更大的chunk
+ where I try to allocate a bigger chunk
+
+80
+00:04:42,866 --> 00:04:45,366
+这样malloc就会遍历它的列表
+so that the malloc will go through its list
+
+81
+00:04:45,366 --> 00:04:46,699
+我一会儿会讲到这个
+I'll talk about that in a second
+
+82
+00:04:46,966 --> 00:04:48,299
+我们现在可以忽略这个
+we can ignore this for now
+
+83
+00:04:48,400 --> 00:04:52,000
+然后我打印出prev_size和chunk大小
+and then I will print out the previous size and size of each chunk
+
+84
+00:04:53,800 --> 00:04:58,133
+这里我执行了setbuf(stdout, null)
+alright one thing I'll mention I do this setbuf stdout null
+
+85
+00:04:58,266 --> 00:04:59,133
+这有什么用?
+what does this do
+
+86
+00:04:59,266 --> 00:05:03,499
+它禁用了libc对标准输出的缓冲
+it disables libc's buffering on standard out
+
+87
+00:05:03,900 --> 00:05:05,266
+我们为什么要这样做
+why do we do this
+
+88
+00:05:06,500 --> 00:05:11,400
+这样做是因为不禁用缓冲
+we do this because if buffering is not disabled
+
+89
+00:05:11,900 --> 00:05:15,600
+那么printf和scanf会在内部使用malloc
+then printf and scanf will actually use malloc internally
+
+90
+00:05:16,333 --> 00:05:18,499
+抱歉，会把这一切搞砸
+excuse me and we'll screw all of this up
+
+91
+00:05:19,566 --> 00:05:20,366
+特别是
+especially
+
+92
+00:05:21,366 --> 00:05:25,166
+不利于观察堆
+these stuff won't tell us what we expected to tell us
+
+93
+00:05:25,166 --> 00:05:26,266
+好了
+alright anyways
+
+94
+00:05:26,933 --> 00:05:27,966
+heap_size
+heap size
+
+95
+00:05:28,900 --> 00:05:33,500
+先试一下不在tcache缓存范围内的大小
+let's try it with a heap size that does not fit into tcache first
+
+96
+00:05:34,500 --> 00:05:36,866
+我们用1050
+let's go with 1050
+
+97
+00:05:37,100 --> 00:05:40,000
+好的我们以1050为大小运行
+all right so we run heap size 1050
+
+98
+00:05:40,366 --> 00:05:47,066
+提供给我们的大小是0x430
+hex 430 is what is provided to us 
+
+99
+00:05:47,166 --> 00:05:49,933
+我们来看看这是什么
+so let's see what that is
+
+100
+00:05:50,300 --> 00:05:54,200
+1050是0x41a
+so that is so 1050 is 41a
+
+101
+00:05:54,800 --> 00:06:03,300
+0x41a填充0x15达到最近的16（0x10）的倍数
+420 is of course hex 15 padding to the nearest hex 10 to the nearest 16 byte
+
+102
+00:06:03,500 --> 00:06:06,900
+这才是0x420
+ and then so that's hex 420
+
+103
+00:06:07,366 --> 00:06:09,166
+0x430
+and then hex 4 3 0
+
+104
+00:06:10,166 --> 00:06:14,533
+是0x420加上0x10字节的chunk元数据
+is that plus 16 bytes for the chunk metadata
+
+105
+00:06:14,533 --> 00:06:17,099
+这就是chunk的大小
+so this is the chunk size
+
+106
+00:06:18,100 --> 00:06:19,466
+这里有一个1
+here we have a 1
+
+107
+00:06:19,466 --> 00:06:21,733
+这个标志标识前一个chunk
+that is the flag that says the previous chunk
+
+108
+00:06:21,733 --> 00:06:25,166
+a前一个chunk是否在使用中
+whatever was before a is in use
+
+109
+00:06:25,366 --> 00:06:27,199
+实际上在a之前什么都没有
+ I think actually nothing was before a
+
+110
+00:06:27,500 --> 00:06:31,700
+可能对于第一个节点，它总认为前面是被使用的
+so probably that just always considers the previous thing to be in use
+
+111
+00:06:31,766 --> 00:06:33,366
+至少不是空闲的
+at least it is not free
+
+112
+00:06:35,500 --> 00:06:36,700
+释放了a后
+since we freed a
+
+113
+00:06:36,700 --> 00:06:37,900
+b就不同了
+B is a different story
+
+114
+00:06:37,933 --> 00:06:40,699
+b的大小是0x430而不是0x431
+b has 430 for the size instead of 4 3 1
+
+115
+00:06:40,833 --> 00:06:43,099
+这意味着，前一chunk是空闲的
+that means hey the previous chunk is free
+
+116
+00:06:43,300 --> 00:06:45,066
+需要的话就可以用
+if you need to take it for whatever reason
+
+117
+00:06:45,233 --> 00:06:47,766
+这就是堆分配器使用的元数据
+that is metadata used by the heap allocator
+
+118
+00:06:48,100 --> 00:06:51,133
+前一个chunk是空闲的
+and then since the previous chunk is free
+
+119
+00:06:51,300 --> 00:06:54,666
+加上分配器有前一个chunk的大小
+it also has the previous size there
+
+120
+00:06:55,166 --> 00:06:57,933
+分配器就知道了
+which of course tells the the allocator
+
+121
+00:06:59,066 --> 00:07:01,533
+这里有多少可用空间
+how much is available there
+
+122
+00:07:01,533 --> 00:07:04,899
+有多少空闲内存可以被使用
+how much free memory there is to be able to play around with
+
+123
+00:07:05,966 --> 00:07:07,566
+例如，如果我
+and for example  if I malloc
+
+124
+00:07:07,633 --> 00:07:10,199
+在这之后malloc一个小内存块
+after this some small amount 
+
+125
+00:07:10,400 --> 00:07:13,766
+分配器会从这个空闲块取size大小的内存
+it'll likely take it out of this size of that free chunk
+
+126
+00:07:13,933 --> 00:07:15,299
+然后减小这个size
+and reduce that size
+
+127
+00:07:15,300 --> 00:07:16,733
+这真是太酷了
+that's just pretty cool to see
+
+128
+00:07:16,733 --> 00:07:19,199
+好吧，不管怎样
+alright anyways um
+
+129
+00:07:20,900 --> 00:07:21,000
+实际上
+actually
+
+130
+00:07:21,000 --> 00:07:23,400
+让我们暂时脱离剧本
+let's just go off script for one second
+
+131
+00:07:23,400 --> 00:07:24,200
+看看
+and just see it
+
+132
+00:07:24,666 --> 00:07:26,199
+如果就这么做了呢
+what if you just do it all right
+
+133
+00:07:26,566 --> 00:07:28,666
+我们来看malloc 16
+let's do malloc 16
+
+134
+00:07:28,666 --> 00:07:31,133
+这个大小很合适
+that's gonna be nice and small
+
+135
+00:07:32,966 --> 00:07:33,766
+编译
+compile it
+
+136
+00:07:35,300 --> 00:07:36,466
+运行
+run it 
+
+137
+00:07:37,033 --> 00:07:40,199
+可以看到它被分配在a中
+you can see that got allocated into a
+
+138
+00:07:40,700 --> 00:07:44,966
+分配了一个0x20大小的chunk在原来a的位置
+so a hex 20 chunk got allocated into where we had a 
+
+139
+00:07:45,133 --> 00:07:46,966
+然后B在别的地方
+and then we have B somewhere else
+
+140
+00:07:47,566 --> 00:07:49,266
+你们是镜像的，所以
+you are mirrored so we have 
+
+141
+00:07:50,066 --> 00:07:53,166
+a，然后在它的左边（我们的右边）是B
+a and then to the left of that we have B
+
+142
+00:07:53,300 --> 00:07:54,333
+它非常大。有0x400
+and it's very large. it's hex 400
+
+143
+00:07:54,333 --> 00:07:56,466
+a是十六进制20
+a is hex 20 
+
+144
+00:07:56,766 --> 00:08:02,933
+他们中间有一个0x410大小的空闲内存
+and in between we have a hex 410 free space
+
+145
+00:08:03,100 --> 00:08:05,966
+能成功真是太让人兴奋了
+super super exciting to have that work
+
+146
+00:08:05,966 --> 00:08:10,599
+先恢复一下，别一会忘了
+anyways let's undo that so I don't forget later alright
+
+147
+00:08:11,266 --> 00:08:15,399
+酷，这就是size
+awesome so that is the size right um
+
+148
+00:08:16,900 --> 00:08:25,500
+为什么prev_size只在前一个chunk不被使用时有效呢
+now why is this prev_size only valid when the the chunk is in use
+
+149
+00:08:25,866 --> 00:08:26,666
+这是个好问题
+this is a good question
+
+150
+00:08:26,666 --> 00:08:27,933
+回答这个问题之前
+actually before we go to that question
+
+151
+00:08:27,933 --> 00:08:29,766
+先看一下前面忘记讲的
+let me show you one thing I forgot to show you
+
+152
+00:08:29,900 --> 00:08:33,300
+我们看了比tcache缓存范围大的chunk的情况
+we so far looked at larger chunks than bin in tcache
+
+153
+00:08:33,366 --> 00:08:34,799
+如果要看tcache
+if you look at tcache
+
+154
+00:08:36,600 --> 00:08:39,800
+我们用16。16在tcache的范围内
+let's do 16. 16 fits in tcache
+
+155
+00:08:39,866 --> 00:08:41,299
+即使我们释放了a
+even though we free a
+
+156
+00:08:42,400 --> 00:08:49,400
+在程序中，我们释放了它
+in our program we will free this guy
+
+157
+00:08:49,766 --> 00:08:54,233
+但是b的prev_in_use仍然被设置为1
+but still b prev_in_use is set to 1 
+
+158
+00:08:54,266 --> 00:08:56,299
+它认为a仍然被使用
+it thinks that a is still allocated
+
+159
+00:08:56,300 --> 00:09:00,800
+这是因为tcache劫持了分配器
+that is because tcache just hijacks the allocator 
+
+160
+00:09:00,800 --> 00:09:05,700
+所有小于等于1032字节的内存块
+basically completely for small allocations up to 1032 bytes
+
+161
+00:09:05,933 --> 00:09:10,633
+我在Tcache的课上说错了，说成了1036字节
+I accidentally said 1036 bytes in the Tcache lecture
+
+162
+00:09:10,800 --> 00:09:11,466
+我为此道歉
+ I apologize about that
+
+163
+00:09:11,466 --> 00:09:15,499
+tcache劫持了小于1032字节的内存块
+but for allocations less than 1032 bytes it just hijacks
+
+164
+00:09:15,733 --> 00:09:17,699
+它没有真释放它们
+it doesn't even really free it 
+
+165
+00:09:17,866 --> 00:09:19,766
+可以说他们一直都被tcache使用
+it just grabs it for Tcaches use
+
+166
+00:09:20,200 --> 00:09:22,866
+因此prev_inuse仍然被设置为1
+hence prev_inuse still being set
+
+167
+00:09:23,166 --> 00:09:23,966
+好吧
+all right
+
+168
+00:09:24,566 --> 00:09:25,366
+酷
+cool
+
+169
+00:09:25,900 --> 00:09:29,666
+那么为什么不使用prev_size呢
+so why was previous size not used
+
+170
+00:09:30,100 --> 00:09:31,700
+正如我们在这里看到的
+as we can see here
+
+171
+00:09:32,800 --> 00:09:37,133
+它是0，尽管前一个chunk的大小是0x20
+it's 0 even though the size here is hex 20
+
+172
+00:09:37,400 --> 00:09:41,400
+这是一件有趣的事情
+well that is an interesting thing
+
+173
+00:09:42,700 --> 00:09:49,000
+这是因为当有两个chunk，假设大小为16
+that is because when you have two chunks of size 16 let's say
+
+174
+00:09:49,066 --> 00:09:51,933
+当然是说malloc 16的chunk
+of course those are allocated with a chunk of size 16 
+
+175
+00:09:52,066 --> 00:09:55,266
+它们在内存中彼此相邻
+and they just fit next to each other in memory
+
+176
+00:09:55,900 --> 00:10:00,133
+如果请求一个8结尾的大小
+when you have a size that is that ends in an 8
+
+177
+00:10:00,266 --> 00:10:01,599
+比如24（0x18）
+ so something like 24
+
+178
+00:10:03,733 --> 00:10:05,499
+这不会多分配
+that doesn't get rounded up
+
+179
+00:10:06,200 --> 00:10:07,666
+如果你看
+if you look
+
+180
+00:10:09,200 --> 00:10:11,966
+如果我们malloc 16
+if we allocate something with size 16
+
+181
+00:10:12,166 --> 00:10:15,599
+chunk大小为0x20
+the chunk size is hex 20. 24 
+
+182
+00:10:17,733 --> 00:10:21,166
+24的话，chunk大小仍然是0x20
+the chunk size is still hex 20 and that is 
+
+183
+00:10:21,300 --> 00:10:27,333
+24当然是十六进制18
+so 24 is of course hex 18
+
+184
+00:10:28,566 --> 00:10:32,366
+size占8，prev_size占8
+plus 8 for the size,  plus 8 for the pre size
+
+185
+00:10:32,866 --> 00:10:34,199
+所以chunk大小应该是0x28
+that should be hex 28
+
+186
+00:10:34,300 --> 00:10:37,533
+但这里chunk size只有0x20
+but they only gave us hex 20 in our chunk size
+
+187
+00:10:37,600 --> 00:10:39,000
+是什么让
+what gives
+
+188
+00:10:39,366 --> 00:10:41,299
+是这样的
+ well it turns out that
+
+189
+00:10:41,900 --> 00:10:47,100
+当前一个chunk正在使用时
+when a previous chunk is in use
+
+190
+00:10:49,200 --> 00:10:52,400
+堆不会
+the heap does not
+
+191
+00:10:53,700 --> 00:10:54,900
+堆就是这样设计的
+just the way it's designed 
+
+192
+00:10:55,100 --> 00:11:01,233
+后一个chunk的prev_size不需要记录前一个chunk的大小
+does not have to track it's the previous size of the next chunk
+
+193
+00:11:01,366 --> 00:11:02,766
+如果chunk a正在使用
+ right so if Chunk a is in use
+
+194
+00:11:03,266 --> 00:11:05,133
+chunk b的prev_size无关紧要
+Chunk b's previous size doesn't matter
+
+195
+00:11:05,100 --> 00:11:07,733
+在a是空闲的时后，查看它
+it's only valid it's only ever checked
+
+196
+00:11:07,966 --> 00:11:12,699
+只是因为ptmalloc的实现逻辑
+just because of the logic in ptmalloc when a is free
+
+197
+00:11:14,133 --> 00:11:16,933
+当a被分配时
+right so when a is allocated
+
+198
+00:11:17,666 --> 00:11:21,599
+它可以使用B的prev_size字段
+it can use this the prev_size field of B
+
+199
+00:11:21,866 --> 00:11:25,233
+也就是说，它们正好连上了
+which is it's right up against as storage
+
+200
+00:11:25,533 --> 00:11:28,099
+从表面上看，这是疯狂的
+which on the face of it is insane
+
+201
+00:11:29,066 --> 00:11:29,866
+但
+but
+
+202
+00:11:30,733 --> 00:11:33,199
+是这样的
+it is the case
+
+203
+00:11:33,366 --> 00:11:39,699
+分配时有机会节省8个字节的内存
+and it saves every once in a while  8 bytes of mem per allocation
+
+204
+00:11:40,266 --> 00:11:44,999
+这是一种优化
+and so it is an optimization that is used
+
+205
+00:11:45,700 --> 00:11:48,933
+让我在另一个demo中给你们看一下
+actually let me show that to you in another demo
+
+206
+00:11:50,000 --> 00:11:53,600
+好的，考虑一下
+all right so consider 
+
+207
+00:11:53,966 --> 00:11:57,566
+这个heap_metadat_overlap.c
+this program heap metadata overlap.c
+
+208
+00:11:57,566 --> 00:11:58,966
+和之前的很像
+it's very similar to our old one
+
+209
+00:11:58,966 --> 00:12:01,133
+我分配了两个chunk
+I allocate two chunks
+
+210
+00:12:01,500 --> 00:12:07,300
+然后用大写字母A填满chunk a
+and then I just fill all of chunk a with Capital As
+
+211
+00:12:08,166 --> 00:12:11,966
+非常简单，对，这是对的
+super straightforward right and and this is correct
+
+212
+00:12:11,966 --> 00:12:14,199
+我们分配了size大小的内存
+we malloced of size
+
+213
+00:12:14,366 --> 00:12:17,299
+然后全用了
+and we're using the full size 
+
+214
+00:12:17,400 --> 00:12:18,200
+这是a
+so this is a 
+
+215
+00:12:18,600 --> 00:12:22,566
+如果我们运行这个
+um if we run this and we create a
+
+216
+00:12:23,300 --> 00:12:26,400
+申请16字节
+I don't know a 16 byte allocation
+
+217
+00:12:27,066 --> 00:12:29,699
+size值为0x21
+our allocations size hex 21
+
+218
+00:12:30,200 --> 00:12:32,600
+0x20，而且prev_in_use位 置为1
+hex 20 and then the prev_in_use bit is set
+
+219
+00:12:33,600 --> 00:12:35,133
+chunk的大小是0x20
+our chunk's size hex 20
+
+220
+00:12:35,133 --> 00:12:38,133
+就是16字节的可用空间
+so that is our 16 bytes of usable space 
+
+221
+00:12:38,233 --> 00:12:41,766
+加上16字节的元数据
+plus our16 bytes of size metadata
+
+222
+00:12:41,900 --> 00:12:44,500
+但如果请求24
+but if I set it to 24
+
+223
+00:12:45,166 --> 00:12:47,166
+这是16字节的可用空间
+this is our 16 byte of usable space
+
+224
+00:12:47,766 --> 00:12:49,499
+然后还有8个字节(占用prev_size)
+and then 8 more
+
+225
+00:12:49,700 --> 00:12:53,600
+但size仍然是0x20
+right the size still hex 20
+
+226
+00:12:53,600 --> 00:12:58,800
+可以看到B的prev_size被大写的A覆盖了
+but you can see the previous size of B was over written with capital As
+
+227
+00:12:58,800 --> 00:13:00,066
+这不是内存损坏
+this is not a memory corruption
+
+228
+00:13:00,066 --> 00:13:03,166
+这是堆的预期用途
+this is intended use of the heap
+
+229
+00:13:03,166 --> 00:13:06,066
+它与元数据重叠
+it overlaps the metadata 
+
+230
+00:13:06,400 --> 00:13:10,400
+对于chunk来说...
+for chunks that are
+
+231
+00:13:12,900 --> 00:13:16,800
+如果当前chunk正在使用，它的数据区会占用后一个chunk的prev_size
+the metadata of the next chunk if the current chunk is in use
+
+232
+00:13:17,333 --> 00:13:18,666
+就是为了节省空间
+just to save some space
+
+233
+00:13:18,933 --> 00:13:21,599
+很疯狂，但就是这样
+pretty crazy but that's how it is
+
+234
+00:13:21,700 --> 00:13:25,200
+好了，那么当chunk空闲时会发生什么呢
+all right so what happens when a chunk is free
+
+235
+00:13:25,300 --> 00:13:28,233
+所以我们看了大小元数据
+so we looked around as sizes 
+
+236
+00:13:28,500 --> 00:13:31,200
+我们看了chunk的那部分
+we looked around at that part of the chunk
+
+237
+00:13:31,200 --> 00:13:32,700
+但在现实中
+but in reality
+
+238
+00:13:32,700 --> 00:13:35,200
+当一个chunk是空闲的，就像我们在Tcache中看到的那样
+when a chunk is free as we saw with Tcache
+
+239
+00:13:35,366 --> 00:13:38,133
+chunk还有更多的部分
+there is more to the structure 
+
+240
+00:13:38,300 --> 00:13:41,966
+取决于它是什么类型的chunk
+depending on what type of chunk it was
+
+241
+00:13:42,300 --> 00:13:43,400
+这里
+um and here 
+
+242
+00:13:43,400 --> 00:13:48,200
+我们必须介绍ptmalloc的不同缓存级别
+we have to introduce the different cache levels of ptmalloc
+
+243
+00:13:48,866 --> 00:13:50,766
+Ptmalloc非常复杂
+ptmalloc is very complex
+
+244
+00:13:50,766 --> 00:13:52,666
+它有数千行代码
+it's thousands of lines of code
+
+245
+00:13:52,666 --> 00:13:54,399
+而且它是不断改变的
+it's constantly changing 
+
+246
+00:13:54,500 --> 00:14:01,800
+所以这张幻灯片是一个大概
+and so this slide is necessarily an approximation
+
+247
+00:14:01,800 --> 00:14:04,800
+事实上，这整个模块都是大概
+in fact this whole module is of somewhat of an approximation
+
+248
+00:14:05,000 --> 00:14:12,900
+东西都是不断发展的，以ubuntu2004的libc2.31来说
+because though a thing is constantly evolving as of libc 2.31 in ubuntu 2004
+
+249
+00:14:13,100 --> 00:14:16,366
+基本上ptmalloc有几个不同的缓存层
+basically ptmalloc has several different cache layers
+
+250
+00:14:16,366 --> 00:14:17,699
+当然，嗯
+and and definitely uh
+
+251
+00:14:19,000 --> 00:14:21,466
+基本上这是它们的使用顺序
+basically this is their order of use
+
+252
+00:14:21,466 --> 00:14:23,999
+释放内存块的时候，首先
+first when you free something 
+
+253
+00:14:24,033 --> 00:14:29,599
+如果它足够小，就会试着放进Tcache
+it goes tries to get put into the Tcache if it's small enough
+
+254
+00:14:30,133 --> 00:14:35,899
+大小在0到1032之间
+it's between size really 0 or size 1 and and and 1032
+
+255
+00:14:37,900 --> 00:14:43,000
+如果tcache关了、满了或由于某些原因不可用
+if tcache is off or full or unavailable for some reason
+
+256
+00:14:43,166 --> 00:14:43,966
+然后
+then
+
+257
+00:14:44,500 --> 00:14:49,900
+这个chunk会被放到一个类似的东西中，fastbin
+the chunk is put into something very very similar,  a fastbin
+
+258
+00:14:50,933 --> 00:14:53,266
+fastbin 最大能缓存160字节的chunk
+for allocations up to 160 bytes
+
+259
+00:14:53,266 --> 00:14:57,799
+注意，tcache完全覆盖了fastbin
+now notice tcache completely covers the fast bins
+
+260
+00:14:58,000 --> 00:15:00,800
+现在通常只和Tcache互动
+usually nowadays you interact with Tcache
+
+261
+00:15:01,166 --> 00:15:02,533
+如果它也不起作用了
+if that doesn't work
+
+262
+00:15:02,533 --> 00:15:05,199
+这个chunk会被扔到所谓的unsorted bin中
+that allocation is thrown into what is called an unsorted bin
+
+263
+00:15:05,200 --> 00:15:07,100
+这是一个列表
+it is a list of
+
+264
+00:15:09,500 --> 00:15:11,600
+是一个双链表
+doubly linked list of
+
+265
+00:15:12,133 --> 00:15:14,333
+记录着最近被释放的chunk
+chunks that had been recently freed
+
+266
+00:15:15,500 --> 00:15:22,200
+而且这些chunk还没被分到合适的下一层级的bin中
+and not yet sorted into better fitting bins lower in the cache hierarchy
+
+267
+00:15:22,566 --> 00:15:25,533
+所以可以快速获取
+this is a fast path to catch
+
+268
+00:15:27,700 --> 00:15:31,600
+适应频繁free，malloc的场景
+you know very quick free reuse type scenarios
+
+269
+00:15:31,700 --> 00:15:34,500
+把被free的chunk
+so you take a chunk that is freed 
+
+270
+00:15:34,600 --> 00:15:35,566
+放到unsorted bin里
+you put it unsorted bin
+
+271
+00:15:35,566 --> 00:15:37,299
+下一次malloc时
+the next time a malloc happens
+
+272
+00:15:37,300 --> 00:15:43,400
+且tcache或fastbin里没有合适的chunk
+and Tcache or fastbins can't produce a chunk that's cacheed to satisfy that malloc
+
+273
+00:15:43,500 --> 00:15:45,100
+我们查看unsorted bin
+we look at the unsorted bin
+
+274
+00:15:45,100 --> 00:15:49,300
+如果找到一个合适的chunk，我们就返回它
+if we find a chunk that satisfies it we return it
+
+275
+00:15:49,500 --> 00:15:54,533
+如果没有，我们就把chunk放到
+if not we take that chunk and we sort it into either
+
+276
+00:15:54,900 --> 00:16:01,300
+64个双链表small bins中，双链表中存储一种大小的chunk
+64 small bins of the same size also doubly linked
+
+277
+00:16:01,500 --> 00:16:07,000
+或者是large bins中，这个双链表可以存储
+or a doubly linked list of large bins that can contain
+
+278
+00:16:07,300 --> 00:16:08,733
+不同大小的chunk
+different sized chunks
+
+279
+00:16:08,900 --> 00:16:10,533
+这非常复杂
+this is all incredibly complicated
+
+280
+00:16:10,533 --> 00:16:16,599
+我想你们不会在作业中用到这个
+you're not going to need this I don't think for the the homework
+
+281
+00:16:18,200 --> 00:16:21,400
+但这就是libc内部的运作方式
+but this is how libc works inside
+
+282
+00:16:22,100 --> 00:16:23,566
+让我们一起来看看
+let's take a look at
+
+283
+00:16:23,900 --> 00:16:27,666
+空闲chunk中的一些元数据
+some of the metadata that is placed in the free chunk
+
+284
+00:16:27,700 --> 00:16:32,200
+您已经看过了tcache元数据 next和 key
+you've seen the tcache metadata next and key
+
+285
+00:16:32,266 --> 00:16:34,299
+如果不熟悉它，可以复习一下上次的课
+if this doesn't look familiar go back and review the tcache lecture
+
+286
+00:16:34,533 --> 00:16:37,366
+对于其他chunk，例如large bin
+for other chunks for example for large bins
+
+287
+00:16:38,166 --> 00:16:41,933
+一旦它们从unsorted bin中取出来
+once they are grabbed out of the unsorted bin
+
+288
+00:16:42,200 --> 00:16:44,300
+如果下一个malloc不能
+if the next malloc can't
+
+289
+00:16:44,966 --> 00:16:47,733
+如果它们不适合下一次malloc
+if they can't be used to satisfy the next malloc
+
+290
+00:16:47,933 --> 00:16:52,599
+它们会被放入一个双链表中
+they are put into a doubly linked list
+
+291
+00:16:52,700 --> 00:16:59,900
+同时也在另一个双链表中，它记录了chunk大小关系
+that also has links to bigger and smaller lists of chunks
+
+292
+00:17:00,100 --> 00:17:02,066
+很复杂
+this is a crazy thing 
+
+293
+00:17:02,266 --> 00:17:04,933
+但是基本上是这样的
+but but here's basically how it works
+
+294
+00:17:09,400 --> 00:17:18,900
+相同大小的chunk会存储在一个链表中
+the chunks of the same size are stored in a linked list 
+
+295
+00:17:18,966 --> 00:17:22,599
+chunk a有一个前向指针指向chunk B
+where chunk a will have a forward pointer that points to chunk B
+
+296
+00:17:22,800 --> 00:17:25,133
+chunk B有一个前向指针指向chunk C
+Chunk B has a forward pointer than points to chunk C
+
+297
+00:17:25,300 --> 00:17:27,733
+然后chunkC有一个后向指针指向chunkB
+then Chunk C has a back pointer that points to chunk B
+
+298
+00:17:27,900 --> 00:17:29,966
+chunk b 有一个后向指针指向chunk a
+Chunk B has a back pointer that points to chunk A
+
+299
+00:17:29,966 --> 00:17:32,499
+这被称为双链表，其中
+this is called the doubly linked list where 
+
+300
+00:17:32,600 --> 00:17:36,066
+每个节点都有链接连接到它的前后节点
+each item has a link to the item after and item before it
+
+301
+00:17:36,300 --> 00:17:37,533
+他们这样做是为了便于
+they do this so that you can 
+
+302
+00:17:37,700 --> 00:17:42,266
+从中间取出一个节点，然后返回
+take an item out of the middle very easily and return it
+
+303
+00:17:43,300 --> 00:17:46,266
+单链表很难做到这点
+whereas that is hard to do with a single link list
+
+304
+00:17:46,500 --> 00:17:52,200
+在大小关系链表中也一样
+and then they also have the same sort of situation  but between different sizes
+
+305
+00:17:52,333 --> 00:17:56,099
+如果你有一个很大的chunk
+so if you have a large chunk of size
+
+306
+00:17:57,466 --> 00:17:59,133
+2K字节
+2 kilobytes 
+
+307
+00:17:59,133 --> 00:18:00,766
+但是你需要4kb
+but you really need 4 kilobytes
+
+308
+00:18:00,700 --> 00:18:04,300
+你可以查看nextsize指针
+you can actually look and follow this next size pointer
+
+309
+00:18:04,400 --> 00:18:11,300
+然后你看到在large bin里的更大的chunk
+and then you see the next larger chunk  that you have available in the large bin 
+
+310
+00:18:11,800 --> 00:18:14,766
+这是malloc内部的复杂实现
+again they are just crazy malloc internals
+
+311
+00:18:14,866 --> 00:18:17,966
+我没有过多的讲 fast bin或者small bins
+for completeness notice I'm not talking about fast bins or small bins 
+
+312
+00:18:17,966 --> 00:18:21,499
+因为它们被Tcache完全覆盖了
+because they are fully covered in some sense by Tcache
+
+313
+00:18:22,100 --> 00:18:26,600
+Tcache也覆盖了部分 large bin，large bin从512字节开始
+large bins started at 512 bytes which Tcache still covers
+
+314
+00:18:26,600 --> 00:18:30,200
+但是在1032字节之后
+but after 1 000 and 32 bytes
+
+315
+00:18:30,200 --> 00:18:32,200
+你不就再和Tcache打交道了
+you're no longer dealing with Tcache
+
+316
+00:18:32,200 --> 00:18:36,700
+你要接触的是unsorted bins 和 large bins
+you're dealing with unsorted bins and large bins for the cacheing
+
+317
+00:18:37,066 --> 00:18:37,866
+好吧
+all right
+
+318
+00:18:38,500 --> 00:18:40,766
+另一个
+finally another
+
+319
+00:18:41,700 --> 00:18:43,566
+也许是最后一个概念
+maybe the last concept yeah
+
+320
+00:18:43,900 --> 00:18:45,733
+我们要讲的是wilderness
+that we're gonna cover is the wilderness
+
+321
+00:18:46,666 --> 00:18:49,799
+chunk是从哪里来的呢
+where do chunks come from right so
+
+322
+00:18:53,300 --> 00:18:55,366
+如果我malloc 16
+let's say I malloc 16
+
+323
+00:18:55,866 --> 00:18:57,166
+会发生什么
+what happens 
+
+324
+00:18:57,333 --> 00:19:01,766
+首先malloc会查看缓存
+well first malloc will look in the caches
+
+325
+00:19:02,000 --> 00:19:03,800
+它会在缓存中寻找合适的chunk
+it'll look in the caches for a free chunk
+
+326
+00:19:03,933 --> 00:19:05,833
+这些chunk就放在那儿，随时可以取出来
+that's sitting around ready to go 
+
+327
+00:19:05,966 --> 00:19:07,399
+查查tcache
+it look in the Tcache 
+
+328
+00:19:07,433 --> 00:19:07,966
+如果失败了
+if that fails 
+
+329
+00:19:08,100 --> 00:19:16,200
+它会查看fast bin、small bin、unsorted bin，large bins（口误）
+it'll look in the fast bin small bins unsorted bin large bins
+
+330
+00:19:16,900 --> 00:19:21,100
+会依次查看，fast bin、unsorted bin、small bin、large bins
+no that the fast bin unsorted bin small bin large bin
+
+331
+00:19:22,800 --> 00:19:26,500
+如果都失败了
+and if that fails
+
+332
+00:19:26,700 --> 00:19:30,266
+它查看堆末尾的可用空间
+it look at the available space at the end of the heap
+
+333
+00:19:30,366 --> 00:19:32,533
+如果堆的末端有足够的空间
+if there's enough space at the end of the heap
+
+334
+00:19:32,533 --> 00:19:39,133
+在介绍堆的时候
+so remember recall in the beginning of the heap introduction 
+
+335
+00:19:39,300 --> 00:19:40,666
+我说的是数据段
+I was talking about the data segment
+
+336
+00:19:40,766 --> 00:19:43,733
+我们追踪并观察了brk 系统调用
+we traced through and we watched the brk syscall
+
+337
+00:19:44,700 --> 00:19:52,900
+libc默认将0x20 000字节映射到堆中
+libc maps something like Hex 20 000 byte into the heap by default
+
+338
+00:19:52,966 --> 00:19:54,733
+所以这里有一些空间
+so there's some space there
+
+339
+00:19:54,900 --> 00:19:58,700
+如果有足够的，它会切下一个chunk
+if there is enough it'll slice off a chunk of that 
+
+340
+00:19:58,899 --> 00:20:00,066
+然后返回
+and return it
+
+341
+00:20:00,266 --> 00:20:04,099
+如果不够，而且分配请求的很大
+right if there's not enough and the allocation is huge
+
+342
+00:20:04,766 --> 00:20:07,999
+那么malloc将使用mmap一块内存来返回
+then malloc will use mmap to return 
+
+343
+00:20:08,233 --> 00:20:11,733
+创建一个内存区域来满足你的请求
+to create a area of memory just for your allocation
+
+344
+00:20:11,733 --> 00:20:12,766
+然后把它返回给你
+and return that to you
+
+345
+00:20:13,333 --> 00:20:15,933
+如果没有足够的可用空间
+if there isn't enough available space
+
+346
+00:20:15,933 --> 00:20:18,099
+并且分配也不是很大
+and the allocation isn't so large
+
+347
+00:20:18,733 --> 00:20:21,566
+malloc将使用BRK系统调用来增长堆
+and malloc will grow the heap using the brk syscall
+
+348
+00:20:22,100 --> 00:20:29,500
+然后来到2这里，切下一个chunk
+and will go to number two to slice off a chunk of it
+
+349
+00:20:29,666 --> 00:20:30,766
+让我把相机藏起来
+let me hide my camera
+
+350
+00:20:30,766 --> 00:20:32,899
+刚刚没注意这个会盖住侧面
+I didn't realize this would cover the side
+
+351
+00:20:32,900 --> 00:20:36,700
+那么malloc是怎么知道还有多少空间的
+alright so how does malloc know how much space is there
+
+352
+00:20:36,700 --> 00:20:37,866
+它必须存储它
+well it has to store it
+
+353
+00:20:37,866 --> 00:20:40,299
+它把它储存在所谓的wilderness里
+and it stores it in what it's called oh the wilderness
+
+354
+00:20:40,466 --> 00:20:43,266
+wilderness是一个假的chunk
+the wilderness is a fake chunk
+
+355
+00:20:43,666 --> 00:20:45,533
+它位于堆的末尾
+it is located at the end of the heap
+
+356
+00:20:45,533 --> 00:20:48,166
+它基本上只有一个大小
+and it basically just has a size
+
+357
+00:20:48,333 --> 00:20:50,766
+就像其他chunk一样
+just like any other chunk
+
+358
+00:20:51,000 --> 00:20:56,500
+但这个大小说明了wilderness还剩下多少
+but that size basicly says how much of the wilderness is remaining
+
+359
+00:20:57,500 --> 00:21:03,100
+什么时候需要映射更多的内存
+and when to actually map more memory so
+
+360
+00:21:03,600 --> 00:21:05,000
+哎呀，我不知道发生了什么
+whoops I don't know what happened there
+
+361
+00:21:07,500 --> 00:21:09,166
+我创建了这个程序
+I created this program
+
+362
+00:21:09,933 --> 00:21:12,566
+向我们展示wilderness 是如何运作的，
+to show us how the wilderness works so we
+
+363
+00:21:13,200 --> 00:21:14,400
+我们准备好堆
+warm up the heap
+
+364
+00:21:14,933 --> 00:21:17,133
+这条语句的作用是
+actually the reason this is here is to
+
+365
+00:21:17,566 --> 00:21:20,099
+免得printf的缓冲区碍事
+get this printf's buffer out of the way
+
+366
+00:21:20,100 --> 00:21:21,933
+但是你也可以使用setvbuf
+but you can also use the setvbuf
+
+367
+00:21:22,133 --> 00:21:24,799
+这个之前展示过的方法来消除影响
+that I showed you earlier to disable the need for that
+
+368
+00:21:25,100 --> 00:21:27,066
+不管怎样，我们分配内存
+anyways we allocate
+
+369
+00:21:27,700 --> 00:21:30,600
+然后展示wilderness的大小
+and then I show you what the wilderness size is
+
+370
+00:21:30,800 --> 00:21:34,033
+这是最后一次分配
+this is the last allocation in the heap 
+
+371
+00:21:34,166 --> 00:21:35,199
+也就是最右边的内存块
+the right most allocation
+
+372
+00:21:35,200 --> 00:21:38,200
+所以它的右边就是wilderness
+so exactly to the right of this is the wilderness
+
+373
+00:21:39,600 --> 00:21:40,800
+wilderness是
+and the wilderness is
+
+374
+00:21:41,300 --> 00:21:42,566
+如果你还记得的话
+so if you recall
+
+375
+00:21:46,133 --> 00:21:50,099
+如果malloc 16，则chunk的大小是0x20
+a 16 byte allocation will have a chunk size of hex 20
+
+376
+00:21:52,700 --> 00:21:55,933
+a在它0x10的位置
+and a will be hex 10 into it 
+
+377
+00:21:56,066 --> 00:22:01,133
+所以chunk还剩下16字节
+so there's 16 left in the chunk size
+
+378
+00:22:01,366 --> 00:22:03,899
+A[0]是首个8字节
+a[0] would be the first 8
+
+379
+00:22:03,900 --> 00:22:05,700
+A[1]第二个8字节
+a[1] the second 8
+
+380
+00:22:05,700 --> 00:22:11,200
+A[2]这8字节是下一个chunk的prev_in_use
+a[2] are the 8 bit bytes that would be the next chunk's prev_in_use
+
+381
+00:22:17,166 --> 00:22:19,066
+嗯…
+uh...
+
+382
+00:22:19,100 --> 00:22:22,100
+8字节整型
+number 8 byte integer
+
+383
+00:22:22,600 --> 00:22:25,466
+如果我们的chunk被分配了
+and if our chunk is allocated
+
+384
+00:22:26,200 --> 00:22:27,300
+它不是空闲的
+and it's not free
+
+385
+00:22:27,300 --> 00:22:28,766
+如果chunk还在使用
+if the chunk is in use
+
+386
+00:22:28,766 --> 00:22:31,499
+那么我们就可以安全地使用接下来的8个字节
+then we can safely use those next 8 bytes by design
+
+387
+00:22:31,500 --> 00:22:32,333
+所以a[2]
+so a[2]
+
+388
+00:22:34,366 --> 00:22:37,399
+A[0]是前8个字节。A[1]是第二个8字节
+a[0] is the first 8 byte. a[1] is the second 8 byte
+
+389
+00:22:37,400 --> 00:22:39,133
+A[2]是预留的8字节
+a[2] is that reserve 8 bytes
+
+390
+00:22:39,133 --> 00:22:40,266
+完全可以使用
+totally value to use
+
+391
+00:22:40,300 --> 00:22:44,800
+A[3]是下一个chunk的size元数据
+a[3] is the size metadata of the next chunk
+
+392
+00:22:45,300 --> 00:22:47,333
+我们把它打印出来
+and here's where we print that out
+
+393
+00:22:47,333 --> 00:22:48,599
+然后我们malloc更多
+then we allocate more
+
+394
+00:22:48,733 --> 00:22:50,066
+打印出wilderness大小
+print out the wilderness size
+
+395
+00:22:50,066 --> 00:22:53,099
+现在a是不同的东西，它是下一个chunk
+now a is something different it's the next chunk over
+
+396
+00:22:53,733 --> 00:22:55,333
+我们分配更多
+we allocate more
+
+397
+00:22:55,600 --> 00:22:58,300
+这里我要分配
+and here I'm going to allocate
+
+398
+00:22:58,300 --> 00:23:00,200
+基本上剩下堆的全部
+what is basically the rest of the heap
+
+399
+00:23:00,200 --> 00:23:03,966
+这个0x20，我想实际上是0x21000
+you this hex 20 I think actually it was hex 21 000
+
+400
+00:23:03,966 --> 00:23:04,766
+无论
+whatever
+
+401
+00:23:06,066 --> 00:23:07,799
+我把剩下的都用掉
+I eat up the rest of that
+
+402
+00:23:10,100 --> 00:23:17,400
+然后我会展示剩下的wilderness非常非常小
+and then I will show the remaining wilderness is very very small
+
+403
+00:23:17,400 --> 00:23:19,366
+当我们再次分配的时候
+and then when we allocate the next thing
+
+404
+00:23:19,366 --> 00:23:20,799
+分配器会增加wilderness
+it'll grow the wilderness
+
+405
+00:23:21,000 --> 00:23:25,100
+我们来编译它
+so let's compile it
+
+406
+00:23:32,800 --> 00:23:33,666
+开始吧
+here we go
+
+407
+00:23:34,133 --> 00:23:34,933
+好吧
+all right
+
+408
+00:23:35,300 --> 00:23:42,900
+wilderness开始的大小是 0x20921
+we start out here with a wilderness size of 20921 in hex
+
+409
+00:23:43,500 --> 00:23:47,200
+在分配16个字节之后
+after allocating another 16 bytes
+
+410
+00:23:47,266 --> 00:23:49,766
+这会返回一个0x20大小的chunk
+so that of course returns a chunk of hex 20
+
+411
+00:23:50,000 --> 00:23:56,000
+还剩0x20901，和我们期望的一样少了0x20
+we end up with 20901  as we expect 20 less
+
+412
+00:23:56,800 --> 00:23:58,266
+我们再来一次
+we malloc again
+
+413
+00:23:58,966 --> 00:24:00,966
+又少了20
+end up with 20 less
+
+414
+00:24:01,066 --> 00:24:03,299
+然后我们malloc一个巨大的内存
+and then we make a giant allocation
+
+415
+00:24:03,300 --> 00:24:03,933
+malloc
+malloc again
+
+416
+00:24:03,933 --> 00:24:06,133
+现在wilderness很小
+and we end up with a wilderness that is tiny
+
+417
+00:24:06,400 --> 00:24:11,533
+只剩下0x20字节了
+only hex 20 bytes left in our wilderness
+
+418
+00:24:11,700 --> 00:24:13,700
+如果我们再malloc
+ if we then malloc again
+
+419
+00:24:14,900 --> 00:24:17,800
+Libc不会让wilderness空着
+libc doesn't like to have an empty wilderness 
+
+420
+00:24:18,500 --> 00:24:21,200
+所以它会用sbrk来重新增大
+so it'll use sbrk to grow it again
+
+421
+00:24:21,800 --> 00:24:22,733
+我应该提一下
+I should mention
+
+422
+00:24:23,200 --> 00:24:26,900
+所有这些打印出的数字都在内存的不同位置
+all of these numbers are printed out of a different location in memory
+
+423
+00:24:26,966 --> 00:24:27,866
+作为我们的
+as our
+
+424
+00:24:28,566 --> 00:24:29,099
+你们是镜像的
+you're mirrored
+
+425
+00:24:29,100 --> 00:24:31,566
+我们的堆向右增长
+let me show you as our heap grows to the right
+
+426
+00:24:33,900 --> 00:24:37,700
+wilderness元数据会被推得越来越远
+the wilderness metadata gets pushed out further and further right
+
+427
+00:24:39,533 --> 00:24:42,999
+当然了，如果它本身还是没问题的
+but of course it it still maintains itself properly
+
+428
+00:24:43,000 --> 00:24:48,600
+我用strace演示一下
+alright um let me show you this in strace
+
+429
+00:24:51,100 --> 00:24:55,500
+这是我们最初设置堆的时候
+so here is when we initially set up the the heap
+
+430
+00:24:55,500 --> 00:24:59,333
+这两个数的差是0x21 000
+this is the difference between this two is hex 2 1000
+
+431
+00:24:59,933 --> 00:25:03,133
+就在7f000到5e000之间
+right between 7f 000 and 5E 000
+
+432
+00:25:04,266 --> 00:25:05,966
+差值是21000
+21 000 actually
+
+433
+00:25:06,100 --> 00:25:08,366
+你们可以看到
+and so you can see that
+
+434
+00:25:09,000 --> 00:25:16,300
+它记录着分配后堆中的可用空间量
+that tracks with the amount of space available in the heap after the allocations
+
+435
+00:25:16,500 --> 00:25:18,166
+这次分配之后
+after the allocations
+
+436
+00:25:18,333 --> 00:25:21,199
+然后当我们分配了这个巨大的chunk后
+and then when we make this gigantic allocation 
+
+437
+00:25:21,433 --> 00:25:22,966
+堆里基本没空余空间了
+and end up with almost nothing in the heap
+
+438
+00:25:23,400 --> 00:25:26,400
+下次我们调用malloc的时候
+ the next time we do a malloc
+
+439
+00:25:26,400 --> 00:25:28,100
+或者说wilderness里什么都不剩了
+or nothing left in the wilderness
+
+440
+00:25:28,100 --> 00:25:30,733
+下次执行malloc时，libc执行了BRK
+the next time we do a malloc libc does a brk
+
+441
+00:25:31,400 --> 00:25:36,900
+再分配了0x21000字节
+and it allocates another 21 000 bytes
+
+442
+00:25:36,900 --> 00:25:43,900
+从f7 f000来到了fa 0000
+so we go from f7 f000 to fa 0000
+
+443
+00:25:44,900 --> 00:25:51,000
+差值是 0x21 000
+that is a difference of 2 1 0 0 0 in hex
+
+444
+00:25:51,900 --> 00:25:56,900
+然后嗯...
+and that is how big our and then we use of course
+
+445
+00:25:56,933 --> 00:26:00,666
+现在堆里还剩0x21
+so we had a remaining hex 21
+
+446
+00:26:01,566 --> 00:26:03,666
+增加了0x21000
+we added hex 21 000
+
+447
+00:26:04,100 --> 00:26:06,566
+然后我们malloc用完了0x21
+then we used up hex 21 for our malloc
+
+448
+00:26:06,866 --> 00:26:11,499
+然后又有了0x21000，当然还有prev_inuse位
+ and we ended up with 21 000 with of course the prev_inuse bit set
+
+449
+00:26:11,933 --> 00:26:12,933
+很酷
+pretty cool huh
+
+450
+00:26:13,933 --> 00:26:15,333
+好了，这就是wilderness
+alright so that is the wilderness
+
+451
+00:26:15,333 --> 00:26:18,366
+这就是libc获得chunk的地方
+that's where libc gets its chunks
+
+452
+00:26:18,366 --> 00:26:20,199
+从wilderness中获取
+tames them from the wilderness
+
+453
+00:26:21,600 --> 00:26:25,266
+最后，我再提一次
+and to close out I'll mention once again 
+
+454
+00:26:25,600 --> 00:26:31,966
+这都是关于PTmalloc的
+this is all about PTmalloc
+
+455
+00:26:32,733 --> 00:26:35,399
+glibc中的分配器
+the allocator in glibc 
+
+456
+00:26:35,500 --> 00:26:42,500
+是大多数Linux发行版的C库
+which is the C library for most Linux distributions
+
+457
+00:26:42,966 --> 00:26:43,933
+嗯
+um
+
+458
+00:26:44,600 --> 00:26:46,133
+其他分配器是不同的
+other allocators are different
+
+459
+00:26:46,600 --> 00:26:51,600
+不是所有分配器都需要这些花哨的缓存
+you don't need all this fancy cacheing necessarily to implement an allocator
+
+460
+00:26:51,700 --> 00:26:56,333
+很多其他的分配器甚至没有块内元数据
+and a lot of other allocators don't even have inline metadata 
+
+461
+00:26:56,433 --> 00:26:59,566
+块内元数据就像我们刚看到的
+metadata in the chunks like what we just looked at
+
+462
+00:26:59,866 --> 00:27:01,799
+Jemalloc就是这样一个分配器
+jemalloc is one such allocator 
+
+463
+00:27:01,966 --> 00:27:03,333
+freeBSD的分配器
+the allocator of freeBSD 
+
+464
+00:27:03,500 --> 00:27:06,533
+Android，也是Linux
+Android which you notice is Linux 
+
+465
+00:27:06,600 --> 00:27:11,366
+但它用的库和用户空间程序与一般发行版非常不同
+but it uses very very different libraries and user space programs
+
+466
+00:27:12,066 --> 00:27:13,766
+包括一个不同的分配器
+including a different allocator
+
+467
+00:27:14,900 --> 00:27:18,300
+Firefox使用Jemalloc
+Firefox uses Jemalloc despite
+
+468
+00:27:18,600 --> 00:27:22,900
+尽管它是一个在Linux上运行的程序
+ostensibly being a program that runs in Linux
+
+469
+00:27:22,900 --> 00:27:24,733
+它仍然可以使用不同的分配器
+it can still use a different allocator
+
+470
+00:27:25,566 --> 00:27:28,699
+Jemalloc没有块内元数据
+Jemalloc has no perchunk metadata
+
+471
+00:27:28,700 --> 00:27:29,733
+这是非常不同的
+it's very different
+
+472
+00:27:30,066 --> 00:27:34,366
+它建立在不同的原则之上
+just built on different principles
+
+473
+00:27:34,366 --> 00:27:35,766
+它也有元数据
+ it does still have metadata
+
+474
+00:27:35,766 --> 00:27:37,299
+它只是在内部存储它
+it just stores it internally
+
+475
+00:27:37,600 --> 00:27:38,400
+所以
+so
+
+476
+00:27:39,300 --> 00:27:42,066
+我希望你学到了很多关于chunk的知识
+I hope you Learned a lot about chunks
+
+477
+00:27:42,066 --> 00:27:43,599
+和chunk元数据的知识
+and about metadata
+
+478
+00:27:44,366 --> 00:27:45,966
+在该模块，接下来
+and in the rest of the module
+
+479
+00:27:45,966 --> 00:27:47,566
+我们将学会如何滥用他们
+we learn how to abuse them
+

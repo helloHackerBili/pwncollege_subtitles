@@ -1,0 +1,1594 @@
+1
+00:00:01,000 --> 00:00:02,066
+你好黑客
+hello hackers
+
+2
+00:00:02,200 --> 00:00:04,500
+欢迎收看另一个PWN大学视频
+welcome to another pwn college video
+
+3
+00:00:04,500 --> 00:00:07,200
+今天我们将讨论ASLR
+today we'll be talking about ASLR
+
+4
+00:00:09,533 --> 00:00:13,866
+这是对内存错误的保护措施
+it's a mitigation for memory errors 
+
+5
+00:00:14,100 --> 00:00:15,766
+特别是控制流劫持攻击
+specifically control flow hijack attacks
+
+6
+00:00:15,900 --> 00:00:19,100
+它代表地址空间布局随机化
+and it stands for adderss space layout randomization
+
+7
+00:00:19,266 --> 00:00:20,066
+好吧
+all right
+
+8
+00:00:20,400 --> 00:00:23,800
+地址空间布局随机化背后的思想是什么
+what is the idea behind address space layout randomization 
+
+9
+00:00:23,900 --> 00:00:27,500
+当然，其思想是随机化地址空间的布局
+of course the idea is to randomize the layout of the address space
+
+10
+00:00:29,200 --> 00:00:32,400
+很多时候
+the intuition here is that oftentimes
+
+11
+00:00:33,200 --> 00:00:36,900
+当利用内存错误时
+when exploiting a memory error
+
+12
+00:00:38,366 --> 00:00:39,866
+你破坏了指针
+you corrupt a pointer
+
+13
+00:00:39,866 --> 00:00:41,299
+攻击者破坏指针
+the attacker corrupts a pointer
+
+14
+00:00:41,300 --> 00:00:42,533
+让它指向别的地方
+to make it point somewhere else
+
+15
+00:00:42,533 --> 00:00:44,333
+这个指针可能是一个代码指针
+that pointer might be a code pointer
+
+16
+00:00:44,466 --> 00:00:47,166
+攻击者想要劫持控制代码执行流
+and the attacker wants to hijack control flow
+
+17
+00:00:47,333 --> 00:00:48,899
+指针可以是数据指针
+the pointer might be a data pointer
+
+18
+00:00:48,900 --> 00:00:54,300
+攻击者想要控制数据权限
+and the attacker wants to perform controlled data right
+
+19
+00:00:55,000 --> 00:00:58,700
+但是每当攻击者重写指针时
+but whenever the attacker overwrites a pointer
+
+20
+00:00:58,700 --> 00:01:02,700
+他们必须要知道指向哪里
+they have to have an idea of where to point it to
+
+21
+00:01:02,866 --> 00:01:05,666
+他们能做到
+and they can do that
+
+22
+00:01:06,200 --> 00:01:12,100
+因为例如，如果你编译时不开启位置无关
+because for example if you compile a program as not position independent
+
+23
+00:01:12,300 --> 00:01:19,100
+攻击者能查看二进制文件，找到程序驻留在内存中的位置
+the attacker can look at the binary and see where in a memory that program will reside
+
+24
+00:01:20,200 --> 00:01:23,200
+但是如果你打开地址空间布局随机化
+but if you turn on address space layout randomization
+
+25
+00:01:23,200 --> 00:01:26,300
+随机化栈和堆的位置
+and you randomize where the stack is where the heap is
+
+26
+00:01:26,900 --> 00:01:28,200
+main函数的位置
+and where the main program is
+
+27
+00:01:28,333 --> 00:01:29,999
+库的位置
+where all the libraries are
+
+28
+00:01:30,500 --> 00:01:34,600
+攻击者就没有这些信息了
+suddenly the attacker doesn't have that information and
+
+29
+00:01:36,200 --> 00:01:43,900
+控制流劫持和任意覆盖攻击要困难得多
+has a much harder time executing these control flow hijack and controlled overwrite attacks
+
+30
+00:01:44,333 --> 00:01:47,966
+看一下示例
+let's take a look at what I mean by this
+
+31
+00:01:48,900 --> 00:01:53,700
+在之前的视频中，我们有一个缓冲区溢出的简单例子
+we have our buffer overflow very simple example from a prior video
+
+32
+00:01:54,566 --> 00:01:55,666
+编译一下
+let's compile it
+
+33
+00:01:55,666 --> 00:01:58,499
+我这次还要关闭栈保护
+I'm going to turn off stack protections again
+
+34
+00:01:59,300 --> 00:02:00,133
+嗯
+um
+
+35
+00:02:03,766 --> 00:02:06,866
+啊，打错了
+ah there's no stack protector
+
+36
+00:02:08,733 --> 00:02:09,533
+好吧
+alright
+
+37
+00:02:11,600 --> 00:02:13,333
+如果你还记得
+and if you recall
+
+38
+00:02:13,500 --> 00:02:17,400
+第一次用它演示缓冲区溢出时，我禁用了位置无关代码
+the 1st time this came out I disabled position independent code
+
+39
+00:02:17,500 --> 00:02:24,400
+如果我 objectdump 这个 bufferoverflow
+so here if I do an object dump on this buffer overflow
+
+40
+00:02:25,266 --> 00:02:29,533
+它总是会映射到这些位置，对吧
+it is always going to be mapped at these locations right
+
+41
+00:02:30,500 --> 00:02:31,900
+所以预测很简单
+so it's simple to predict
+
+42
+00:02:31,900 --> 00:02:34,933
+在之前的视频中我利用这个时
+in the previous video where I exploited this
+
+43
+00:02:35,000 --> 00:02:41,800
+我只是使用这个确切的地址来覆盖返回地址
+I simply used that exact address to overwrite the return address with
+
+44
+00:02:41,933 --> 00:02:43,166
+所以很简单
+so it was very simple
+
+45
+00:02:46,400 --> 00:02:48,100
+但如果你没有关闭这个时
+but what if you don't have this
+
+46
+00:02:51,466 --> 00:02:54,366
+现在是什么样子
+what does it look like now 
+
+47
+00:02:55,933 --> 00:02:57,299
+现在看起来不一样了
+now it looks different right
+
+48
+00:02:57,700 --> 00:03:01,800
+这些是程序加载时在内存中的偏移量
+these are offsets in memory where this program will be loaded and
+
+49
+00:03:04,300 --> 00:03:10,600
+如果我们运行这个bufferoverflow
+if we just run this bufferoverflow and we
+
+50
+00:03:13,600 --> 00:03:18,300
+在另一个窗口（执行bufferoverflow）
+in a different window
+
+51
+00:03:20,400 --> 00:03:22,300
+读出内存映射
+read out the memory mapping
+
+52
+00:03:22,300 --> 00:03:24,800
+我们看到它被随机映射到某个地方
+we see it got mapped somewhere random
+
+53
+00:03:26,566 --> 00:03:29,199
+它的库被随机映射到某个地方
+its libraries got mapped somewhere random
+
+54
+00:03:31,400 --> 00:03:34,400
+加载器，也是它的库，随机映射到某个地方
+the loader another one of its libraries got maps somewhere random
+
+55
+00:03:34,466 --> 00:03:36,533
+栈被随机映射到某个地方
+the stack got maps somewhere random
+
+56
+00:03:37,566 --> 00:03:39,199
+如果我们再运行一次
+and if we rerun this again
+
+57
+00:03:42,800 --> 00:03:44,000
+所有这些都是不同的
+all of these are different
+
+58
+00:03:44,000 --> 00:03:45,733
+原来是55f6
+so it used to be 5 5 F6
+
+59
+00:03:46,000 --> 00:03:48,333
+现在是5619等等
+now it's 5 6 1 9 and so on
+
+60
+00:03:49,300 --> 00:03:55,500
+一直到这个数字都有较大的随机性
+high amount of randomness right down to this number 
+
+61
+00:03:56,766 --> 00:04:01,366
+这个第四个最低有效的半个字节
+this very the 4th least significant half byte 
+
+62
+00:04:01,366 --> 00:04:03,099
+顺便说一下，半个字节叫做半字节
+1/2 a byte by the way is called the nibble
+
+63
+00:04:03,800 --> 00:04:07,166
+所以一直到第4个最低有效的半字节会被随机化
+so right down to the 4th least significant nibble things are randomized
+
+64
+00:04:07,300 --> 00:04:10,900
+这对攻击者来说是个坏消息
+ this is bad news for an attacker
+
+65
+00:04:11,066 --> 00:04:14,599
+好了，让我们回到幻灯片
+alright so let's roll back to the slides
+
+66
+00:04:15,300 --> 00:04:18,300
+先研究这是怎么出现的
+and dive into 1st how this came about
+
+67
+00:04:18,300 --> 00:04:20,566
+然后看看我们能做些什么
+and then what we can do about it so
+
+68
+00:04:22,000 --> 00:04:25,000
+ASLR首次出现于2001年
+ASLR 1st appeared in 2001
+
+69
+00:04:25,900 --> 00:04:31,733
+作为Linux安全补丁集PaX的一部分
+as part of a Linux security patch set called PaX
+
+70
+00:04:32,100 --> 00:04:38,200
+这个补丁集放在今天也是很重要的
+it packs as a patch set that is still relevant today
+
+71
+00:04:40,100 --> 00:04:50,500
+在Linux内核中实现了大量的安全概念缓保护机制
+man has implements that a whole lot of security concepts mitigations in the linux kernel
+
+72
+00:04:50,600 --> 00:04:55,100
+他们也为下一个内核版本提供了数据执行保护（DEP）
+these are also the people that brought data execution Protection to the the next kernel
+
+73
+00:04:55,166 --> 00:04:55,966
+这是一个
+it's a
+
+74
+00:04:56,400 --> 00:05:02,800
+这也是防御工具箱中非常有效的工具
+which is a very also a very effective tool in the defense toolbox and
+
+75
+00:05:03,700 --> 00:05:06,166
+我在shellcode模块中讲过
+that I talked about in the shell code module
+
+76
+00:05:07,100 --> 00:05:10,800
+有趣的是，PaX是由一个匿名的程序员领导的
+interestingly the PaX is led by an anonymous coder
+
+77
+00:05:10,800 --> 00:05:12,000
+这是一件有趣的事情
+so that's an interesting thing
+
+78
+00:05:12,000 --> 00:05:14,600
+这是他们的吉祥物
+this is their mascot
+
+79
+00:05:14,666 --> 00:05:18,266
+它是经过苦战版的Linux吉祥物
+it's a battle hardened version of the Linux mascot
+
+80
+00:05:18,700 --> 00:05:22,500
+这是他们向世界展示自己的方式
+and that is how they present themselves to the world
+
+81
+00:05:22,700 --> 00:05:25,100
+但在2001年，他们创建了ASLR
+but in 2001 they created ASLR
+
+82
+00:05:25,700 --> 00:05:29,533
+提交到Linux
+added to submitted to Linux 
+
+83
+00:05:29,700 --> 00:05:35,700
+2005年，Linux终于在内核主线中发布了ASLR
+2005 is when Linux finally shipped ASLR in the main line of kernel
+
+84
+00:05:37,100 --> 00:05:44,700
+openBSD在默认配置下启用所有ASLR，比Linux快了两年
+open BSD beat Linux by two years in enabling all ASLR on a default configuration
+
+85
+00:05:44,933 --> 00:05:46,599
+但在
+but around
+
+86
+00:05:46,800 --> 00:05:52,300
+2001到2005年，地址空间随机布局开始兴起
+between 2001 and 2005 is this rise of address space layout randomization
+
+87
+00:05:53,066 --> 00:05:55,266
+现在所有东西都是随机化的
+all right so now everything is randomized
+
+88
+00:05:55,266 --> 00:05:56,599
+栈在一个随机的位置
+the stacks at a random location
+
+89
+00:05:56,600 --> 00:06:01,100
+即使在该程序中没有使用堆，它也位于随机位置
+the heap even though it wasn't used in that program is at a random location
+
+90
+00:06:01,700 --> 00:06:03,400
+我们还可以做什么
+what do we do
+
+91
+00:06:04,200 --> 00:06:06,666
+我们还可以做一些事情
+there's still a couple of things that we could do
+
+92
+00:06:06,666 --> 00:06:09,899
+一这些地址还是在内存的某个地方
+one is those addresses are in memory somewhere
+
+93
+00:06:09,900 --> 00:06:12,400
+如果你还有漏洞，我们就可以泄露出来
+so we could leak them out if you had another vulnrability
+
+94
+00:06:12,566 --> 00:06:14,966
+听起来像是金丝雀一样，不是吗
+sounds like the canary case doesn't it
+
+95
+00:06:15,500 --> 00:06:22,000
+我们现在必须有一个新的漏洞来泄漏内存中的位置
+we have to have now a new vulnrability to leak out the location in memory
+
+96
+00:06:29,266 --> 00:06:30,066
+抱歉
+sorry 
+
+97
+00:06:31,300 --> 00:06:32,866
+我们需要第二个弱点
+we need to have a 2nd vulnrability
+
+98
+00:06:32,800 --> 00:06:40,900
+泄漏内存中各种库、二进制文件、堆栈等的基址
+to leak out the base addresses of various libraries binaries the stack etc in memory
+
+99
+00:06:41,800 --> 00:06:42,600
+这
+this
+
+100
+00:06:44,500 --> 00:06:47,500
+这表明ASLR是一种非常有效的缓解措施
+this shows that ASLR is a very effective mitigation
+
+101
+00:06:47,533 --> 00:06:48,966
+和栈金丝雀一样
+like stack canary
+
+102
+00:06:49,000 --> 00:06:53,900
+我们很难忽略ASLR
+it is very hard to simply ignore ASLR
+
+103
+00:06:55,400 --> 00:07:01,700
+而ASLR确实大大提高了攻击者利用软件的门槛
+and ASLR really raised the bar significantly for attackers to be able to exploit software
+
+104
+00:07:02,500 --> 00:07:03,533
+另一种方法
+another method
+
+105
+00:07:04,533 --> 00:07:07,099
+我们会更深入一点
+that we'll go in in depth a little bit
+
+106
+00:07:07,100 --> 00:07:08,666
+基本上是YOLO它
+is basically to YOLO it
+
+107
+00:07:09,000 --> 00:07:13,200
+要意识到程序资产是对齐的
+to realize that the program assets are aligned
+
+108
+00:07:13,400 --> 00:07:15,733
+页面映射的地址是对齐的
+pages are mapped at aligned locations
+
+109
+00:07:17,600 --> 00:07:22,300
+你看，最后三个半字节都是零
+ you see all these last three nibbles are all zeros
+
+110
+00:07:22,300 --> 00:07:29,300
+为了更好地解释这个问题，我们将在第二部分中深入讲解
+and to leverage that for explication we'll cover that in a 2nd in depth
+
+111
+00:07:29,333 --> 00:07:32,399
+第三种方法适用于使用fork的服务
+and a 3rd method for forking services
+
+112
+00:07:32,600 --> 00:07:35,600
+和我们对栈金丝雀做的一样
+is to do the exact same thing we did for stack canary
+
+113
+00:07:35,666 --> 00:07:36,733
+用暴力破解的方法
+to brute force them
+
+114
+00:07:36,866 --> 00:07:38,899
+如果你有使用fork的服务
+again if you have a forking service
+
+115
+00:07:39,000 --> 00:07:41,500
+只是在一开始
+things are only really randomized at the beginning
+
+116
+00:07:41,900 --> 00:07:45,500
+当父进程启动时，是随机的
+of the when the original process the parent process launches up
+
+117
+00:07:45,866 --> 00:07:47,966
+父进程fork出的每个子进程
+every childhood the parent process forks off
+
+118
+00:07:47,966 --> 00:07:49,933
+都是父进程的副本
+will be a copy of the parent process
+
+119
+00:07:49,900 --> 00:07:53,700
+包括栈金丝雀，包括ASLR后的库偏移量
+including the stack canary and including the ASLR library offsets
+
+120
+00:07:54,600 --> 00:07:59,900
+这和我们在栈金丝雀案例中看到的forker程序是一样的
+so this is the exact same forker that we looked at in the stack canary case
+
+121
+00:08:00,466 --> 00:08:02,266
+我们可以用同样的攻击
+we can continue that same attack
+
+122
+00:08:02,266 --> 00:08:03,499
+不仅能泄露栈金丝雀
+to leak not just the canary
+
+123
+00:08:03,500 --> 00:08:04,966
+还能泄露
+but also the
+
+124
+00:08:06,100 --> 00:08:16,300
+栈上指向存储数据的有效地址
+various addresses on the stack that will point us to valid locations in memory where things are stored
+
+125
+00:08:17,100 --> 00:08:18,666
+好的，那么
+all right so
+
+126
+00:08:20,500 --> 00:08:25,400
+让我们更深入地了解页偏移量覆盖
+let's take a more in depth look at overwriting page offsets
+
+127
+00:08:26,366 --> 00:08:29,499
+这背后的关键原理
+the key intuition behind this
+
+128
+00:08:29,866 --> 00:08:31,766
+是页面总是对齐的
+is that pages are always aligned
+
+129
+00:08:31,766 --> 00:08:35,066
+它们总是和0x1000对齐
+they're always aligned to 0x1000
+
+130
+00:08:35,066 --> 00:08:36,266
+他们是随机的
+they're randomized
+
+131
+00:08:36,666 --> 00:08:38,699
+位置是随机的
+but the location is randomized
+
+132
+00:08:38,700 --> 00:08:44,100
+但是该页的第一个字节的偏移量总是000
+but the 1st byte of that page is always at 000 offset
+
+133
+00:08:44,133 --> 00:08:47,066
+页面的最后一个字节是F F F
+and the last byte of the page is F F F
+
+134
+00:08:47,700 --> 00:08:49,066
+然后是其他的
+and then everything else
+
+135
+00:08:49,400 --> 00:08:51,533
+那一页的实际位置
+um the actual location of that page
+
+136
+00:08:51,766 --> 00:08:55,133
+是随机的，但与0x1000对齐
+is randomized but aligned to ox 1000
+
+137
+00:08:55,400 --> 00:08:57,733
+可能的页面地址是
+okay so possible page addresses are
+
+138
+00:08:57,733 --> 00:08:59,566
+这些是各种各样的怪物
+are these various monstrosities
+
+139
+00:08:59,600 --> 00:09:02,200
+这可能是一个库地址
+this is a possible address of a library
+
+140
+00:09:02,200 --> 00:09:04,900
+这可能是一个主二进制文件的地址
+this is a possible address of a main binary
+
+141
+00:09:04,900 --> 00:09:12,700
+这可能是一些特殊的内核映射帮助器地址
+this is a possible address of  some special kernel mapped helper region
+
+142
+00:09:15,266 --> 00:09:18,099
+我们会在以后的课上讲到
+ that we'll talk about in a future module
+
+143
+00:09:18,300 --> 00:09:25,500
+这可能是一个非位置无关的库地址
+this is a possible location of a not position independent library binary
+
+144
+00:09:25,600 --> 00:09:29,766
+但结果是这三个零永远不会改变
+but the upshot is these three zeros never change
+
+145
+00:09:29,700 --> 00:09:39,800
+如果有一段代码在二进制文件中的偏移量是0x137
+if there is a piece of code that is 0x137 of an offset inside a binary
+
+146
+00:09:40,133 --> 00:09:41,933
+并且主二进制文件加载在这里
+and the main binary is mount here
+
+147
+00:09:42,000 --> 00:09:44,100
+那个地址就是这些乱七八糟的137
+that address will be all of this gunk 137
+
+148
+00:09:45,100 --> 00:09:50,500
+有趣的是你可以覆盖最后一个或者两个字节
+ and the interesting thing is that you can overwrite the last byte or the last 2 bytes
+
+149
+00:09:50,866 --> 00:09:52,366
+如果你只覆盖最后一个字节
+if you overwrite the last byte
+
+150
+00:09:52,400 --> 00:09:54,000
+你可以重定向到指定位置
+you can overwrite it with certainty
+
+151
+00:09:54,000 --> 00:10:00,500
+如果您想从二进制文件中的137重定向执行到145
+if you want to redirect execution from 137 in the binary to 145
+
+152
+00:10:01,500 --> 00:10:07,900
+你可以很容易地把最后一个字节37覆盖成45
+you can very easily just overwrite that last byte from 37 to 4 5
+
+153
+00:10:08,100 --> 00:10:09,133
+因为在小端序中
+because in little endian
+
+154
+00:10:09,133 --> 00:10:11,999
+最后一个字节将是你覆盖的第一个字节
+that last byte will be the 1st byte that you overwrite
+
+155
+00:10:12,766 --> 00:10:14,466
+如果你需要跳到更远的位置
+if you need to make a wider jump
+
+156
+00:10:14,666 --> 00:10:16,099
+那你就得需要一点暴力破解了
+ then you'll need to brute force
+
+157
+00:10:16,100 --> 00:10:16,900
+你需要运气
+you need to get lucky
+
+158
+00:10:16,900 --> 00:10:18,900
+你需要运行大约16次
+you need to run it about 16 times
+
+159
+00:10:19,200 --> 00:10:23,800
+直到这最后的半字节与所要覆盖它的内容一致
+until this last nibble lines up to what you expect to what you overwrote it with
+
+160
+00:10:23,900 --> 00:10:27,200
+因为通常一次覆盖一个字节
+all right because you overwrite generally a byte at a time
+
+161
+00:10:29,200 --> 00:10:30,566
+举个例子
+let me show you this
+
+162
+00:10:30,566 --> 00:10:33,666
+所以我编译了这个buffer_overflow
+so I compiled my buffer overflow
+
+163
+00:10:35,066 --> 00:10:40,333
+当然，我想跳转（到win）
+and I want to of course redirect execution from win
+
+164
+00:10:41,100 --> 00:10:42,800
+从main返回地址
+from the return address of main
+
+165
+00:10:42,800 --> 00:10:45,100
+当main返回时，我想跳转到win函数
+when main returns I wanted to jump to win
+
+166
+00:10:48,766 --> 00:10:51,499
+提醒一下，这个buffer_overflow代码长这样
+and as remind this buffer overflow looks like this
+
+167
+00:10:51,533 --> 00:10:52,533
+有一个main函数
+there's a main function
+
+168
+00:10:52,533 --> 00:10:54,566
+紧接着是一个win函数
+and right afterwards there's a win function
+
+169
+00:10:54,800 --> 00:10:57,500
+反汇编一下
+let's disassemble it
+
+170
+00:11:03,100 --> 00:11:07,700
+这是main函数在1189
+here is main  at 1189 
+
+171
+00:11:08,266 --> 00:11:13,199
+win函数在11c2处，这两个地址只有一字节差异
+and at 11c2 is win one byte differs between those two addresses
+
+172
+00:11:14,466 --> 00:11:15,933
+gdb一下
+let's GDB it
+
+173
+00:11:19,166 --> 00:11:20,166
+GDB将
+GDB will
+
+174
+00:11:21,100 --> 00:11:24,300
+我马上就会提到
+as I'll mention in a second
+
+175
+00:11:24,700 --> 00:11:28,133
+会自动禁用ASLR如果它可以，如果你有权限
+ will automatically disable ASLR if it can if you have permissions to do so
+
+176
+00:11:28,133 --> 00:11:29,899
+这对于调试非常有用
+this is very useful for debugging
+
+177
+00:11:31,766 --> 00:11:33,166
+我们来看看
+so let's look at
+
+178
+00:11:34,000 --> 00:11:35,300
+在main下断点
+let's break in main
+
+179
+00:11:36,900 --> 00:11:42,366
+运行，好，现在在main，我们有5555 5555 4000
+run okay so here we are in main we have  5555 5555 4000
+
+180
+00:11:42,300 --> 00:11:49,700
+所以当GDB禁用ASLR后，内存基址就是这个
+so GDB has a base of this when it disables randomization
+
+181
+00:11:50,000 --> 00:11:54,300
+然后加上1189，这是main所在的位置
+and then plus 1189 which is where main lives
+
+182
+00:11:54,733 --> 00:11:57,333
+1189，所以现在在这里
+1189 and so here we are
+
+183
+00:11:59,100 --> 00:12:02,966
+我刚想起一个问题
+I just realized a problem that I should have
+
+184
+00:12:04,066 --> 00:12:06,666
+让我们看看main的返回地址
+let's look at the return address of main
+
+185
+00:12:07,000 --> 00:12:09,700
+main的返回地址是某个库的地址
+the return address of main goes to some library somewhere
+
+186
+00:12:09,800 --> 00:12:13,200
+这不是我们在这个简单例子中想看到的
+that's not what we want in this simple example
+
+187
+00:12:13,200 --> 00:12:16,200
+在这个简单的例子中，它为什么会返回到库中
+the simple example  why does it go into the library
+
+188
+00:12:16,200 --> 00:12:19,166
+因为__libc_start_main调用了main
+because __libc_start_main calls main
+
+189
+00:12:19,100 --> 00:12:25,100
+如果你对此感到困惑，回头看看我的进程生命周期基础课程
+if this is confusing to you go back and look at my process life cycle fundamental lectures
+
+190
+00:12:25,300 --> 00:12:27,400
+我们把它改成一个vuln函数
+let's make this a vuln function
+
+191
+00:12:27,800 --> 00:12:29,733
+让main调用vuln
+let's make main called vuln
+
+192
+00:12:30,100 --> 00:12:30,566
+好了
+okay
+
+193
+00:12:30,566 --> 00:12:33,299
+很简单的小变化
+this is nice and simple very small change
+
+194
+00:12:33,566 --> 00:12:35,866
+main函数调用vuln函数
+the main function just calls the vuln function
+
+195
+00:12:36,300 --> 00:12:37,733
+我们可以编译
+we can compile this
+
+196
+00:12:38,100 --> 00:12:38,933
+太棒了
+awesome
+
+197
+00:12:40,066 --> 00:12:42,599
+运行，我们在vuln下断点
+run it all right now we're breaking vuln
+
+198
+00:12:47,000 --> 00:12:48,700
+哦，objdump看一下
+oh let's objdump
+
+199
+00:12:56,500 --> 00:12:56,800
+在哪里
+where
+
+200
+00:12:56,800 --> 00:12:58,300
+我的vuln函数在哪
+where's my vuln function
+
+201
+00:13:11,000 --> 00:13:11,400
+oops
+oops
+
+202
+00:13:11,400 --> 00:13:13,333
+我刚才修改了什么
+what did I just modify
+
+203
+00:13:14,133 --> 00:13:15,566
+啊，我改错了
+ah I modified the wrong
+
+204
+00:13:15,566 --> 00:13:17,499
+我刚刚修改的forker.c
+I modified an example for the wrong video
+
+205
+00:13:17,966 --> 00:13:19,166
+很抱歉
+sorry about that
+
+206
+00:13:20,200 --> 00:13:23,800
+这是buffer_overflow.c
+here's our buffer_overflow.c
+
+207
+00:13:28,066 --> 00:13:30,466
+然后编译
+and here is the compilation
+
+208
+00:13:30,466 --> 00:13:31,499
+好酷
+okay cool
+
+209
+00:13:31,500 --> 00:13:38,000
+现在我们有一个main函数调用一个会溢出的vuln函数
+so now we have a main function that calls a vuln function that will have an overflow
+
+210
+00:13:38,733 --> 00:13:41,399
+我们像重定向到win函数
+and we want to redirect our execution to win
+
+211
+00:13:41,400 --> 00:13:43,133
+我这么做（做这个修改）的原因是
+the reason I did this is so that
+
+212
+00:13:43,200 --> 00:13:47,400
+vuln的返回地址将是一个地址
+the return address of vuln will be an address
+
+213
+00:13:47,466 --> 00:13:49,599
+一个在main里的地址
+the address an address in main
+
+214
+00:13:49,600 --> 00:13:56,900
+在main里的地址我们才能只改一个字节就跳到win函数
+and that's where we can modify one byte to redirect to win
+
+215
+00:13:57,000 --> 00:13:58,266
+让我们来看看
+so let's take a look
+
+216
+00:13:58,733 --> 00:14:00,166
+在vuln下断点
+let's break in vuln
+
+217
+00:14:00,900 --> 00:14:02,900
+好了，运行
+there we go we run
+
+218
+00:14:03,800 --> 00:14:04,800
+现在在vuln函数
+we're in vuln
+
+219
+00:14:05,400 --> 00:14:08,300
+让我们看看栈上有什么
+let's look at what is right on the stack
+
+220
+00:14:08,333 --> 00:14:11,733
+现在栈上的值是main函数中的地址 519b
+right on stack is an address in main 519B
+
+221
+00:14:11,933 --> 00:14:13,799
+我打赌如果反汇编main
+I bet if you disassemble main
+
+222
+00:14:14,466 --> 00:14:16,866
+它和之前一样从5189开始
+it starts as 5189 as before
+
+223
+00:14:17,933 --> 00:14:22,333
+519b就在这个调用之后
+ and 519b is right after this call
+
+224
+00:14:22,600 --> 00:14:24,466
+这就是我们要返回到的位置
+that's where we'll be returning to
+
+225
+00:14:24,733 --> 00:14:26,866
+如果反汇编win
+if we disassemble win
+
+226
+00:14:27,700 --> 00:14:30,166
+win在51d7
+win is at 51d7
+
+227
+00:14:30,333 --> 00:14:33,566
+如果你只覆盖这个最低有效字节
+so if you overwrite just this least significant byte
+
+228
+00:14:33,566 --> 00:14:35,666
+也就是我现在要在GDB做的
+which I'm about to do right now in GDB
+
+229
+00:14:39,200 --> 00:14:40,333
+我们可以这样做
+we can do this
+
+230
+00:14:43,466 --> 00:14:46,366
+无符号char *
+unsigned char star
+
+231
+00:14:48,400 --> 00:14:49,600
+rsp
+RSP
+
+232
+00:14:50,266 --> 00:14:51,266
+=
+equals
+
+233
+00:14:52,900 --> 00:14:54,800
+在哪来着？d7
+ah where is it d7
+
+234
+00:14:57,166 --> 00:14:59,999
+现在看一下返回地址
+okay now let's see what is our return address
+
+235
+00:15:00,000 --> 00:15:01,766
+boom如果继续运行
+boom if you continue here
+
+236
+00:15:06,300 --> 00:15:09,766
+触发了win，打印了flag
+we triggered the win call and printed the flag
+
+237
+00:15:09,700 --> 00:15:14,500
+当然，我们想要在漏洞利用的过程实现这个效果
+so now of course we want to do this in the course of exploitation
+
+238
+00:15:14,600 --> 00:15:19,500
+我们要写一堆a，然后接着这个D7
+we've got to write a bunch of A's and then this D7
+
+239
+00:15:20,700 --> 00:15:22,366
+让我们进入python
+let's jump into python
+
+240
+00:15:22,800 --> 00:15:24,000
+导入pwn
+import pwn
+
+241
+00:15:24,900 --> 00:15:31,800
+使用pwn.process启动buffer_overflow
+pwn. process buffer_overflow
+
+242
+00:15:34,400 --> 00:15:37,700
+然后我们试着写
+and then we will try to r.write
+
+243
+00:15:41,500 --> 00:15:43,766
+我们知道缓冲区是16字节
+we know that the buffer is 16 bytes
+
+244
+00:15:43,766 --> 00:15:45,366
+可能是有一些填充
+it's probably there's some padding
+
+245
+00:15:45,700 --> 00:15:53,100
+所以我们试试0x18 + \xd7
+so let's try ox 18 plus x d seven
+
+246
+00:15:57,333 --> 00:15:58,899
+然后r.read
+and then r.read
+
+247
+00:16:00,133 --> 00:16:02,066
+boom成了
+boom victory
+
+248
+00:16:02,900 --> 00:16:03,500
+好了
+all right
+
+249
+00:16:03,500 --> 00:16:09,000
+当然在GDB中我们知道这个地址
+now of course in GDB we know this address
+
+250
+00:16:09,066 --> 00:16:11,733
+在GDB外，我们不知道这个地址
+outside of GDB we didn't know that address
+
+251
+00:16:12,700 --> 00:16:15,700
+这就是神奇的地方
+and that is the amazing thing
+
+252
+00:16:15,800 --> 00:16:18,066
+尽管不知道地址，我们还是可以
+despite not knowing that address we were able to
+
+253
+00:16:18,733 --> 00:16:21,199
+只是稍微调整返回地址
+just slightly tweaked that return value
+
+254
+00:16:21,200 --> 00:16:27,300
+如果原本的返回地址是这个555555555090，修改后的结果将是一个错误的地址
+if I had tried to write this full 55555 it would be an incorrect address
+
+255
+00:16:27,300 --> 00:16:29,600
+实际的程序会被随机映射到某个地方
+the actual program is mapped somewhere randomly
+
+256
+00:16:29,900 --> 00:16:33,100
+但只是通过调整最后一个字节
+but just by tweaking by tweaking just the last byte
+
+257
+00:16:33,600 --> 00:16:35,500
+我就能重定向到合适的地方
+I was able to redirect it properly
+
+258
+00:16:36,966 --> 00:16:38,599
+在更复杂的情况下
+in more complex scenarios
+
+259
+00:16:38,600 --> 00:16:41,200
+你必须对最后两个字节进行微调，然后
+you'll have to tweek the last two bytes and then
+
+260
+00:16:41,366 --> 00:16:42,766
+有一些不确定性
+there's some uncertainty
+
+261
+00:16:42,700 --> 00:16:48,900
+你可能会破坏这个你不知道的值
+you might end up corrupting this value which you don't know
+
+262
+00:16:48,933 --> 00:16:51,733
+运气好，覆盖前后的值这里正好相同
+you have to get lucky and overwrited with what it was before
+
+263
+00:16:51,733 --> 00:16:53,199
+所以你要一直试
+ so you just keep trying
+
+264
+00:16:55,000 --> 00:16:57,366
+1/16的概率
+one out of 16 times digitally speaking
+
+265
+00:16:57,366 --> 00:16:58,266
+你能成功
+you should get it
+
+266
+00:16:58,700 --> 00:17:02,000
+好吧，假设你在做本地测试
+alright let's say you're doing local testing
+
+267
+00:17:02,000 --> 00:17:04,300
+如何禁用ASLR
+how do you disable ASLR 
+
+268
+00:17:04,500 --> 00:17:05,133
+首先
+well 1st of all 
+
+269
+00:17:05,133 --> 00:17:07,333
+这样你就可以调试你的漏洞利用程序等等
+so that you know of course you can debug your exploits and so forth
+
+270
+00:17:07,300 --> 00:17:09,800
+在不开启地址空间布局随机化的情况下调试
+and not in the presence of address space layout randomization
+
+271
+00:17:09,933 --> 00:17:11,666
+然后相应地调整它们（漏洞利用程序）
+and then adapt them accordingly
+
+272
+00:17:13,700 --> 00:17:17,600
+首先，如你所见，GDB默认是这样做的
+1st of all as you saw GDB does it by default
+
+273
+00:17:17,700 --> 00:17:23,000
+如果程序设置了SUID，GDB将不能这样做
+it will not be able to do it under any circumstances if the program is set UID
+
+274
+00:17:23,100 --> 00:17:26,666
+作业中有这样的情况
+which the challenges for the homework problems are
+
+275
+00:17:27,133 --> 00:17:29,733
+因此，在使用GDB之前，您必须删除setuid位
+so you will have to remove that setuid bit before using GDB
+
+276
+00:17:29,900 --> 00:17:33,900
+如果你想关闭ASLR
+ if you want ASLR to be turned off
+
+277
+00:17:34,000 --> 00:17:35,666
+你可以用chmod来做这个
+you can do this with chmod
+
+278
+00:17:35,666 --> 00:17:38,599
+只要把它修改成普通的755
+just chmod it to a normal you know 755 
+
+279
+00:17:39,900 --> 00:17:42,966
+或者复制到其他地方
+or copy it somewhere else
+
+280
+00:17:42,966 --> 00:17:45,066
+这将重置setuid位
+that will reset the setuid bit
+
+281
+00:17:46,600 --> 00:17:47,933
+所以一定要小心
+so just be careful
+
+282
+00:17:48,800 --> 00:17:54,900
+如果你不明白为什么GDB没有关闭ASLR，这就是原因
+if you're confused why GDB isn't turning off ASLR that can be why
+
+283
+00:17:55,933 --> 00:17:57,966
+您也可以在pwntools中执行此操作
+you can also do it in pwntools
+
+284
+00:17:57,966 --> 00:18:01,366
+启动程序时，ASLR = false即可
+when you launch up a program just do ASLR equals false
+
+285
+00:18:01,366 --> 00:18:03,866
+它的原理与此非常相似
+under the hood it does something very similar to this
+
+286
+00:18:03,866 --> 00:18:05,866
+你能用
+you can which you can use
+
+287
+00:18:06,100 --> 00:18:09,900
+这个shell命令，你可以使用它来启动一个shell
+there's a shell command which you can use to spin up a shell
+
+288
+00:18:10,566 --> 00:18:13,999
+这个shell禁用了ASLR
+that doesn't have ASLR enabled 
+
+289
+00:18:14,400 --> 00:18:15,800
+当然，这些对于setUID二进制文件都无关紧要
+of course none of this matters for setUID binaries
+
+290
+00:18:15,800 --> 00:18:19,000
+它会忽略这些，并启用ASLR
+it'll ignore whatever you're saying and happily enable ASLR
+
+291
+00:18:19,166 --> 00:18:21,733
+最大限度地提高setUID二进制文件的安全性
+to maximize the security of setUID binaries
+
+292
+00:18:21,733 --> 00:18:24,266
+让我来展示一下最后一招
+let me show you how this last one works
+
+293
+00:18:24,466 --> 00:18:27,199
+在普通的shell，我可以执行ldd /bin/true
+so I am in my normal shell I can do ldd bin true
+
+294
+00:18:30,133 --> 00:18:32,799
+它（的地址）一直会随机化
+ and it keeps randomizing right
+
+295
+00:18:32,800 --> 00:18:36,300
+这个LDD是一个加载器调试器
+this ldd is a loader debugger
+
+296
+00:18:36,400 --> 00:18:38,466
+它只是告诉你将在哪里加载库
+it just tells you where libraries will be loaded
+
+297
+00:18:38,466 --> 00:18:40,199
+好了，它一直是随机的
+alright so it keeps randomizing
+
+298
+00:18:41,000 --> 00:18:45,500
+如果我执行 setarch x86_64 -R /bin/bash。R代表随机化
+if I do set arch x86_64 with R randomization bin bash
+
+299
+00:18:46,066 --> 00:18:48,099
+这（bash）也可以是任何其他程序
+ this can be any other process too
+
+300
+00:18:48,500 --> 00:18:52,100
+这个进程和它的所有子进程
+this process now and all of its children
+
+301
+00:18:54,133 --> 00:18:57,133
+会被去随机化
+ are going to be derandomized 
+
+302
+00:18:57,733 --> 00:18:58,866
+所以我可以这样做
+so I can do this
+
+303
+00:19:00,766 --> 00:19:02,399
+我的电脑有点奇怪
+something weird is going on in my computer
+
+304
+00:19:02,400 --> 00:19:03,200
+bin true
+ bin true
+
+305
+00:19:04,200 --> 00:19:05,933
+你可以看到它们都在同一个地方
+and you can see it's all at the same place
+
+306
+00:19:06,300 --> 00:19:09,800
+使调试漏洞利用变得更加容易
+makes it much easier for debugging exploits
+
+307
+00:19:09,800 --> 00:19:14,700
+当然，事后你可以让它们适配ASLR
+and then of course you can adapt them to ASLR after the fact
+
+308
+00:19:15,900 --> 00:19:18,866
+这就是我们要讨论的ASLR
+that's what we're going to talk about with ASLR
+
+309
+00:19:19,600 --> 00:19:21,100
+我希望
+I hope that
+
+310
+00:19:21,800 --> 00:19:30,400
+你对现代的保护机制有了更好的理解
+you got a bit of a better understanding of the modern mitigations
+
+311
+00:19:30,766 --> 00:19:32,466
+数据执行防护
+data execution prevention
+
+312
+00:19:32,800 --> 00:19:36,166
+ASLR和栈金丝雀
+ASLR and stack canaries
+
+313
+00:19:36,333 --> 00:19:39,099
+这三个功能
+are really kind of the three features
+
+314
+00:19:39,266 --> 00:19:43,566
+经常用于保护可执行文件
+that are used everywhere to protect executables
+
+315
+00:19:44,866 --> 00:19:46,566
+有一个新功能
+there's a new feature coming in
+
+316
+00:19:46,566 --> 00:19:48,166
+我下一模块再讲
+I will talk about it next module 
+
+317
+00:19:48,166 --> 00:19:50,533
+叫控制流完整性
+which is control flow integrity
+
+318
+00:19:50,733 --> 00:19:54,166
+这将是未来的一个重要角色
+that is going to be a big player in the future
+
+319
+00:19:54,366 --> 00:19:56,133
+但我们稍后再谈
+but we'll talk about that later

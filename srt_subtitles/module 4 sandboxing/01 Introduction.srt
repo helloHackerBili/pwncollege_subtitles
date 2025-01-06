@@ -1,0 +1,929 @@
+1
+00:00:00,866 --> 00:00:02,533
+学生们好
+hello students
+
+2
+00:00:03,000 --> 00:00:09,900
+我是Yan，这个视频是对沙盒模块的一个介绍
+I'm Yan and this is the introduction to the sandboxing module of pwn College
+
+3
+00:00:10,300 --> 00:00:12,266
+这个模块会讲到
+and this module will talk about
+
+4
+00:00:12,900 --> 00:00:14,733
+沙盒的概念
+the concept of sandboxing
+
+5
+00:00:14,966 --> 00:00:19,133
+沙盒使用到的技术和
+the technologies used in sandboxing and
+
+6
+00:00:19,900 --> 00:00:25,200
+从简单沙盒中逃逸的方法
+the ways to break out of at least kind of rudimentary sandboxes
+
+7
+00:00:25,200 --> 00:00:27,066
+让我们来谈谈沙盒
+so let's talk about sandboxing
+
+8
+00:00:27,066 --> 00:00:28,499
+这是什么意思呢
+what do we mean by this
+
+9
+00:00:29,800 --> 00:00:34,600
+这有一个XKCD漫画介绍了沙箱发展的循环（xkcd指Randall Munroe的网名或者他的漫画）
+there's a relevant xkcd as there's for a lot of things about the sandboxing cycle
+
+10
+00:00:34,600 --> 00:00:43,300
+本质上，新技术可以以很酷的方式和系统组合在一起，实现很酷的功能
+essentially as we develop new technology that can be put together in cool ways to enable cool functionality
+
+11
+00:00:43,333 --> 00:00:44,933
+但慢慢地我们开始意识到
+we start slowly realizing
+
+12
+00:00:44,933 --> 00:00:47,199
+我们对这项技术的使用方式
+that the way that we have put this technology together
+
+13
+00:00:47,366 --> 00:00:49,399
+不是很安全
+is not very secure
+
+14
+00:00:49,400 --> 00:00:51,666
+导致很多漏洞等等
+causes a lot of vulnerabilities etcetera
+
+15
+00:00:51,600 --> 00:00:54,300
+这种情况一次又一次地发生在不同的技术中
+and this happens time and time again with different technologies
+
+16
+00:00:54,300 --> 00:00:59,700
+然后我们会想出其他方法来分离它们或者使用沙盒
+and then we end up figuring out other ways to either separate them or to sandbox
+
+17
+00:00:59,900 --> 00:01:10,300
+本质上是为了将这些漏洞的能力降低到对系统无害的程度
+ essentially to reduce the ability of these vulnerabilities to harmless in these systems
+
+18
+00:01:10,900 --> 00:01:14,000
+好吧，让我们回到最初的起点
+all right let's let's rewind back to the beginning
+
+19
+00:01:14,066 --> 00:01:16,666
+我们会以十年为单位的讲
+we're just gonna do a decade by decade jump
+
+20
+00:01:16,666 --> 00:01:18,266
+这里的十年是大概的
+these decades are very approximate
+
+21
+00:01:18,266 --> 00:01:19,766
+这只是一个很好的框架
+it's just a good frame
+
+22
+00:01:19,700 --> 00:01:25,100
+不要把这当成是对计算机历史的准确描述（防杠声明）
+don't don't take this as kind of verbatim the history of computing
+
+23
+00:01:25,900 --> 00:01:29,400
+但是让我们看一下
+but let's go through and look at 
+
+24
+00:01:30,133 --> 00:01:32,933
+沙盒的起源
+how kind of sandboxing arose 
+
+25
+00:01:33,500 --> 00:01:35,100
+起初
+from the beginning or close to the beginning
+
+26
+00:01:35,866 --> 00:01:39,133
+20世纪50年代的计算机
+which is computers back at let's say the 1950s
+
+27
+00:01:39,200 --> 00:01:43,500
+这些电脑用打卡器写程序
+right these computers you often wrote programs with Sam punch cards
+
+28
+00:01:43,600 --> 00:01:45,500
+当你把这些程序加载到电脑里
+and when you loaded these programs into the computer 
+
+29
+00:01:45,700 --> 00:01:51,500
+它们会在裸机里运行
+they would just run in the like bare metal of the computer just
+
+30
+00:01:51,766 --> 00:01:53,533
+最接近硬件
+as close to the hardware
+
+31
+00:01:53,500 --> 00:01:57,800
+计算机唯一做的事情就是执行你的程序
+that was the only thing the computer was doing was executing your program
+
+32
+00:01:57,866 --> 00:02:00,366
+问题是，有很多问题
+the problem it was was, there were multiple problems
+
+33
+00:02:00,366 --> 00:02:03,366
+一是一次只能执行一个程序
+one is could execute only one program at a time
+
+34
+00:02:08,000 --> 00:02:12,600
+二是这些程序可能会破坏硬件等等
+the programs could do stuff like damage the hardware and so forth
+
+35
+00:02:12,666 --> 00:02:15,599
+他们可以在机器上做任何事情
+they could do anything on the machine
+
+36
+00:02:16,100 --> 00:02:18,900
+某些操作的副作用很危险
+and certain things had side effects that could be dangerous
+
+37
+00:02:19,000 --> 00:02:19,800
+所以
+and so
+
+38
+00:02:20,300 --> 00:02:25,400
+给操作系统和用户空间做了隔离
+the split of kind of an operating system in the user space arose which
+
+39
+00:02:27,400 --> 00:02:32,000
+它做了两件事。一是提供了更多的保护
+did 2 things they enabled a bit more Protection
+
+40
+00:02:32,100 --> 00:02:35,700
+比如一个普通进程在跑的时候计算机不会破坏它
+so a typical process running and your machine couldn't destroy it
+
+41
+00:02:35,800 --> 00:02:39,200
+二是允许同时运行多个进程
+and 2 they allowed multiple processes to run at the same time
+
+42
+00:02:39,300 --> 00:02:42,466
+所以我们慢慢开始开发多进程系统
+so we slowly started developing multi processed systems
+
+43
+00:02:43,100 --> 00:02:47,600
+每个进程都可以运行
+where every process could run
+
+44
+00:02:48,100 --> 00:02:49,800
+但要避免与其他进程冲突
+as long as it carefully avoided collaboring other processes
+
+45
+00:02:50,100 --> 00:02:55,300
+在非常早期的原型中
+ right in very early prototypes you could you know
+
+46
+00:02:55,300 --> 00:02:57,566
+一个进程和一部分内存空间对应
+have one process and one part of the memory space
+
+47
+00:02:57,566 --> 00:02:59,566
+另一个进程和另一部分内存空间对应
+another process and another part of the memory space
+
+48
+00:02:59,700 --> 00:03:06,100
+他们只会使用自己的那部分内存空间，避免相互冲突
+and they would happily use their own part of that memory space  to avoid collaborating each other
+
+49
+00:03:06,400 --> 00:03:08,933
+问题是，如果人们不小心，他们就会相互冲突
+the problem is that they could collaborate each other if the people weren't careful 
+
+50
+00:03:09,300 --> 00:03:15,500
+所以人们创造了一种沙盒
+and so they created essentially a sort of sandboxing
+
+51
+00:03:15,533 --> 00:03:15,699
+将这些进程分隔到它们自己的内存空间中
+that we separated these processes into their own memory spaces
+
+52
+00:03:15,700 --> 00:03:20,400
+我们创建了虚拟内存
+ we created virtual memory
+
+53
+00:03:20,566 --> 00:03:23,866
+现在你接触的大多数电脑
+nowadays um most computers you interact with
+
+54
+00:03:23,866 --> 00:03:25,199
+都支持虚拟内存
+will have virtual memory support
+
+55
+00:03:25,200 --> 00:03:29,700
+多个进程都有自己的内存视图
+where multiple processes will have their own view of memory um
+
+56
+00:03:30,700 --> 00:03:32,533
+所以他们不会相互冲突
+so they don't collaborate each other
+
+57
+00:03:32,900 --> 00:03:39,500
+然后其他的隔离和沙盒措施开始出现
+uh and then other um kind of isolation and sandboxing measures um start arising
+
+58
+00:03:39,733 --> 00:03:43,566
+在90年代，再次声明这是一个近似的描述
+uh let's say in the 90s again this is kind of a um approximating frame and
+
+59
+00:03:44,100 --> 00:03:49,800
+90年代出现了脚本语言
+ the 90s you see the creation of uh scripting languages
+
+60
+00:03:49,800 --> 00:03:50,600
+嗯
+um
+
+61
+00:03:50,933 --> 00:03:51,733
+而且
+and
+
+62
+00:03:54,300 --> 00:04:05,300
+脚本语言在解释器和脚本代码之间有一个隐式的隔离
+scripting languages have a implicit separation between the interpreter and the interpreted thing  right the interpreted code
+
+63
+00:04:07,100 --> 00:04:13,400
+解释器会执行底层操作
+and the interpreter has you know low level operations that it does and so forth
+
+64
+00:04:13,400 --> 00:04:15,900
+脚本代码只是调用解释器
+the interpreter code just calls into the interpreter
+
+65
+00:04:15,900 --> 00:04:17,666
+这是一种隔离
+it's a sort of isolation
+
+66
+00:04:17,733 --> 00:04:19,766
+它本意不是为了安全
+that is not meant to be a security isolation
+
+67
+00:04:19,766 --> 00:04:21,699
+但实际上却经常被这样用
+but is often actually utilized as such
+
+68
+00:04:21,700 --> 00:04:25,700
+有很多在线服务会
+there are plenty of online services that will
+
+69
+00:04:25,733 --> 00:04:28,099
+给你一个Python shell来玩
+give you like a Python shell to play around with
+
+70
+00:04:28,100 --> 00:04:35,000
+每隔一段时间，由于Python代码和Python解释器之间的错误隔离
+and every once in a while because of faulty isolation between Python the interpreter language and Python the interpreter
+
+71
+00:04:35,533 --> 00:04:37,166
+安全问题产生了
+security of own abilities arise
+
+72
+00:04:37,466 --> 00:04:39,466
+这方面有一些著名的例子
+and there are some famous examples of this
+
+73
+00:04:39,466 --> 00:04:40,533
+例如在
+for example on
+
+74
+00:04:40,800 --> 00:04:43,700
+微软的Rise for fun平台
+Microsoft's Rise for fun platform
+
+75
+00:04:43,700 --> 00:04:47,300
+它允许你在那个平台上直接与Python交互
+which allowed you to interact directly with Python within that platform
+
+76
+00:04:47,300 --> 00:04:52,700
+但由于安全问题，这个功能不得不被取消了一段时间
+but that functionality had to be taken down for a while specifically because of security issues
+
+77
+00:04:53,700 --> 00:05:00,000
+让我们看一个具体的例子来为这个模块做个提升
+let's look at a specific case of this to motivate this module
+
+78
+00:05:00,133 --> 00:05:01,466
+那就是网页浏览器
+and that is web browsers
+
+79
+00:05:01,466 --> 00:05:03,966
+Web浏览器可能是最大的例子
+web browsers are probably the biggest example
+
+80
+00:05:03,900 --> 00:05:09,100
+所有潜在的功能都被塞进了一个程序
+of all potential functionality being stuffed into one program
+
+81
+00:05:10,766 --> 00:05:14,466
+以满足快速扩张的网络需求
+to keep up with the needs of a rapidly expanding web
+
+82
+00:05:15,000 --> 00:05:16,766
+在21世纪初
+in the early 2000s
+
+83
+00:05:18,800 --> 00:05:20,466
+我们看到YouTube的崛起
+we saw the rise of YouTube
+
+84
+00:05:21,400 --> 00:05:32,500
+甚至比它更早的内容创作平台，比如其它的视频分享网站，游戏平台
+ the rise of even earlier than that  other video sharing and sharing of you know game creation platforms
+
+85
+00:05:34,000 --> 00:05:36,766
+有很多丰富的网络内容
+a lot of rich web content and 
+
+86
+00:05:37,000 --> 00:05:42,500
+这些都是由Adobe Flash、 ActiveX、 Java applet之类的东西提供支持
+these was powered by things such as Adobe Flash Active X Java applets 
+
+87
+00:05:43,300 --> 00:05:50,700
+这些都拥有运行浏览器时的用户的完整权限
+these sort of technologies that all ran in your browser with the full permissions of the user you were running them on
+
+88
+00:05:50,700 --> 00:05:58,600
+使用完整的权限丰富了网页的内容和功能
+as the full privileges to enable rich content on the web
+
+89
+00:05:59,900 --> 00:06:04,600
+最后导致拥有了狂野西部世界般的安全性
+what ended up happening was kind of the Wild West of security
+
+90
+00:06:04,666 --> 00:06:07,099
+新的漏洞不断被发现
+you had new vulnerabilities constantly being discovered
+
+91
+00:06:07,100 --> 00:06:14,700
+这些漏洞将使攻击者基本上完全控制您的系统
+in the expectation of these vulnerabilities would give an attacker essentially full control of your system
+
+92
+00:06:14,733 --> 00:06:16,999
+就好像他们是你的用户一样
+as if they were acting as your user
+
+93
+00:06:17,600 --> 00:06:23,200
+这些基本都和flash、Java applet、ActiveX有关
+this happened constantly with flash constantly with Java constantly with Active X
+
+94
+00:06:23,733 --> 00:06:25,133
+并且
+and uh
+
+95
+00:06:25,533 --> 00:06:28,566
+它带来了爆炸式增长并且由下载的驱动的（安全事件）
+it LED to this huge explosion and drive by downloads
+
+96
+00:06:28,500 --> 00:06:31,900
+有一段时间他们是互联网上最大的威胁
+for a while um they were the biggest threat on the Internet
+
+97
+00:06:31,966 --> 00:06:33,933
+你会不小心点击一个恶意链接
+you would accidentally click a malicious link
+
+98
+00:06:34,000 --> 00:06:38,400
+它会加载一个存在漏洞的ActiveX控件
+it would load an ActiveX control that would have a vulnerability 
+
+99
+00:06:38,566 --> 00:06:40,333
+然后你
+and then you
+
+100
+00:06:40,333 --> 00:06:42,466
+你的机器就被感染了
+it would be over your machine is infected
+
+101
+00:06:42,933 --> 00:06:43,733
+嗯
+um
+
+102
+00:06:44,466 --> 00:06:45,266
+所以
+so
+
+103
+00:06:46,000 --> 00:06:50,100
+最初的缓解措施是试图消除
+initial mitigations into this was trying to eliminate
+
+104
+00:06:51,166 --> 00:06:53,533
+漏洞软件，减少攻击面
+vulnerable software reduced the attack surface
+
+105
+00:06:53,800 --> 00:06:55,100
+就是打补丁
+patch bugs of course
+
+106
+00:06:56,200 --> 00:07:01,000
+Adobe Flash没有在这种方法中幸存下来
+Adobe Flash for example didn't survive this sort of mitigation
+
+107
+00:07:01,700 --> 00:07:11,100
+它死了的原因有很多，其中一部分是它的安全状况
+ it was killed off and for many reasons part of them is the security posture of that
+
+108
+00:07:11,933 --> 00:07:14,599
+系统ActiveX也被淘汰
+system Active X was eliminated
+
+109
+00:07:14,600 --> 00:07:17,900
+Java applets 在现在的互联网上也看不到了
+Java applets are not something you see on Internet nowadays
+
+110
+00:07:17,966 --> 00:07:19,533
+再次声明，这不仅仅是因为安全问题，
+again not just because of security but
+
+111
+00:07:19,533 --> 00:07:21,666
+但安全问题是部分原因
+but also in part because of security
+
+112
+00:07:23,766 --> 00:07:27,499
+现在你看到的大多数Java applet都是遗留系统
+nowadays most Java applet you see are legacy systems that
+
+113
+00:07:27,600 --> 00:07:29,533
+有些公司可能会在内部使用
+some companies might use internally
+
+114
+00:07:29,500 --> 00:07:33,300
+但他们会碰到很多困难最终
+then they would actually go through a lot of jump through a lot of hoops to actually
+
+115
+00:07:33,500 --> 00:07:35,900
+让它们在一个合理的浏览器中工作
+make them work in a reasonable browser
+
+116
+00:07:37,566 --> 00:07:39,133
+但这并没有解决问题
+but this didn't solve the problems right
+
+117
+00:07:39,133 --> 00:07:40,566
+当我们移除这些
+as we removed these
+
+118
+00:07:40,733 --> 00:07:43,999
+攻击面，黑客就转移到其他区域
+attack surfaces hackers moved on to other areas
+
+119
+00:07:44,000 --> 00:07:46,400
+为了消除
+um in order to eliminate
+
+120
+00:07:46,533 --> 00:07:47,333
+呃
+uh
+
+121
+00:07:47,600 --> 00:07:48,966
+Flash等等
+flash and so forth
+
+122
+00:07:49,066 --> 00:07:50,999
+我们不得不创造了表现很好的
+we had to create very performance
+
+123
+00:07:51,000 --> 00:07:56,900
+非常强大的Javascript引擎
+very high power Javascript engines 
+
+124
+00:07:57,100 --> 00:08:02,500
+这替代了很多我们消除了的动态网页功能
+that could do a lot of this dynamic content functionality that we were eliminating
+
+125
+00:08:04,166 --> 00:08:06,299
+这导致
+this caused
+
+126
+00:08:07,666 --> 00:08:08,666
+这些漏洞（口误）
+these vulnerability
+
+127
+00:08:08,800 --> 00:08:12,300
+Javascript引擎非常复杂，有更多的漏洞
+javascript engines to be very complex with more vulnerabilities
+
+128
+00:08:15,133 --> 00:08:17,366
+浏览器的功能代表了一些
+functionality of your browser represents some
+
+129
+00:08:17,766 --> 00:08:20,299
+可能有漏洞的潜在表面
+potential surface that could have a vulnerability
+
+130
+00:08:20,300 --> 00:08:24,700
+GIF解析库
+the gif parsing library
+
+131
+00:08:25,400 --> 00:08:28,700
+浏览器使用的各种媒体数据编解码器
+the various media codex that your browser uses
+
+132
+00:08:28,733 --> 00:08:30,399
+所有这些都有潜在的脆弱性
+all of these are potentially vulnerable
+
+133
+00:08:30,400 --> 00:08:33,600
+并且有一些例子表明他们实际上很脆弱
+and there are examples of them being actually vulnerable
+
+134
+00:08:33,866 --> 00:08:35,099
+这就导致了
+and this causing
+
+135
+00:08:35,666 --> 00:08:37,399
+和以前一样的问题
+the same problem as before
+
+136
+00:08:37,400 --> 00:08:40,600
+和利用Adobe Flash时同样的问题又
+the exact same problem is when you would exploit Adobe Flash
+
+137
+00:08:40,600 --> 00:08:45,200
+发生在你利用Javascript即时编译器中的漏洞时
+occurs when you exploit a vulnerability in your Javascript Just in time compiler
+
+138
+00:08:46,066 --> 00:08:49,166
+这就导致了
+and so this led and now this is
+
+139
+00:08:49,500 --> 00:08:54,700
+近代史中浏览器沙箱的兴起
+you know very recent history to the rise of sandboxing in the browser 
+
+140
+00:08:55,200 --> 00:08:59,900
+这个想法是任何代码数据和
+the idea being that any code data and
+
+141
+00:09:00,166 --> 00:09:02,699
+提醒一下代码和数据大致相同的东西
+as a reminder code and data roughly the same thing
+
+142
+00:09:04,100 --> 00:09:11,200
+任何您不信任的代码和数据都应该以基本为0的权限运行
+any code and data that you don't trust should run with basically 0 privileges
+
+143
+00:09:11,733 --> 00:09:14,066
+通常是这样实现的
+the way that this is generally accomplished 
+
+144
+00:09:14,666 --> 00:09:16,333
+在现代浏览器中有一个进程
+you have a process let's say on a modern browser
+
+145
+00:09:16,300 --> 00:09:20,000
+它有一个父进程，负责与系统交互
+you have a parent process that is responsible for interacting with your system
+
+146
+00:09:20,100 --> 00:09:21,800
+这个父进程有对应的权限
+and has the privileges to do so
+
+147
+00:09:22,266 --> 00:09:23,999
+但是每一个
+but then every single
+
+148
+00:09:25,400 --> 00:09:28,700
+页面、插件和扩展
+individual page and individual plugin and individual extension
+
+149
+00:09:28,700 --> 00:09:33,000
+它们都运行在自己的进程中，没有权限
+they all run in their own processes with no privileges
+
+150
+00:09:34,766 --> 00:09:36,599
+如果一个进程
+if a process
+
+151
+00:09:36,700 --> 00:09:43,000
+如果某个沙盒中的子进程需要对系统做些事
+if one of these individual child sandboxed processes needs to do something to the system
+
+152
+00:09:43,766 --> 00:09:45,866
+比如存一个cookie
+ store a cookie
+
+153
+00:09:45,933 --> 00:09:49,366
+显示一些内容等
+display some content something along these lines
+
+154
+00:09:49,400 --> 00:09:52,900
+它会要求父进程代表它去做
+it'll ask the parent process to do it that on its behalf
+
+155
+00:09:54,933 --> 00:09:56,366
+这是理想的模型
+this is the ideal model
+
+156
+00:09:56,366 --> 00:09:57,966
+事情并不总是这样的
+it's not always how things work
+
+157
+00:09:57,966 --> 00:09:59,133
+出于性能考虑
+for performance reasons
+
+158
+00:09:59,133 --> 00:09:59,733
+通常
+oftentimes
+
+159
+00:09:59,700 --> 00:10:02,900
+这些子进程必须与整个系统进行通信，等等
+these child processes have to talk to the system at large and so forth
+
+160
+00:10:03,266 --> 00:10:05,533
+但这是理想的沙盒场景
+um but this is the ideal sandbox scenario
+
+161
+00:10:05,533 --> 00:10:07,599
+在这个模块中，我们将学习
+and in this module we will learn
+
+162
+00:10:08,266 --> 00:10:10,966
+不同沙盒的工作原理。(我们)会简单的讲
+how different sandboxes work. (we) will keep things simple
+
+163
+00:10:11,000 --> 00:10:14,800
+这不是沙盒设计课程
+um this isn't a sandbox design course 
+
+164
+00:10:14,800 --> 00:10:19,500
+这是一门网络安全概览课程
+this is a a a Cyber Security Overview course
+
+165
+00:10:19,766 --> 00:10:21,999
+我们将主要研究简单的沙盒
+we will look at simple sandboxes for the most part
+
+166
+00:10:22,000 --> 00:10:24,866
+还有一些现代沙盒技术
+but also some modern sandboxing techniques
+
+167
+00:10:26,666 --> 00:10:29,366
+最后是关于沙盒有效性的说明
+finally a note on sandbox effectiveness
+
+168
+00:10:29,366 --> 00:10:29,799
+正确的
+right
+
+169
+00:10:29,800 --> 00:10:33,566
+我讲了很多关于沙盒的事情，它是如何崛起的
+I talk a lot about sandboxing what it is how to rose
+
+170
+00:10:34,066 --> 00:10:34,999
+有用吗?
+does it work
+
+171
+00:10:35,700 --> 00:10:37,100
+是的，它很管用
+yes it works a lot
+
+172
+00:10:37,100 --> 00:10:38,600
+在这门课中我们会看到
+throughout this course we look at
+
+173
+00:10:39,366 --> 00:10:42,666
+有几个缓解措施非常有力
+several mitigations that are extremely strong
+
+174
+00:10:42,900 --> 00:10:49,700
+强缓解措施针对它的目标漏洞
+a strong mitigation is something that  for the vulnerability class that it is designed to mitigate against
+
+175
+00:10:50,066 --> 00:10:52,733
+从本质上大大提高了安全性
+essentially raises the bar significantly
+
+176
+00:10:53,133 --> 00:10:55,566
+沙盒就是这样
+sandboxing does this uh
+
+177
+00:10:56,500 --> 00:10:59,000
+在2000年早期
+whereas in the early 2 thousands
+
+178
+00:10:59,000 --> 00:11:02,800
+你只需要一个Adobe Flash的代码执行漏洞
+you needed one vulnerability code execution in Adobe Flash
+
+179
+00:11:03,000 --> 00:11:07,500
+就能在受害者电脑里横冲直撞
+to um rampage across victims computer
+
+180
+00:11:07,700 --> 00:11:13,700
+现在你需要更多，你需要Javascript JIT编译器的漏洞
+nowadays you need more you need vulnerability in your Javascript Justin Time compiler
+
+181
+00:11:13,733 --> 00:11:14,533
+和
+and
+
+182
+00:11:14,900 --> 00:11:25,700
+沙盒漏洞、内核漏洞或者是脆弱进程漏洞
+vulnerability in the sandbox or the kernel or something around  the vulnerable process
+
+183
+00:11:25,800 --> 00:11:31,200
+所以你先在沙盒里站稳脚跟，然后
+so you first get a foothold inside the sandbox and then
+
+184
+00:11:31,366 --> 00:11:33,599
+你还得逃逸出沙盒
+ you have to escape that sandbox and in this module
+
+185
+00:11:33,800 --> 00:11:38,100
+在本模块中，我们将研究如何在简单沙盒中做到这点
+in this module that's what we will be looking at how to do for very simple sandboxes
+
+186
+00:11:38,933 --> 00:11:40,966
+以后的视频见
+see you later in future videos

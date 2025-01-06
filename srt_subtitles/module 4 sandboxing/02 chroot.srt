@@ -1,0 +1,1564 @@
+1
+00:00:01,066 --> 00:00:02,333
+黑客们你们好
+hello hackers
+
+2
+00:00:02,866 --> 00:00:03,733
+我是Yan
+I'm Yan
+
+3
+00:00:03,733 --> 00:00:07,533
+今天我们要讲的是沙盒
+and today we're going to be talking about sandboxing
+
+4
+00:00:07,533 --> 00:00:10,566
+特别是chroot
+specifically using chroot
+
+5
+00:00:11,066 --> 00:00:14,266
+chroot是什么？chroot是一种古老的技术
+what is chroot well chroot is an old technique
+
+6
+00:00:14,266 --> 00:00:16,266
+这是操作系统的一部分
+it's an old part of the operating system
+
+7
+00:00:16,266 --> 00:00:20,333
+它于1979年出现在Unix中
+it appeared in Unix in 1979
+
+8
+00:00:20,600 --> 00:00:21,800
+很快就传到了BSD
+shortly spread to BSD
+
+9
+00:00:21,800 --> 00:00:24,566
+并且从那时起传播到了所有的现代unix
+and from there it spread to all of the modern Unixes
+
+10
+00:00:25,133 --> 00:00:26,200
+包括Linux
+including Linux
+
+11
+00:00:26,200 --> 00:00:29,700
+我们会在Linux的背景下讨论它
+and we'll be of course talking about it in the context of Linux
+
+12
+00:00:30,300 --> 00:00:34,966
+chroot所做的就是改变根目录的含义
+what chroot does is change the meaning of slash
+
+13
+00:00:34,900 --> 00:00:39,600
+当你在普通的Linux系统中执行ls /
+when you are in the normal Linux system and you do ls slash
+
+14
+00:00:39,600 --> 00:00:42,800
+这个/是文件系统的根目录
+that is the root of your file system
+
+15
+00:00:43,266 --> 00:00:46,000
+Chroot会改变根的位置
+chroot changes where that root is
+
+16
+00:00:46,100 --> 00:00:51,500
+它会将其设置到您指定的文件系统中的另一个目录
+of course it sets it to another directory that is already on your file system that you specify
+
+17
+00:00:51,666 --> 00:00:54,100
+举个例子，如果你有一个jail目录
+so for example if you had a jail
+
+18
+00:00:54,566 --> 00:00:58,066
+目录/tmp/jail
+um directory in /tmp/jail
+
+19
+00:00:58,400 --> 00:01:00,066
+然后你使用chroot将它置为root
+and you chrooted into that
+
+20
+00:01:00,500 --> 00:01:03,133
+任何在chroot中运行的进程
+any process that runs inside that chroot so that
+
+21
+00:01:03,400 --> 00:01:07,100
+调用chroot的进程及其所有子进程将
+the process that called chroot and all of its children would
+
+22
+00:01:08,600 --> 00:01:16,100
+会把/tmp/jail看作根目录
+see a file system view that is rooted at /tmp/jail as opposed to the old /
+
+23
+00:01:17,766 --> 00:01:21,366
+那个年代的沙盒是这样的
+this used to be the defacto way to sandbox
+
+24
+00:01:21,300 --> 00:01:25,600
+比如你想建一个web服务，那时候的人会说一定要在chroot中运行它
+you'd set up a web server and I would say make sure to run it inside a chroot
+
+25
+00:01:27,100 --> 00:01:34,800
+你会发现它其实是一种弱的隔离机制
+but as you'll see it it's kind of a weak um isolation metric
+
+26
+00:01:34,900 --> 00:01:36,800
+我们稍后会讲到这个
+and we'll talk about that in a little later
+
+27
+00:01:36,800 --> 00:01:40,566
+我先展示一下chroot的效果
+but first let me show you chroot
+
+28
+00:01:41,400 --> 00:01:42,933
+这是一个终端
+so here we are on a terminal
+
+29
+00:01:43,800 --> 00:01:45,966
+Chroot实际上是shell上的一个实用程序
+chroot is actually a utility on the shell 
+
+30
+00:01:46,333 --> 00:01:47,466
+有一个
+there's a
+
+31
+00:01:48,266 --> 00:01:50,400
+在Linux系统中默认安装
+in Linux installed by default
+
+32
+00:01:50,900 --> 00:01:57,000
+/usr/sbin/chroot，它所做的只是调用/chroot，非常简单
+/usr/sbin/chroot,  all it does is just call /chroot super simple
+
+33
+00:01:57,500 --> 00:01:59,966
+不好意思，它调用了chroot系统调用
+or sorry it calls the chroot syscall
+
+34
+00:02:00,100 --> 00:02:01,400
+来把某个目录设置为根目录
+to chroot you into somewhere
+
+35
+00:02:01,400 --> 00:02:02,266
+超级简单
+super simple
+
+36
+00:02:03,066 --> 00:02:04,466
+可以用strace看一下
+actually you can strace it
+
+37
+00:02:04,500 --> 00:02:05,566
+让我先
+well let me first
+
+38
+00:02:06,400 --> 00:02:07,466
+我只是运行它
+I just run it
+
+39
+00:02:07,533 --> 00:02:09,133
+我以root用户运行它
+I'm running it as root
+
+40
+00:02:09,300 --> 00:02:16,100
+你必须有一定的权限才能运行chroot
+um you have to have certain privileges to run chroot and by default uh
+
+41
+00:02:16,266 --> 00:02:17,500
+用户帐户
+user accounts
+
+42
+00:02:17,500 --> 00:02:19,366
+普通用户没有这些权限
+normal users do not have those privileges
+
+43
+00:02:19,366 --> 00:02:22,533
+正常情况下，你需要是root用户才能运行chroot
+you need to be root normally to run chroot
+
+44
+00:02:22,533 --> 00:02:24,133
+所以我们要用sudo来运行
+so we're gonna run it with sudo
+
+45
+00:02:24,533 --> 00:02:27,100
+chroot有两个参数
+and chroot takes 2 arguments
+
+46
+00:02:27,166 --> 00:02:31,600
+一个是要chroot到的目录
+one is the directory to chroot into
+
+47
+00:02:32,300 --> 00:02:34,700
+另一个是要在chroot下运行的命令（程序）
+and the other one is the command
+
+48
+00:02:34,700 --> 00:02:36,200
+我会执行一个失败的操作
+so I'm going to do something that won't work
+
+49
+00:02:36,200 --> 00:02:37,166
+我呆会会解释为什么
+and I'll explain why
+
+50
+00:02:38,000 --> 00:02:40,900
+假如这个命令是bin bash，我们做了chroot
+say bin bash okay so we did a chroot
+
+51
+00:02:43,166 --> 00:02:45,533
+将自己的根目录切换到/tmp/jail（在bash里切换bash的根目录）
+chrooting ourselves into tmp jail
+
+52
+00:02:45,700 --> 00:02:49,600
+顺便说一下的chroot代表change root
+chroot by the way I should have mentioned stands for change root
+
+53
+00:02:50,333 --> 00:02:53,133
+因此，我们将自己的根目录更改为/tmp/jail
+so we're changing our root directory into /tmp/jail
+
+54
+00:02:53,933 --> 00:02:55,933
+我们还尝试运行/bin/bash
+and we are trying to run /bin/bash
+
+55
+00:02:55,900 --> 00:02:59,900
+然后它说没有/bin/bash这个文件，这就很奇怪
+and it's saying /bin/bash no such follow directory but that's weird
+
+56
+00:03:00,266 --> 00:03:02,966
+我明明可以ls /bin/bash. 它就在那儿
+I can ls /bin/bash. it's right there
+
+57
+00:03:02,966 --> 00:03:04,866
+我可以运行/bin/bash
+I can run /bin/bash
+
+58
+00:03:04,866 --> 00:03:07,466
+虽然我们会在递归中
+I mean then we'll be in recur whatever
+
+59
+00:03:07,500 --> 00:03:10,700
+但你知道，它不存在是不可能的
+but you know it doesn't make sense that it is not there
+
+60
+00:03:10,766 --> 00:03:12,366
+有趣的是
+well the interesting thing is
+
+61
+00:03:12,466 --> 00:03:14,966
+在执行/bin/bash时
+by the time we're executing this /bin/bash
+
+62
+00:03:15,566 --> 00:03:17,466
+我们其实是在/tmp/jail/中
+we are inside the jail
+
+63
+00:03:17,666 --> 00:03:18,766
+这意味着
+so this means
+
+64
+00:03:19,266 --> 00:03:21,933
+/bin/bash真正的意思是
+that /bin/bash really means
+
+65
+00:03:22,300 --> 00:03:26,500
+/tmp/jail/bin/bash
+/tmp/jail/bin/bash
+
+66
+00:03:26,866 --> 00:03:28,133
+但这并不存在
+and that doesn't exist
+
+67
+00:03:29,200 --> 00:03:30,700
+我们的jail目录里到底有什么
+so what does exist in our jail
+
+68
+00:03:30,700 --> 00:03:35,900
+我在视频开始前就设置好了
+so I set this up right before the video
+
+69
+00:03:35,900 --> 00:03:38,933
+jail里有两个文件一个叫a
+there are 2 files in the jail one is a file called a
+
+70
+00:03:39,266 --> 00:03:41,400
+另一个是busybox
+the other one is busybox
+
+71
+00:03:41,566 --> 00:03:45,966
+什么是busybox busybox是一种
+what isbusybox busybox is a um kind of
+
+72
+00:03:46,866 --> 00:03:50,100
+shell工具中的瑞士军刀
+Swiss Army knife of shell utilities
+
+73
+00:03:50,166 --> 00:03:52,333
+这个忙碌箱是一个静态链接的二进制文件
+this busybox is a statically linked binary
+
+74
+00:03:52,333 --> 00:03:54,333
+我给你们看这个是因为它很重要
+I'm showing you this because that's important
+
+75
+00:03:54,500 --> 00:03:56,500
+chroot目录中没有库
+there are no libraries inside the chroot
+
+76
+00:03:56,500 --> 00:03:58,866
+即使bin bash在chroot中
+even if bin bash was inside the chroot
+
+77
+00:03:58,800 --> 00:04:02,200
+bin bash需要的所有库都不在那里
+all of the libraries that bin bash needs aren't in there
+
+78
+00:04:02,200 --> 00:04:04,300
+那我还得把库也转过来
+so I'd have to transfer the libraries as well
+
+79
+00:04:04,300 --> 00:04:06,333
+这真是让人头疼（大肠的一头）
+and bin bash and it's a pain in the butt
+
+80
+00:04:06,866 --> 00:04:09,266
+但是你可以使用busybox，它非常简单
+but you can use busybox and it is super easy 
+
+81
+00:04:09,700 --> 00:04:19,900
+busybox附带了一系列不同的Linux实用程序的功能
+busybox is um ships with the functionality of a bunch of different uh Linux utilities
+
+82
+00:04:21,766 --> 00:04:23,866
+在一些嵌入式设备中
+in in in some embedded devices
+
+83
+00:04:23,866 --> 00:04:26,533
+Busybox是整个用户空间
+busybox is the entire user space
+
+84
+00:04:26,533 --> 00:04:28,266
+这里基本上有你需要的一切
+and there's basically everything you need here
+
+85
+00:04:28,266 --> 00:04:29,200
+有shell
+there's a shell
+
+86
+00:04:29,366 --> 00:04:32,900
+有rm
+there is uh you know things like R m uh
+
+87
+00:04:34,100 --> 00:04:35,600
+你可以查看主机名
+you can check your host name
+
+88
+00:04:35,600 --> 00:04:37,200
+您可以关闭系统
+you can shut down the system
+
+89
+00:04:37,200 --> 00:04:39,100
+你可以zip压缩等等
+you can zip on zip etc
+
+90
+00:04:39,100 --> 00:04:42,500
+它的功能非常齐全
+it's it's super feature complete
+
+91
+00:04:42,800 --> 00:04:45,066
+它的运作方式是
+and the way it works is
+
+92
+00:04:45,000 --> 00:04:51,300
+运行它，通过ARG v 0或ARG v1告诉它
+you basically run it and you tell it what either an ARG v 0 or an ARG v1
+
+93
+00:04:52,000 --> 00:04:53,366
+所以在这种情况下，它将是ARG v1
+so in this case it will be an ARG v1
+
+94
+00:04:53,366 --> 00:04:54,866
+因为我只是从shell运行它
+because I'm just running it from the shell
+
+95
+00:04:54,900 --> 00:05:00,700
+像往常一样，你告诉它你想执行什么程序
+like normal you tell it what utility you wanted to execute
+
+96
+00:05:00,766 --> 00:05:02,966
+所以我执行sh，这是我的shell
+so I do sh and here is my shell
+
+97
+00:05:02,900 --> 00:05:14,900
+现在我在busybox的自己的目录中
+so now I am here in in my you know own directory in busybox
+
+98
+00:05:15,700 --> 00:05:19,133
+同样，我也可以执行Echo Hi等等
+likewise I can do Echo Hi and and so forth
+
+99
+00:05:19,133 --> 00:05:20,966
+所以你可以做很多事情
+right so you can do a lot of stuff
+
+100
+00:05:20,900 --> 00:05:26,400
+这基本上就是功能完整的用户空间
+this is basically all you need for a functional userspace and 
+
+101
+00:05:26,466 --> 00:05:27,666
+我们用它做一个演示环境
+what we're using it for is a functional demo environment
+
+102
+00:05:27,666 --> 00:05:29,566
+让我们往回滚动
+so let's scroll back up
+
+103
+00:05:30,166 --> 00:05:31,366
+然后执行这条语句
+and do this
+
+104
+00:05:32,666 --> 00:05:33,933
+/tmp/jail/busybox
+/tmp/jail/busybox
+
+105
+00:05:35,333 --> 00:05:37,366
+这样能成吗?
+ will this work
+
+106
+00:05:37,800 --> 00:05:38,600
+不能
+no
+
+107
+00:05:38,933 --> 00:05:41,000
+首先，我们需要busybox sh
+first of all of course we need busybox sh 
+
+108
+00:05:41,300 --> 00:05:44,900
+但这行不通，因为
+but it doesn't work because again
+
+109
+00:05:45,500 --> 00:05:47,566
+当在chroot环境下
+when we're in the jail
+
+110
+00:05:48,500 --> 00:05:53,500
+这里第一个/实际上是指jail目录
+when we say slash for the first /it actually means the jail
+
+111
+00:05:53,500 --> 00:06:01,900
+所以这条语句实际相当于/tmp/jail/tmp/jail/busybox
+so what I'm trying to resolve here is actually equivalent to /tmp/jail/tmp/jail/busybox
+
+112
+00:06:02,166 --> 00:06:03,533
+当然这是不存在的
+of course that doesn't exist
+
+113
+00:06:03,533 --> 00:06:05,466
+我们只有/tmp/jail/busybox
+we just have /tmp/jail/busybox
+
+114
+00:06:05,500 --> 00:06:09,766
+我们怎么做呢?我们写/busybox
+so how do we do this well we just say /busybox
+
+115
+00:06:09,900 --> 00:06:11,766
+这样就可以运行了
+now this is gonna work
+
+116
+00:06:11,800 --> 00:06:17,600
+但是我的系统实际在根目录上并没有busybox
+but there is no /busybox on my system right
+
+117
+00:06:19,266 --> 00:06:21,533
+这样执行是有效的
+such busybox is valid inside the jail
+
+118
+00:06:21,500 --> 00:06:24,500
+是因为/tmp/jail/下存在busybox
+because there is a /tmp/jail/busybox
+
+119
+00:06:25,566 --> 00:06:25,800
+好吧
+okay
+
+120
+00:06:25,800 --> 00:06:29,066
+要点是当你chroot （参数1 参数2）的时候
+just arriving to the point when you change root
+
+121
+00:06:29,500 --> 00:06:34,700
+对于参数2指定的命令，参数1指定的目录就是它的根目录
+you end up in wherever you change rooted into and that is your new slash
+
+122
+00:06:34,800 --> 00:06:36,266
+现在你可以运行它了
+so now you can run it all right
+
+123
+00:06:36,266 --> 00:06:38,933
+当然我们必须给它一个参数sh
+of course we have to give it an argument sh
+
+124
+00:06:39,366 --> 00:06:41,366
+现在我们在一个shell中，被隔离在指定的/tmp/jail目录下
+and now we are in a shell in isolation inside our new jail
+
+125
+00:06:41,866 --> 00:06:48,066
+如果我们执行busybox ls /
+ so if we do busybox ls /
+
+126
+00:06:48,566 --> 00:06:51,966
+这是我们的新根目录
+here is our new root directory
+
+127
+00:06:53,066 --> 00:06:53,866
+而且
+and
+
+128
+00:06:55,700 --> 00:07:00,700
+我们不能用很简单的方法离开这个目录
+as I'll talk about we can't get out of this directory in very simple ways
+
+129
+00:07:00,900 --> 00:07:06,600
+在linux常规的cd .. 是行不通的
+the same as on Linux we do /and then try to cd .. from there doesn't work
+
+130
+00:07:07,700 --> 00:07:12,100
+我们当然可以创建其他文件和目录
+we can of course touch other files and directories
+
+131
+00:07:12,166 --> 00:07:13,466
+这也是为啥这会有个文件a
+and that's how I ended up with a
+
+132
+00:07:13,466 --> 00:07:14,600
+我乱创的
+I was playing around with this
+
+133
+00:07:14,666 --> 00:07:17,400
+现在我创建一个ASDF文件
+so now I create an ASDF file
+
+134
+00:07:17,900 --> 00:07:22,300
+等我退出去证明给你们看
+and let me prove to you that when I log out of here 
+
+135
+00:07:22,600 --> 00:07:24,200
+在/tmp/jail中有我的ASDF文件
+in /tmp/jail there is my ASDF file
+
+136
+00:07:24,766 --> 00:07:27,366
+但这里是在根目录
+but here it was in slash
+
+137
+00:07:27,533 --> 00:07:29,733
+因为那是我的工作目录
+because that was my working directory
+
+138
+00:07:30,200 --> 00:07:35,066
+这就是chroot的效果
+um all right so that is how a chroot works
+
+139
+00:07:35,066 --> 00:07:37,500
+那么它的原理是怎样的
+now what does it actually do well
+
+140
+00:07:37,800 --> 00:07:39,666
+Chroot是一个系统调用
+chroot is a system call
+
+141
+00:07:40,066 --> 00:07:43,500
+它有两个效果
+that has exactly 2 effects right
+
+142
+00:07:43,500 --> 00:07:48,200
+一是把根目录改成了指定的目录
+one it changes the meaning of slash to whatever the jail is
+
+143
+00:07:48,400 --> 00:07:53,500
+二是它使得当你试着用../从这里出去时
+and 2 it makes it so that when you try to dot dot /out of there
+
+144
+00:07:53,800 --> 00:07:55,200
+你最终还是在新根目录里
+you end up still in jail
+
+145
+00:07:55,200 --> 00:07:57,366
+如果你的当前目录或
+so if your current directory or 
+
+146
+00:07:57,600 --> 00:08:03,500
+如果你输入../../../..在这个过程中碰到了/tmp/jail
+if you go dot dot slash dot dot and at some point in that cycle you hit /tmp/jail
+
+147
+00:08:03,700 --> 00:08:10,900
+就停了，这样出不去的
+you're screwed right you can't get out
+
+148
+00:08:11,966 --> 00:08:13,133
+它就做这两件事
+that's all it does
+
+149
+00:08:13,100 --> 00:08:18,900
+它不会做任何其他奇异的事情，它不会关闭指向监狱外的文件描述符
+it doesn't do any other exotic stuff it doesn't close file descriptors that you have pointing outside of the jail
+
+150
+00:08:19,566 --> 00:08:21,966
+它不会那样做
+ it doesn't do that
+
+151
+00:08:21,966 --> 00:08:23,300
+那些文件描述符仍然有效
+those are still valid
+
+152
+00:08:23,700 --> 00:08:26,400
+它不会自动cd到新根目录下
+it doesn't change directory into the jail
+
+153
+00:08:26,400 --> 00:08:28,600
+你必须自己手动做
+you have to do that explicitly right
+
+154
+00:08:28,800 --> 00:08:32,600
+否则，您可能会处于一种情况，程序在jail目录中
+otherwise you could end up in a situation where you are inside a directory
+
+155
+00:08:32,700 --> 00:08:37,200
+但你现在的工作目录在jail外面
+your current working directory is outside of the jail
+
+156
+00:08:37,200 --> 00:08:38,100
+这很糟糕
+and that's bad
+
+157
+00:08:38,300 --> 00:08:42,600
+因为拦截../的功能只适用于监狱内
+because this catch of the dot dot only applies within the jail
+
+158
+00:08:43,900 --> 00:08:45,200
+它不做任何其他事情
+it doesn't do anything else
+
+159
+00:08:45,200 --> 00:08:47,333
+这当然会引起问题
+and so of course this causes problems
+
+160
+00:08:47,333 --> 00:08:50,366
+让我给你们看一个这样的问题
+let me show you one such problem
+
+161
+00:08:50,366 --> 00:08:53,566
+这个问题的样子
+that are what it looks like this problem
+
+162
+00:08:58,100 --> 00:09:04,200
+这是我写的chroot
+so here is my chroot
+
+163
+00:09:05,066 --> 00:09:05,866
+我
+I
+
+164
+00:09:06,500 --> 00:09:07,333
+这是
+and this is
+
+165
+00:09:07,300 --> 00:09:12,900
+我写了一个chroot.c，它基本上等同于chroot命令
+I wrote I wrote a chroot.c that is a replacement for basically the chroot utility
+
+166
+00:09:12,900 --> 00:09:15,166
+只不过我们用硬编码来运行busybox
+except we're just hard coded to run busybox
+
+167
+00:09:15,200 --> 00:09:20,500
+你可以看到我正在chroot并将目录更改为/tmp/jail
+and you can see I'm chrooting and changing directory into /tmp/jail
+
+168
+00:09:20,766 --> 00:09:22,133
+我来编译一下
+let me compile this
+
+169
+00:09:23,500 --> 00:09:27,500
+好的，我运行sudo ./chroot
+okay i run sudo ./chroot
+
+170
+00:09:28,866 --> 00:09:32,000
+现在我在jail里，和之前一模一样
+and I am in jail and it's exactly as before
+
+171
+00:09:32,100 --> 00:09:37,900
+这里就是之前的jail
+busybox ls / and here we are our old jail
+
+172
+00:09:37,900 --> 00:09:46,300
+好了，现在看一下如果我忘记更改目录会发生什么
+all right now let me show you what happens if I forget to Change directory
+
+173
+00:09:46,300 --> 00:09:48,066
+oops，这不是C语言的注释方式
+oops that's not how you comment in C
+
+174
+00:09:48,400 --> 00:09:50,500
+所以我只调用chroot然后执行
+so I just chroot and execute
+
+175
+00:09:50,766 --> 00:09:51,566
+好吧
+alright
+
+176
+00:09:53,500 --> 00:09:55,533
+编译，运行
+compile that run it
+
+177
+00:09:55,866 --> 00:09:58,000
+好吧，我们马上就能看到奇怪的事情发生了
+okay right away we see something weird is going on
+
+178
+00:09:58,000 --> 00:10:03,900
+之前有这个漂亮的提示符提示你现在所处的目录，还有想要执行的命令
+before we have this nice prompt the directory you're in and then you know our command that we want to enter 
+
+179
+00:10:05,700 --> 00:10:08,200
+现在getcwd说没有这样的文件或目录
+now getcwd says no such filer or directory
+
+180
+00:10:08,200 --> 00:10:09,666
+这很奇怪
+that's very weird
+
+181
+00:10:09,666 --> 00:10:10,700
+getcwd
+getcwd
+
+182
+00:10:11,700 --> 00:10:12,533
+先从这退出
+let's log out here
+
+183
+00:10:12,500 --> 00:10:19,500
+是获取当前工作目录的系统调用
+ is the syscall that gets the current working directory
+
+184
+00:10:20,733 --> 00:10:21,700
+这是
+well this is
+
+185
+00:10:22,900 --> 00:10:24,500
+这里填2
+it's like there two
+
+186
+00:10:26,800 --> 00:10:27,866
+它是一个系统调用
+it is a syscall
+
+187
+00:10:27,866 --> 00:10:30,966
+尽管它在man的第3节
+even though it is giving it to us in section 3
+
+188
+00:10:31,966 --> 00:10:33,466
+它会得到当前的工作目录
+so it gets the current working directory 
+
+189
+00:10:33,466 --> 00:10:35,700
+就是这里，就是你现在所处的目录
+that's this guy that's that's where you are right now
+
+190
+00:10:35,700 --> 00:10:36,500
+如果我这么做
+if I do this 
+
+191
+00:10:37,300 --> 00:10:39,600
+这里就是我当前的工作目录
+you know that's my current working directory
+
+192
+00:10:39,666 --> 00:10:42,166
+它会得到当前的工作目录
+so it gets the current working directory 
+
+193
+00:10:43,100 --> 00:10:45,200
+但是很奇怪它竟然说没有这样的父目录
+but it says something weird no such father directory
+
+194
+00:10:45,200 --> 00:10:50,600
+我的当前工作目录怎么可能不是父目录，这很奇怪
+how can my current working directory not be a father directory right that's weird
+
+195
+00:10:50,666 --> 00:10:53,333
+另一个要注意的是这里的unknown
+the other thing is as a result that says unknown here
+
+196
+00:10:53,333 --> 00:10:55,466
+好吧，我们来看看会发生什么
+well let's see what happens when do
+
+197
+00:10:56,100 --> 00:10:59,333
+我一直在敲成baby是因为课后题叫babyshell
+I keep typing baby as the babyshell for the challenges
+
+198
+00:10:59,366 --> 00:11:02,300
+当我们执行busybox ls的时候
+when we do a busybox ls
+
+199
+00:11:03,166 --> 00:11:05,066
+执行结果看起来不像在jail里
+that doesn't look like our jail
+
+200
+00:11:05,066 --> 00:11:08,466
+提醒一下，ls / 这样是在jail里
+right as a reminder ls / this is our jail
+
+201
+00:11:10,466 --> 00:11:12,866
+但这样就不在jail里
+but this this isn't our jail
+
+202
+00:11:13,900 --> 00:11:15,133
+这很奇怪
+this is something weird
+
+203
+00:11:16,800 --> 00:11:17,866
+如果执行/busybox ls
+what if you do ls
+
+204
+00:11:19,300 --> 00:11:24,700
+这显然是在PWN目录中
+ so this is in of course this pwn directory
+
+205
+00:11:24,733 --> 00:11:28,366
+退出看一下
+let me just exit out of this
+
+206
+00:11:29,166 --> 00:11:32,400
+这就是这期视频用的工作目录
+here it is it's my working directory for this video
+
+207
+00:11:32,733 --> 00:11:35,133
+如果在这执行ls
+if I do ls here 
+
+208
+00:11:36,900 --> 00:11:41,600
+哦，因为我现在在shell里
+oh yeah because now that I'm in the shell
+
+209
+00:11:42,100 --> 00:11:43,566
+没问题
+I am all good
+
+210
+00:11:43,566 --> 00:11:45,100
+我可以执行cd /
+all right I can do cd /
+
+211
+00:11:46,333 --> 00:11:49,566
+现在变正常了
+ls and now now things make sense again
+
+212
+00:11:49,866 --> 00:11:51,166
+现在我又回到jail里了
+now I'm back in the jail
+
+213
+00:11:52,066 --> 00:11:52,866
+但如果我
+but if I
+
+214
+00:11:54,533 --> 00:11:58,600
+当我刚进来的时候，我在一些奇怪的地方
+when I first start in I am in some weird place
+
+215
+00:11:58,600 --> 00:12:00,300
+显然是在jail外
+obviously outside of the jail
+
+216
+00:12:00,600 --> 00:12:07,200
+在我实际的目录中，也就是为这节课写材料的地方
+in my actual home directory where I'm writing stuff for this lecture
+
+217
+00:12:07,266 --> 00:12:10,500
+如果我cd ../..
+what if I CD dot dot /dot dot let's say
+
+218
+00:12:11,366 --> 00:12:12,800
+啊，这很有趣
+ah that's interesting
+
+219
+00:12:12,800 --> 00:12:16,300
+现在我在另一个目录中，它的父目录的父目录
+now I am in some other directory a parent of a parent of that
+
+220
+00:12:16,366 --> 00:12:18,000
+如果我一直回退下去
+and if I go all the way out
+
+221
+00:12:18,500 --> 00:12:26,300
+最终会回到jail外文件系统的根目录
+I am all the way back in the root directory of my file system which is outside of the jail
+
+222
+00:12:26,900 --> 00:12:30,900
+都是因为最开始就在jail外面
+right all because I started out outside of the jail
+
+223
+00:12:30,933 --> 00:12:32,733
+因为没有调用chdir("/")
+because there was no chroot
+
+224
+00:12:34,700 --> 00:12:41,500
+如果之后去到/tmp/jail目录，它立即就变成了根目录
+if I then go and find /tmp/jail then suddenly I'm back in slash
+
+225
+00:12:41,866 --> 00:12:45,466
+因为现在我在监狱里，它知道该怎么做了
+because now I'm inside the jail and it knows what to do
+
+226
+00:12:47,500 --> 00:12:54,800
+所以当你使用chroot时不改变目录就有问题了
+so that's the tricky thing when you chroot and you don't change directory
+
+227
+00:12:54,800 --> 00:13:02,200
+还有其他几种会出错的情况
+this is along with several other situations 
+
+228
+00:13:02,900 --> 00:13:04,100
+我把视频移开
+let me move my video out of the way there
+
+229
+00:13:04,800 --> 00:13:10,500
+这是chroot的缺陷之一
+this is one of the pitfalls of chroot
+
+230
+00:13:10,600 --> 00:13:17,900
+一种情况是chroot时存在已打开的资源
+one of the ways that things go wrong is there were previously opened resources before the chroot happened
+
+231
+00:13:17,966 --> 00:13:19,933
+例如当前工作目录
+such as the current working directory
+
+232
+00:13:19,933 --> 00:13:21,933
+这是一种隐性的已打开资源
+that is an implicitly open resource
+
+233
+00:13:22,200 --> 00:13:34,400
+在沙盒（chroot）中不受信任的代码获得控制权之前，这些资源并没有被关闭
+and those resources were not closed or were not invalidated before um the untrusted code inside the sandbox inside the chroot got control um
+
+234
+00:13:36,100 --> 00:13:46,200
+你可以使用非常复杂的系统调用滥用这些之前打开的资源
+you can abuse a lot of um these previously opened resources using pretty intricate system calls
+
+235
+00:13:46,200 --> 00:13:49,300
+像Linux中open和execve的at变体
+ and Linux for example the at variants of open and execve
+
+236
+00:13:50,700 --> 00:13:56,500
+这些变体不像open只需要一个路径或execve只需要一个二进制文件的路径
+these variants unlike open which just takes a path or execve which just takes a path to a binary
+
+237
+00:13:57,400 --> 00:14:01,200
+openat接受已打开资源的文件描述符
+openat takes a file descriptor of an open resource
+
+238
+00:14:01,300 --> 00:14:03,166
+和一条以这个资源为起点的相对路径
+and a relative path from that
+
+239
+00:14:03,500 --> 00:14:09,900
+所以可以执行一个相对于之前打开的文件的程序
+so you can say relative to some file that had previously been open execute a program
+
+240
+00:14:10,100 --> 00:14:12,333
+这会让你脱离chroot
+and this bursts you out of the chroot
+
+241
+00:14:12,700 --> 00:14:16,300
+因为如果你在chroot之外有一个之前打开的资源
+because if you have a previously open resource outside of the chroot
+
+242
+00:14:16,400 --> 00:14:19,000
+所有相对于它的东西都在chroot之外
+then everything relative to that is still outside of the chroot 
+
+243
+00:14:19,066 --> 00:14:22,366
+就像刚刚我们用busybox演示的那样
+as we saw in my Journey Through busybox
+
+244
+00:14:24,500 --> 00:14:25,333
+同样的道理
+the same way
+
+245
+00:14:26,133 --> 00:14:28,100
+就像我提到的
+and like I mentioned
+
+246
+00:14:28,133 --> 00:14:31,266
+当前工作目录是一个隐式开放资源
+the current working directory is an implicitly open resource 
+
+247
+00:14:31,300 --> 00:14:37,300
+因此，当不受信代码获得控制权时，你的工作目录如果不在chroot中
+so if your working directory is not in the chroot when the intrusted code gains control
+
+248
+00:14:37,500 --> 00:14:38,600
+那将是个问题
+that is a problem
+
+249
+00:14:38,600 --> 00:14:43,100
+openat和execveat不是唯一可以被利用的
+and openat and execveat are not the only thing that can be used
+
+250
+00:14:43,133 --> 00:14:45,866
+还有很多其他的变种
+there are tons of other at variants
+
+251
+00:14:47,166 --> 00:14:52,166
+好了，我们来谈谈另一个问题：遗忘
+all right let's roll on another problem forgetfulness
+
+252
+00:14:52,700 --> 00:14:55,266
+内核只为进程记录一个chroot
+the kernel tracks one chroot for your process
+
+253
+00:14:55,266 --> 00:14:56,566
+如果你再次chroot
+if you chroot again
+
+254
+00:14:56,766 --> 00:14:58,733
+它将覆盖之前的chroot
+it'll override the previous chroot
+
+255
+00:15:00,800 --> 00:15:05,300
+所以如果你在choot中有root权限
+so if you are running inside a chroot with root privileges
+
+256
+00:15:05,300 --> 00:15:10,800
+在本期作业中就有可能遇到这种情况
+like you will in the homeworks in this assignment are the chance problems in this module rather
+
+257
+00:15:13,300 --> 00:15:14,966
+你可以再次chroot
+you can just chroot again
+
+258
+00:15:15,700 --> 00:15:20,300
+覆盖掉之前chroot到的位置
+and wipe out the old understanding of where the chroot jail used to be
+
+259
+00:15:21,200 --> 00:15:29,500
+好好思考如何用前面的概念来逃逸chroot
+think through together with the previous concepts how can you use this to escape a chroot
+
+260
+00:15:30,933 --> 00:15:32,333
+这里总结一下
+so kind of as a summary
+
+261
+00:15:32,566 --> 00:15:33,900
+chroot安全吗
+is chroot safe
+
+262
+00:15:35,400 --> 00:15:38,666
+不安全，存在几个不同的原因
+no I mean there are several different reasons
+
+263
+00:15:38,600 --> 00:15:47,400
+但一般来说，如果用户的eid为0
+but generally speaking if a user with an effective ID of 0 so either
+
+264
+00:15:48,000 --> 00:15:58,800
+不论是suid程序，亦或有一个root程序，还是
+a setuid binary or a said you had your root binary or 
+
+265
+00:15:59,100 --> 00:16:01,166
+就是root用户在chroot中
+just root is operating inside a chroot
+
+266
+00:16:01,500 --> 00:16:05,566
+除非chroot系统调用被阻塞，否则它们都可以逃逸
+they can escape unless the chroot syscall is blocked
+
+267
+00:16:05,600 --> 00:16:16,100
+放在现在这不是一个很好的沙箱工具
+it's not a goodsandboxing tool for in the kind of the modern way of doing things
+
+268
+00:16:16,300 --> 00:16:20,100
+但它是一个重要的历史性的工具，实际上现在也经常被使用
+but it is an important historical one that is actually still frequently used
+
+269
+00:16:21,300 --> 00:16:23,000
+chroot的另一个缺点
+another drawback of chroot
+
+270
+00:16:23,000 --> 00:16:26,700
+除了易逃脱，它还缺少了其他形式的隔离
+other than the ability to escape is that it's missing other forms of isolation
+
+271
+00:16:26,733 --> 00:16:28,800
+让我来告诉你我的意思
+let me show you what I mean by this
+
+272
+00:16:30,600 --> 00:16:39,200
+如果我chroot，即使我进了jail
+if I chroot even if I go and and and happily go into my jail
+
+273
+00:16:39,200 --> 00:16:40,933
+现在我在jail里
+so now I'm in my jail
+
+274
+00:16:41,333 --> 00:16:43,566
+一切都好，如果我
+everything is good if I
+
+275
+00:16:44,600 --> 00:16:50,500
+好吧，你在这里看不到
+ah well you can't see it here
+
+276
+00:16:51,466 --> 00:16:53,333
+有点偏离剧本，它有点难到我了
+went a little off script and it bit me
+
+277
+00:16:53,600 --> 00:16:56,733
+嗯，我看看这里有netcat吗，没有
+um let's see do I have netcat in this no
+
+278
+00:16:58,466 --> 00:16:59,266
+好吧
+okay
+
+279
+00:16:59,266 --> 00:17:01,566
+你得相信我的话
+uh you're gonna have to take my word for it
+
+280
+00:17:01,966 --> 00:17:05,866
+Um chroot不提供其他形式的隔离
+um chroot does not provide other forms of isolation
+
+281
+00:17:06,066 --> 00:17:09,666
+所以它不提供进程ID隔离
+right so it doesn't provide process ID isolation
+
+282
+00:17:09,900 --> 00:17:15,000
+举个例子，让我展示一个简单的验证方法
+uh as an example actually let me show you an easy way to uh to look at this
+
+283
+00:17:15,000 --> 00:17:17,900
+我们执行一下chroot
+let's let's um do our our chroot
+
+284
+00:17:17,900 --> 00:17:20,666
+先修复一下chroot，执行chdir
+actually let's fix the chroot so does the ch directory
+
+285
+00:17:21,733 --> 00:17:22,533
+好的
+all right
+
+286
+00:17:22,866 --> 00:17:24,566
+执行chroot
+so we do our chroot
+
+287
+00:17:26,166 --> 00:17:27,066
+我们看看
+we look at the
+
+288
+00:17:27,066 --> 00:17:32,766
+这会打印出这个shell的进程ID 13761
+this echoes the process ID of the shell 13761
+
+289
+00:17:37,500 --> 00:17:41,600
+我要在另一个终端停止它
+I'm gonna sig stop it in another terminal
+
+290
+00:17:42,066 --> 00:17:44,333
+不过你们看不到我在另一个终端的操作
+so in another terminal that you can't see unfortunately
+
+291
+00:17:44,333 --> 00:17:47,133
+我会执行 kill -
+I'm doing kill dash
+
+292
+00:17:47,933 --> 00:17:49,333
+SIGSTOP是多少来着
+what is sig stop
+
+293
+00:17:50,800 --> 00:17:54,533
+kill -19 13761
+dash 19 13761
+
+294
+00:17:55,533 --> 00:17:57,400
+好吧，我在另一个终端停止了这个shell
+all right I stopped the shell in another terminal
+
+295
+00:17:57,400 --> 00:18:00,900
+好了，它在后台被停了
+it's right it's it's it's still stopped in the background
+
+296
+00:18:02,666 --> 00:18:05,133
+可以用 ps aux 看到
+I can psaux and I can see it
+
+297
+00:18:05,100 --> 00:18:20,700
+13761它与其他不同jail里的进程运行在相同的区域内
+13761 it's running inside the same general isolation area as my other processes just in a different  jail
+
+298
+00:18:23,000 --> 00:18:31,900
+根据你的安全标准，这可能不是什么大问题，也可能是一个大问题
+that might not be a big deal depending on your security criteria but but it could be a big deal
+
+299
+00:18:32,400 --> 00:18:34,733
+它在网络上也不是隔离的
+it is not isolated on the network
+
+300
+00:18:34,700 --> 00:18:39,100
+例如，假如我在chroot中启动一个网络服务，它能使用
+for example if I launch a network service inside the chroot it uses the
+
+301
+00:18:39,100 --> 00:18:42,900
+和chroot之外的网络服务相同的资源
+same resources as network services outside of the chroot um
+
+302
+00:18:42,933 --> 00:18:43,966
+它也不是
+it's not also
+
+303
+00:18:43,900 --> 00:18:48,100
+在与其他进程通信方面，它也不是孤立的
+it's also not um isolated in terms of communicating with other processes
+
+304
+00:18:48,200 --> 00:18:54,200
+这些可能都是你想要强制隔离的安全属性
+and so on this might all be security properties that you want to enforce the isolation of
+
+305
+00:18:54,500 --> 00:19:00,800
+所以它基本上，现在或多或少已经过时了
+um and so it's it's basically um more or less obsoleted nowadays 
+
+306
+00:19:01,300 --> 00:19:03,900
+它已经失宠了，嗯
+it's fallen out of favor really um
+
+307
+00:19:04,900 --> 00:19:10,500
+实现快速系统隔离的现代方法是使用名称空间
+the modern way of doing fast system isolation is with namespacing
+
+308
+00:19:11,300 --> 00:19:14,100
+我们将在本模块后续视频中讨论
+we'll talk about that later in the module
+
+309
+00:19:15,000 --> 00:19:19,166
+另外还创建了新隔离措施
+and additional isolation measures have been created
+
+310
+00:19:19,266 --> 00:19:20,900
+例如Cgroups和seccomp
+such Cgroups and seccomp
+
+311
+00:19:20,900 --> 00:19:22,466
+这个我们也会讲到
+and we'll talk about that as well
+
+312
+00:19:22,800 --> 00:19:24,000
+谢谢大家的聆听
+thank you for listening
+
+313
+00:19:24,133 --> 00:19:25,800
+以后的视频见
+and I'll see you in future videos

@@ -1,0 +1,1050 @@
+1
+00:00:01,066 --> 00:00:02,199
+你好黑客
+hello hackers
+
+2
+00:00:02,400 --> 00:00:07,600
+欢迎来到PWN学院 shellcoding模块的另一个视频
+welcome to another video in the pwn college of shellcoding module
+
+3
+00:00:07,700 --> 00:00:10,766
+今天我们将讨论数据执行保护(DEP)
+today we'll be talking about data execution Protection
+
+4
+00:00:11,066 --> 00:00:12,466
+简单地说一下
+just very briefly
+
+5
+00:00:12,700 --> 00:00:19,500
+如果你还记得我们计算机架构基础中的3个John的话
+if you remember the 3 Johns from our computer architecture fundamentals
+
+6
+00:00:19,900 --> 00:00:24,200
+他们给我们带来了冯·诺依曼架构
+the 3 Johns gave us what is now called the John Von Neumann architecture
+
+7
+00:00:25,000 --> 00:00:34,700
+他们提出的这种架构基本上以相同的方式处理代码和数据
+they proposed this architecture that basically treats code and data in the same way
+
+8
+00:00:35,000 --> 00:00:35,500
+好
+right
+
+9
+00:00:35,500 --> 00:00:37,900
+它们都存储在内存中
+they're all stored in memory
+
+10
+00:00:37,900 --> 00:00:41,800
+它们都会被读入CPU缓存，等等
+they're all read into your CPU cache and so forth and so on
+
+11
+00:00:42,900 --> 00:00:44,300
+这就产生了问题
+and this causes problems
+
+12
+00:00:44,300 --> 00:00:46,166
+正如我们前面在本模块中看到的
+as we have seen throughout this module
+
+13
+00:00:46,200 --> 00:00:50,333
+这能让我们注入如同代码的数据
+this allows us to inject data as if it were code
+
+14
+00:00:50,533 --> 00:00:52,099
+然后执行注入的代码
+and have it executed
+
+15
+00:00:53,066 --> 00:00:54,699
+混乱随之而来
+and chaos ensues
+
+16
+00:00:55,566 --> 00:00:59,166
+它在1988年摧毁了互联网
+it brought down the internet in 1988
+
+17
+00:01:00,100 --> 00:01:05,700
+这是由于一个漏洞，它有涉及到shellcode
+it you know as as an exploit that involved shellcode 
+
+18
+00:01:07,700 --> 00:01:12,300
+它也导致你必须解决很多为你准备的有挑战性的作业题目
+and it is caused you to have to tackle a lot of challenge problems that be prepared for you
+
+19
+00:01:12,300 --> 00:01:16,900
+这是这个设计决策的一个非常有趣的副作用
+it's a pretty interesting side effect of this design decision
+
+20
+00:01:17,000 --> 00:01:18,100
+所以有时
+so sometime
+
+21
+00:01:18,766 --> 00:01:20,266
+最近
+relatively recently
+
+22
+00:01:20,500 --> 00:01:24,700
+在最近的可能差不多20年里
+as in the last I don't know maybe almost 2 decades
+
+23
+00:01:25,566 --> 00:01:28,466
+计算机架构设计师开始考虑
+computer architecture designers started thinking
+
+24
+00:01:28,400 --> 00:01:32,300
+如果我们对数据和代码的处理略有所不同呢
+well what if we treat data and code slightly differently
+
+25
+00:01:32,966 --> 00:01:34,399
+就算有一点点不同呢？
+right just a little bit
+
+26
+00:01:34,900 --> 00:01:38,766
+于是数据执行保护（DEP）就诞生了
+and data execution Protection was born
+
+27
+00:01:40,700 --> 00:01:44,533
+现代架构支持对数据划分权限
+modern architectures support permissions on data
+
+28
+00:01:44,533 --> 00:01:45,733
+这些权限可以是
+these permissions can be
+
+29
+00:01:46,000 --> 00:01:47,500
+是否能读取这些数据
+can we read this data
+
+30
+00:01:47,900 --> 00:01:49,733
+是否能写入（修改）这些数据
+can we write this data
+
+31
+00:01:49,800 --> 00:01:51,966
+是否能执行这些数据
+and can we execute this data
+
+32
+00:01:51,966 --> 00:01:53,866
+这些常量PROT_READ、 PROT_WRITE、 PROT_EXEC
+so these constants PROT_READ PROT_WRITE PROT_EXEC 
+
+33
+00:01:53,800 --> 00:02:00,000
+来自mmap和mprotect系统调用
+ are from you know the mmap and mprotect system calls
+
+34
+00:02:00,133 --> 00:02:01,533
+你可以使用它们
+you can actually use them
+
+35
+00:02:01,500 --> 00:02:06,000
+定义映射内存的权限
+to define the permissions of memory that you are mapping or
+
+36
+00:02:06,666 --> 00:02:07,933
+或者修改它的权限
+changing the permissions of
+
+37
+00:02:09,733 --> 00:02:11,933
+这背后的原理是
+the intuition behind this was 
+
+38
+00:02:12,100 --> 00:02:16,900
+注意: 一般只有ELF中.text段的数据
+look: normally all the data in your .text segment in your ELF
+
+39
+00:02:17,933 --> 00:02:19,866
+需要可执行权限
+that's what needs to be executable
+
+40
+00:02:20,266 --> 00:02:21,399
+没人会执行
+no one needs to execute
+
+41
+00:02:21,400 --> 00:02:24,800
+也不是没有，但通常栈上的数据不需要被执行
+not no one but usually you don't need to execute the stack
+
+42
+00:02:25,700 --> 00:02:27,733
+有时确实会这样做，但这种情况很少
+sometimes you do but that's rare
+
+43
+00:02:27,733 --> 00:02:29,999
+在这种情况下，你要自己想办法了
+and in those cases you'll deal with it yourself
+
+44
+00:02:30,200 --> 00:02:31,366
+默认情况
+right by default
+
+45
+00:02:31,466 --> 00:02:34,066
+我们要确保栈上数据不能执行
+let's make sure nothing on the stack can be executed
+
+46
+00:02:34,166 --> 00:02:36,866
+程序代码不能更改
+nothing in the program code can be changed
+
+47
+00:02:37,066 --> 00:02:38,266
+这样就相安无事了
+everyone will be happy
+
+48
+00:02:39,400 --> 00:02:42,533
+不同的系统，对这种机制有不同的称呼
+in different systems this is called different things
+
+49
+00:02:42,500 --> 00:02:46,500
+windows里它被称为DEP数据执行保护
+on windows it tends to be called DEP data execution Protection
+
+50
+00:02:46,700 --> 00:02:54,400
+Linux系统里它经常被称为NX，即无执行位
+on Linux systems that it is frequently referred to as NX the no execute bit
+
+51
+00:02:56,866 --> 00:02:59,733
+它也被称为W⊕X
+it has been called or W⊕X
+
+52
+00:02:59,733 --> 00:03:00,966
+这很难写
+this is very difficult to write
+
+53
+00:03:01,166 --> 00:03:04,933
+因为它包含了“⊕”
+because it involves an ⊕
+
+54
+00:03:05,066 --> 00:03:07,099
+有时写成W+X
+sometimes written as W+X
+
+55
+00:03:09,133 --> 00:03:10,566
+它传达的意思是
+that conveys the idea that
+
+56
+00:03:10,600 --> 00:03:13,600
+执行权限和写权限不应该同时被赋予
+something should never be executable and writeable at the same time
+
+57
+00:03:14,200 --> 00:03:17,400
+它有很多称呼，但总的来说
+known by a lot of different things but generally speaking
+
+58
+00:03:17,733 --> 00:03:20,999
+DEP阻止了 shellcode或者说
+Data Execute Protection prevent your shellcode
+
+59
+00:03:21,000 --> 00:03:23,700
+任何注入的数据的执行
+any data that you inject from being able to execute
+
+60
+00:03:24,133 --> 00:03:26,199
+这终结了shellcode吗？
+so is that the end of shellcode
+
+61
+00:03:26,566 --> 00:03:26,766
+好吧
+well
+
+62
+00:03:26,766 --> 00:03:28,399
+它可能不会被毁灭
+it might not be damned
+
+63
+00:03:29,600 --> 00:03:34,300
+但确实很受影响
+ but it definitely hurts 
+
+64
+00:03:35,100 --> 00:03:39,100
+在某种程度上，shellcode现在是一种古老的艺术
+shellcode in some way is now a little bit of an ancient art
+
+65
+00:03:39,200 --> 00:03:45,200
+只由神秘又聪明的黑客大佬使用
+practiced by mysterious wise hackers
+
+66
+00:03:45,800 --> 00:03:49,500
+它在嵌入式设备中依旧非常普遍
+it's still very very much around in embedded devices
+
+67
+00:03:49,500 --> 00:03:54,900
+仍然有很多嵌入式设备没有良好的DEP机制
+there's still a lot of embedded devices that don't have good data execution Protection
+
+68
+00:03:55,300 --> 00:04:02,500
+在通用计算机领域，它也以不同方法存在着
+and it is around in kind of the  general purpose computing landscape as well in a number of different ways
+
+69
+00:04:02,700 --> 00:04:06,200
+我们将在这节课中讨论
+ that we'll discuss in this lecture
+
+70
+00:04:07,600 --> 00:04:15,000
+我们讨论一下还能用的shellcode注入方法
+let's talk about kind of the remaining data uh shellcode injection methods
+
+71
+00:04:15,733 --> 00:04:16,866
+首先
+thing number one
+
+72
+00:04:17,700 --> 00:04:21,800
+最直接的说法就是
+that the kind of most straightforward way to talk about is well
+
+73
+00:04:21,966 --> 00:04:24,166
+您可以使用系统调用
+you can use a system call
+
+74
+00:04:24,500 --> 00:04:26,700
+mprotect系统调用
+a system call called mprotect
+
+75
+00:04:26,733 --> 00:04:29,133
+来修改内存的权限
+to actually change the permissions of memory
+
+76
+00:04:29,133 --> 00:04:30,466
+使其可执行
+to make it executable
+
+77
+00:04:30,466 --> 00:04:32,099
+以及可写
+and writeable right
+
+78
+00:04:34,100 --> 00:04:35,866
+这是一个先有鸡还是先有蛋的问题
+this is kind of a chicken and egg problem
+
+79
+00:04:35,866 --> 00:04:38,399
+因为通常要能这样做
+because usually in order to do that
+
+80
+00:04:38,500 --> 00:04:43,300
+你已经对程序有了一些高级别的控制
+you already have to have some high level of control over a program
+
+81
+00:04:43,900 --> 00:04:51,500
+一个常见的方法是面向返回编程（ROP）
+a very common way in hacking challenges to do it is through return oriented programming
+
+82
+00:04:52,100 --> 00:04:53,800
+将在以后的模块中讨论
+which you will talk about in a future module
+
+83
+00:04:53,800 --> 00:04:56,600
+但基本上要创建一个面向返回的小程序
+but you basically create a small return oriented program
+
+84
+00:04:56,600 --> 00:05:00,700
+用mprotect修改一小段内存的权限，然后
+to mprotect a piece of memory and then 
+
+85
+00:05:01,400 --> 00:05:03,000
+你通过它运行你的shellcode
+you run your shellcode out of that
+
+86
+00:05:04,466 --> 00:05:06,066
+其他情况则非常看情况
+other cases are very situational
+
+87
+00:05:06,066 --> 00:05:08,533
+这取决于程序的原有功能
+it really depends on what is the program designed to do
+
+88
+00:05:08,533 --> 00:05:10,699
+有什么样的漏洞等等
+what is the vulnerability and so forth
+
+89
+00:05:11,100 --> 00:05:15,200
+有些情况是可以绕过DEP的
+it is not impossible to have this happen
+
+90
+00:05:15,200 --> 00:05:18,500
+特别是竞争条件之类的
+especially as result of a race condition or something along these lines
+
+91
+00:05:19,333 --> 00:05:21,933
+但这要看情况
+but it's a situational scenario
+
+92
+00:05:23,400 --> 00:05:28,700
+很多情况下shellcode仍然有用
+a large class of scenarios were shellcode does still exist
+
+93
+00:05:28,800 --> 00:05:31,500
+它涉及到 JIT编译器
+It involve just in time compilers
+
+94
+00:05:32,000 --> 00:05:40,100
+JIT编译器可以让你非常非常快地运行javascript
+just in time compilers were created to allow you to run javascript very very very quickly
+
+95
+00:05:40,300 --> 00:05:46,600
+要注意的是解释型语言不只有js
+right the idea is you take interpreted language it doesn't just have to be javascript
+
+96
+00:05:47,400 --> 00:05:52,600
+还可以是java字节码之类的
+or you know java byte code or something along these lines
+
+97
+00:05:52,700 --> 00:05:56,200
+在运行时
+and at runtime
+
+98
+00:05:57,133 --> 00:06:00,699
+为了能跑得更快，如果觉有必要
+if you feel that it would help you run things faster
+
+99
+00:06:00,700 --> 00:06:04,900
+就编译那部分（能加快运行的）代码
+you compile that a little bit of code at a time 
+
+100
+00:06:05,400 --> 00:06:07,300
+后面正好可以运行它
+just in time to to run it 
+
+101
+00:06:07,300 --> 00:06:11,300
+just in Time编译有点超出了这门课的范围
+just in Time compilation is a little bit outside of the scope of this course in general
+
+102
+00:06:11,900 --> 00:06:14,300
+如果你感兴趣，可以查一下
+look it up if you are interested
+
+103
+00:06:14,300 --> 00:06:18,000
+网上有很多资源可以去了解它
+there's you know a lot of resources on Internet to learn about it
+
+104
+00:06:18,166 --> 00:06:20,566
+但总的思想是会生成代码
+but the general idea is you're generating code
+
+105
+00:06:20,500 --> 00:06:23,500
+会生成要被执行的二进制代码
+you're generating binary code that needs to be able to run
+
+106
+00:06:23,566 --> 00:06:26,533
+所以生成的二进制代码需要能够
+so that binary code that is generated needs to be able
+
+107
+00:06:26,766 --> 00:06:30,166
+写在某个地方，然后还要在那里执行
+to be written somewhere and then executed from there
+
+108
+00:06:30,166 --> 00:06:31,733
+安全的做法是
+right the safety thing to do
+
+109
+00:06:31,900 --> 00:06:35,900
+为它mmap一快内存，写入代码
+would be to mmap a place just for it to write the code
+
+110
+00:06:36,133 --> 00:06:40,266
+然后用mprotect保护那块内存，这样那块内存
+to then mprotect that place so that memory location
+
+111
+00:06:40,500 --> 00:06:42,566
+就不再是可写的了
+ so that it is no longer writeable
+
+112
+00:06:43,066 --> 00:06:45,499
+然后执行里面代码
+then execute that code
+
+113
+00:06:45,900 --> 00:06:46,766
+如果需要更新它
+ if you need to update it
+
+114
+00:06:47,500 --> 00:06:49,733
+即时编译器通常是增量的
+Just in time compilers are usually incremental
+
+115
+00:06:49,700 --> 00:06:52,100
+所以他们肯定会不断更新代码
+so they'll have to update code over time
+
+116
+00:06:52,133 --> 00:06:55,399
+您需要再次调用mprotect使其可写
+you'll need to once again mprotect it to be writeable
+
+117
+00:06:56,166 --> 00:06:59,666
+然后再调用mprotect使其只可执行
+and then once again mprotect it to be executable only
+
+118
+00:07:00,100 --> 00:07:01,966
+这是最安全的做法
+this is the safe thing to do
+
+119
+00:07:02,133 --> 00:07:04,199
+但是系统调用很慢
+right but system calls are slow
+
+120
+00:07:04,200 --> 00:07:06,333
+所以这也是一件非常缓慢的事情
+so there's also an extremely slow thing to do
+
+121
+00:07:06,300 --> 00:07:14,300
+事实上，像这样的方法可能会有巨大的开销
+in fact an approach like this likely is going to have enormous overhead
+
+122
+00:07:14,400 --> 00:07:17,300
+而JIT编译的期望是要非常快的执行
+and the point of just in time compilations should be very fast to
+
+123
+00:07:17,366 --> 00:07:18,899
+是为了加快速度
+to speed things up
+
+124
+00:07:18,933 --> 00:07:22,266
+而安全会失去速度
+and slow and safe tends to lose out over fast
+
+125
+00:07:22,300 --> 00:07:25,366
+因此，可写并可执行的内存页面是常见的
+as a result writeable and executable pages are common
+
+126
+00:07:25,700 --> 00:07:27,700
+对，更糟的是
+right and it's it gets a little worse even
+
+127
+00:07:27,700 --> 00:07:33,033
+如果你使用了库，而库使用了可写并可执行的内存页
+if your program uses a library that uses writeable plus executable pages 
+
+128
+00:07:33,300 --> 00:07:34,700
+这些内存页都在你的内存空间里
+that those pages are in your memory space right
+
+129
+00:07:34,766 --> 00:07:35,933
+所以你也因此有了漏洞
+so you're vulnerable too
+
+130
+00:07:36,000 --> 00:07:40,700
+让我来告诉你这些有多常见
+but let me show you just how common these are
+
+131
+00:07:42,000 --> 00:07:46,500
+看看我能不能做到展示的同时不剧透
+let's see if I can do this without spewing secrets all over the place
+
+132
+00:07:48,666 --> 00:07:52,733
+之前讲过/proc文件系统
+talked about the slash proc file system before
+
+133
+00:07:54,300 --> 00:08:01,600
+在这里的/proc中，有机器上所有进程对应的目录
+here in slash proc we have directories for all the processes running on machine
+
+134
+00:08:02,400 --> 00:08:08,300
+我们先用grep搜索一下这些进程
+ so let's just grep through all of these processes
+
+135
+00:08:08,800 --> 00:08:11,100
+这里有一个文件
+there's a file
+
+136
+00:08:13,300 --> 00:08:19,100
+self表示当前进程
+and for each of these process ID self is just symboling to my current
+
+137
+00:08:20,900 --> 00:08:25,800
+所以这就是ls的进程ID，这很酷
+so this would be symboling to ls's process ID which is pretty cool
+
+138
+00:08:26,266 --> 00:08:28,099
+很灵活
+all super dynamic and everything
+
+139
+00:08:28,100 --> 00:08:29,700
+好的，如果我们
+all right if we
+
+140
+00:08:31,500 --> 00:08:43,700
+Grep查找所有进程maps中的RWX
+grep all of these process maps for the word for the permissions rwx
+
+141
+00:08:44,700 --> 00:08:45,500
+好
+right
+
+142
+00:08:46,100 --> 00:08:48,900
+理想情况下，我们一个也看不到，但我们看到了很多
+ideally we wouldn't see any but we see a lot
+
+143
+00:08:49,000 --> 00:08:51,700
+看到了很多文件匹配这些权限
+see a lot of files that match these permissions
+
+144
+00:08:51,800 --> 00:08:56,200
+我们可以用parallel来运行更多的命令
+and we can use our friend parallel to run more commands here
+
+145
+00:08:56,700 --> 00:08:57,500
+如果我们
+if we
+
+146
+00:08:58,333 --> 00:08:59,733
+让我们看看这是否可行
+let's see if this works
+
+147
+00:09:07,700 --> 00:09:08,400
+嗯,让我们
+uh let's
+
+148
+00:09:08,400 --> 00:09:09,266
+嗯好吧
+yeah okay
+
+149
+00:09:09,466 --> 00:09:12,066
+让我们以基本名称/exe为例
+let's just take the base name slash exe
+
+150
+00:09:15,000 --> 00:09:24,000
+所有这些程序都在内存中映射了一个可写且可执行的页面
+all of these programs have a page mapped in memory that is writable and executable
+
+151
+00:09:24,066 --> 00:09:25,899
+这里有一些重量级人物
+and there are some heavy hitters in here
+
+152
+00:09:26,100 --> 00:09:30,000
+X我的图形界面
+X my freaking graphical interface
+
+153
+00:09:30,133 --> 00:09:31,499
+还有zoom
+we have zoom
+
+154
+00:09:32,733 --> 00:09:34,999
+它也有一个可写可执行的页面
+it has a writable and executable page
+
+155
+00:09:35,000 --> 00:09:37,700
+如果在zoom中有shellcode注入
+if there is shellcode injection in zoom
+
+156
+00:09:37,700 --> 00:09:40,233
+这里就有一个地方可供shellcode执行
+now there's a place for that shellcode execute from 
+
+157
+00:09:40,233 --> 00:09:43,199
+Firefox！它里面有JIT编译器
+Firefox has a just in time compiler
+
+158
+00:09:43,266 --> 00:09:44,599
+有可能RWX页面就在那里
+it's possible it's there
+
+159
+00:09:44,600 --> 00:09:45,933
+我有点好奇
+I'm actually curious
+
+160
+00:09:45,933 --> 00:09:47,966
+我不这么认为
+I didn't think it was
+
+161
+00:09:47,966 --> 00:09:49,799
+很明显，这有点离题
+obviously this is a little offscript
+
+162
+00:09:52,400 --> 00:09:55,700
+RWX在哪里
+so where's the RWX
+
+163
+00:09:57,066 --> 00:09:58,266
+没找到
+I don't see it
+
+164
+00:09:59,133 --> 00:10:00,966
+还是用聪明点的方法吧
+well actually let's be smart about this
+
+165
+00:10:04,766 --> 00:10:05,566
+哦
+oh
+
+166
+00:10:07,533 --> 00:10:09,399
+它在一个Nvidia库
+it's an Nvidia library
+
+167
+00:10:09,400 --> 00:10:15,766
+由于某种原因，这个库映射了可写和可执行的页面
+so here I mean for some reason this library has writable and executable page mapped
+
+168
+00:10:16,033 --> 00:10:25,499
+所以现在我的火狐浏览器也存在了
+ and as a result now my Firefox does as well
+
+169
+00:10:27,766 --> 00:10:29,299
+名单上还有谁
+who else was on this list
+
+170
+00:10:29,800 --> 00:10:32,700
+一些GNOME组件、discord、slack
+some GNOME components discord and slack
+
+171
+00:10:33,666 --> 00:10:35,099
+和obs
+open broadcast system
+
+172
+00:10:36,733 --> 00:10:39,699
+我打赌这是因为它是电子应用程序
+I bet this is because it's electron apps
+
+173
+00:10:39,966 --> 00:10:40,766
+不管怎样
+anyways
+
+174
+00:10:41,200 --> 00:10:45,600
+甚至在我的系统上，都有可写和可执行的代码
+a lot of things have writeable and executable code even on my system
+
+175
+00:10:46,066 --> 00:10:47,099
+甚至我的系统
+even my system
+
+176
+00:10:47,466 --> 00:10:48,266
+好吧
+all right
+
+177
+00:10:48,800 --> 00:10:53,300
+显然这让shellcode仍有用武之地
+so obviously this could still allow some shellcode action
+
+178
+00:10:53,666 --> 00:10:54,599
+我们继续
+let's move on
+
+179
+00:10:55,400 --> 00:10:57,166
+如果JIT是遵照安全方法实现的呢
+what if the JIT was safe
+
+180
+00:10:57,300 --> 00:11:02,900
+在特定的情况下，你仍然可以攻击它
+right well you can still attack it in given certain scenarios
+
+181
+00:11:03,333 --> 00:11:06,366
+有一种技术叫做JIT spray，想象一下
+there's a technique called JIT spraying so imagine
+
+182
+00:11:08,900 --> 00:11:13,900
+JIT编译器需要编译你所有的代码
+just in time compiler would need to compile all of your code
+
+183
+00:11:14,300 --> 00:11:19,600
+比如将所有javascript代码转换成二进制
+that all of your javascript code for example into binary 
+
+184
+00:11:20,166 --> 00:11:23,333
+如果你的javascript代码有一些常量
+if your javascript code has Constants
+
+185
+00:11:23,933 --> 00:11:28,199
+它们恰好是有效的x86汇编指令的值
+that happened to have the values of valid x86 assembly
+
+186
+00:11:28,866 --> 00:11:31,533
+它们可能被放在可执行的内存中
+they might end up in memory that is executable
+
+187
+00:11:31,500 --> 00:11:35,000
+现在也有针对这个问题的缓解措施，但是
+now there are mitigations that have been developed for this as well but
+
+188
+00:11:35,100 --> 00:11:37,100
+但概念仍然成立
+but the general concepts still stand
+
+189
+00:11:37,166 --> 00:11:38,499
+你可能会
+you could end up
+
+190
+00:11:38,700 --> 00:11:44,400
+你可能是一个恶意网站，可以在浏览器中运行自己的javascript
+because you might be a malicious website that can run its own javascript in a browser
+
+191
+00:11:44,533 --> 00:11:46,766
+你可能使用JIT编译
+you might be able to cause things to be just in time compiled 
+
+192
+00:11:46,700 --> 00:11:53,500
+并将结果通过可控的方式存入内存
+and placed into memory in ways that you more or less control
+
+193
+00:11:53,600 --> 00:11:56,700
+然后触发漏洞将代码重定向到那里
+and then by triggering a vulnerability to redirect code to there
+
+194
+00:11:56,766 --> 00:11:59,533
+这样就在运行shellcode了
+ you're running shellcode
+
+195
+00:12:00,500 --> 00:12:04,200
+顺便说一下，这种情况也会发生
+this also happens by the way
+
+196
+00:12:05,500 --> 00:12:11,300
+这不仅仅是一个理论问题
+all right and JIT isn't just a theoretical problem right
+
+197
+00:12:11,300 --> 00:12:13,600
+JIT无处不在
+JIT is everywhere
+
+198
+00:12:14,200 --> 00:12:16,000
+它在你的浏览器中
+it's in your browser
+
+199
+00:12:16,266 --> 00:12:20,699
+在你们很多人使用的软件中都有
+it's in a lot of you know software that you're using 
+
+200
+00:12:21,033 --> 00:12:24,499
+它肯定在javascript解释器中
+it's in your javascript interpreter for sure
+
+201
+00:12:24,600 --> 00:12:27,366
+在你的lua解释器中
+in your lua interpreter
+
+202
+00:12:27,500 --> 00:12:31,500
+在你的python解释器中，如果你使用pypy等
+ in your python interpreter if you're using pypy etc
+
+203
+00:12:32,400 --> 00:12:33,900
+它非常有用
+a very useful thing
+
+204
+00:12:34,066 --> 00:12:36,599
+但它重新打开了这个攻击向量
+but it reopens this attack vector
+
+205
+00:12:38,500 --> 00:12:39,566
+另一个保护机制是
+another mitigation 
+
+206
+00:12:39,500 --> 00:12:44,200
+只是预览一下，因为下一讲你们会讲到这个
+just a preview  because you're gonna move on to this in the next module
+
+207
+00:12:45,100 --> 00:12:48,800
+如果
+what happens if we say okay fine
+
+208
+00:12:49,700 --> 00:12:52,600
+攻击者会以某种方式运行他们的shellcode
+the attacker is gonna run their shellcode somehow
+
+209
+00:12:52,733 --> 00:12:56,566
+我们能够避免shellcode造成很大的伤害吗
+but can we prevent that shellcode from doing a lot of damage
+
+210
+00:12:56,966 --> 00:12:57,666
+请继续关注
+ stay tuned
+

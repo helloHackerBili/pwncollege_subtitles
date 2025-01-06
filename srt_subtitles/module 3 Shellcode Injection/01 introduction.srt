@@ -1,0 +1,3769 @@
+1
+00:00:02,100 --> 00:00:03,900
+同学们好，我是Yan
+hey hello students I'm Yan
+
+2
+00:00:03,900 --> 00:00:06,733
+这是另一个PWN大学视频
+and this is yet another pwn college video
+
+3
+00:00:07,000 --> 00:00:09,933
+具体来说是关于shellcoding的视频
+specifically a video on shellcoding
+
+4
+00:00:10,100 --> 00:00:13,300
+这期PWN学院教学视频介绍了的shellcoding
+this is an introduction of the shellcoding module of pwn college
+
+5
+00:00:13,333 --> 00:00:15,499
+希望你们有
+hopefully you have
+
+6
+00:00:15,766 --> 00:00:19,066
+了解过计算机架构
+come to this module knowing computer architecture
+
+7
+00:00:19,566 --> 00:00:22,599
+一些汇编基础知识
+some assembly fundamentals and
+
+8
+00:00:22,766 --> 00:00:25,366
+二进制文件结构等等
+what a binary file is and so forth
+
+9
+00:00:25,666 --> 00:00:28,133
+如果你缺失其中的一些知识
+if you're missing some of this knowledge
+
+10
+00:00:28,200 --> 00:00:30,200
+我们有一系列的基础视频
+we have a series of fundamental videos
+
+11
+00:00:30,200 --> 00:00:35,500
+我强烈建议你在尝试这个模块之前去看一下
+ that I highly recommend you go watch before trying this module
+
+12
+00:00:35,800 --> 00:00:41,100
+好了，首先复习一下计算机基础知识
+all right let's get started as a review from those computer fundamentals
+
+13
+00:00:41,100 --> 00:00:43,900
+主要是计算机架构相关
+specifically computer architecture fundamental video
+
+14
+00:00:45,400 --> 00:00:47,533
+现代计算机架构中
+the modern computer architecture
+
+15
+00:00:48,366 --> 00:00:51,733
+最受欢迎的
+that is most popular let's say among the
+
+16
+00:00:52,700 --> 00:00:55,700
+你每天都用的
+systems that you will interact with consciously on the daily basis
+
+17
+00:00:55,800 --> 00:00:57,300
+是冯·诺伊曼架构
+is the von noiman architecture
+
+18
+00:00:57,300 --> 00:01:01,500
+该架构以这三位之一命名，他们发明了这种架构
+named after one of these 3 Johns that brought us this architecture
+
+19
+00:01:01,766 --> 00:01:03,066
+冯·诺伊曼架构
+von noiman architecture
+
+20
+00:01:03,200 --> 00:01:07,100
+与其它的架构，比如哈佛的架构，
+as opposed to some other architecture such as the Harvard architecture
+
+21
+00:01:08,000 --> 00:01:09,866
+在设计理念上不同
+you know kind of philosophical design
+
+22
+00:01:11,333 --> 00:01:13,666
+它对数据和代码是没有明显区分的
+treats data and code interchangeably
+
+23
+00:01:15,000 --> 00:01:16,666
+冯·诺伊曼架构基本上是这样的
+the von noiman architecture is basically this
+
+24
+00:01:16,600 --> 00:01:21,100
+存储金字塔（硬盘、内存、多级cache、寄存器）
+methuroshicum doller of caching layers
+
+25
+00:01:21,500 --> 00:01:24,266
+数据在这些缓存层之间流动
+and data flows between these caching layers
+
+26
+00:01:24,200 --> 00:01:28,300
+从互联网到你的磁盘到你的内存再到你的
+from the open internet to your disk to your memory to your
+
+27
+00:01:29,133 --> 00:01:31,799
+CPU缓存到CPU寄存器等等
+CPU cache to CPU registers at so forth
+
+28
+00:01:32,066 --> 00:01:33,699
+这些数据可以是
+and these data can be
+
+29
+00:01:35,200 --> 00:01:37,900
+这些数据可以是代码，也可以是数据
+these data can be code or data interchangeally
+
+30
+00:01:39,133 --> 00:01:41,133
+这会导致一些问题
+ this can cause problems
+
+31
+00:01:41,100 --> 00:01:47,000
+我们深入研究一个可能导致的安全问题具体示例
+so let's dive into one specific example of a security problem that this can cause
+
+32
+00:01:47,400 --> 00:01:50,500
+这是一个程序
+here's a program that
+
+33
+00:01:50,800 --> 00:01:53,666
+一个我自己写的规模不大的程序
+a not various scale program myself wrote
+
+34
+00:01:53,666 --> 00:01:55,333
+写的过程中
+and in the course of writing
+
+35
+00:01:55,333 --> 00:01:57,066
+这个程序有几个bug
+this program made several bugs
+
+36
+00:01:57,900 --> 00:02:02,000
+这节课我们将讨论一个特定的bug
+we're going to talk about one specific bug in this lecture
+
+37
+00:02:02,300 --> 00:02:04,666
+在未来的模块中，我们将讨论其他bug
+in future module we'll talk about other bugs
+
+38
+00:02:04,800 --> 00:02:07,700
+但这个特定的漏洞会让攻击者
+but this specific bug allows an attacker
+
+39
+00:02:08,366 --> 00:02:10,499
+实现shellcode执行
+to achieve shellcode execution
+
+40
+00:02:10,500 --> 00:02:15,500
+即注入会被执行的二进制代码到程序
+that is to inject binary code that will be executed
+
+41
+00:02:16,000 --> 00:02:21,900
+并且和该程序有相同权限
+under the exact permissions and so forth of this program
+
+42
+00:02:22,166 --> 00:02:24,266
+和这个程序有相同的上下文
+right on in the context of this program
+
+43
+00:02:24,533 --> 00:02:25,933
+这是怎么发生的呢
+so how does this happen
+
+44
+00:02:25,933 --> 00:02:29,333
+让我们来看看这个程序
+well let's take a look at this program
+
+45
+00:02:30,500 --> 00:02:33,700
+首先看到这两个bye函数
+1st thing that you see is 2 different functions that say bye
+
+46
+00:02:33,700 --> 00:02:35,366
+还有一个hello函数
+one function that says hello
+
+47
+00:02:35,566 --> 00:02:37,933
+hello函数接受一个指向bye函数的指针
+the hello function actually takes a pointer to the bye function
+
+48
+00:02:38,066 --> 00:02:40,399
+并调用它
+ and invokes it
+
+49
+00:02:40,400 --> 00:02:44,500
+函数指针是C和某些其他编程语言的一个特性
+function pointers are a feature of C and certain other programming languages 
+
+50
+00:02:44,500 --> 00:02:49,900
+允许你在运行时定位到并调用
+that allow you at runtime to target
+
+51
+00:02:50,800 --> 00:02:54,000
+这些函数指针指向的代码段地址
+the calling of these pointers to different places in memory
+
+52
+00:02:54,300 --> 00:02:59,166
+hello函数接收一个内存地址
+right so this hello function receives a memory address
+
+53
+00:02:59,400 --> 00:03:01,166
+当到了该说再见的时候
+and when it's time to say goodbye
+
+54
+00:03:01,333 --> 00:03:02,566
+它会调用这个内存地址
+it invokes that memory address
+
+55
+00:03:02,566 --> 00:03:04,799
+这不是一个罕见的模式
+this is not a rare pattern 
+
+56
+00:03:05,400 --> 00:03:08,266
+它在复杂代码中使用得非常频繁
+it's used actually quite frequently in complex code basis
+
+57
+00:03:08,333 --> 00:03:10,566
+会在程序中四处传递这些函数指针
+right passing around these function pointers
+
+58
+00:03:10,866 --> 00:03:13,266
+再看看这个程序的主要功能
+and you look at the main functionality of this program
+
+59
+00:03:15,733 --> 00:03:17,499
+可以看到首先会读取一个name变量
+you see that at 1st reads a name
+
+60
+00:03:17,500 --> 00:03:22,100
+实际上这里还有另一个弱点我们之后会讲到（缓冲区溢出）
+and here's actually where there is another vulnerability that's we'll deal with that later
+
+61
+00:03:24,133 --> 00:03:25,599
+这个程序读取一个name
+this program reads a name
+
+62
+00:03:27,800 --> 00:03:34,700
+然后随机用2个bye函数之一调用hello
+and then chooses randomly to invoke the hello function with one of the 2 good bye functions
+
+63
+00:03:34,700 --> 00:03:36,766
+bye1或bye2
+right either bye1 or bye2
+
+64
+00:03:37,900 --> 00:03:41,700
+如果它使用了bye2，一切看起来都很好
+and if it uses bye2 it all looks great
+
+65
+00:03:42,200 --> 00:03:45,800
+它传递一个name，那是你输入的名字
+there's a name that it passes that's the name you input
+
+66
+00:03:45,800 --> 00:03:48,800
+然后是函数指针
+and then there is the function pointer
+
+67
+00:03:50,700 --> 00:03:51,900
+但是当第一种情况发生时，当它使用bye1时
+but when it uses the 1st case when it uses bye1
+
+68
+00:03:52,366 --> 00:03:57,399
+颠倒了传参顺序
+ it reverses the order
+
+69
+00:03:57,400 --> 00:04:00,200
+程序员犯了一个错误
+the programmer myself made a mistake
+
+70
+00:04:00,200 --> 00:04:03,666
+在这个小程序中，这个错误是可笑的
+and in this tiny program this mistake is laughable
+
+71
+00:04:04,266 --> 00:04:05,766
+但还是在一个大的代码库中
+but in a large code base again
+
+72
+00:04:06,066 --> 00:04:08,466
+这是一个容易犯的错误
+this is a very easy mistake to make
+
+73
+00:04:08,466 --> 00:04:11,999
+记错了参数顺序
+just a mix up of argument order
+
+74
+00:04:13,733 --> 00:04:17,933
+bye1作为name传入
+so bye1 gets passed in as the name
+
+75
+00:04:18,166 --> 00:04:20,399
+所以现在name收到了二进制代码地址
+so the name is now binary code
+
+76
+00:04:20,733 --> 00:04:23,933
+现在代码被视作为数据
+so the data is or the code is being treated as data
+
+77
+00:04:24,133 --> 00:04:27,733
+更糟糕的是输入的名字原本是数据
+and what's worse is my name which is data
+
+78
+00:04:27,733 --> 00:04:30,299
+现在被视为代码
+is now being treated as code
+
+79
+00:04:31,933 --> 00:04:34,066
+那么这意味着什么呢
+so what are the implications of this
+
+80
+00:04:34,200 --> 00:04:35,566
+这意味着
+all right the implication of this is
+
+81
+00:04:35,600 --> 00:04:37,666
+当要调用bye函数时
+when the bye function gets involved
+
+82
+00:04:37,666 --> 00:04:39,066
+bye函数指针
+the bye function pointer
+
+83
+00:04:39,100 --> 00:04:44,900
+当程序执行跳转到传递给hello函数的地址时
+when the program execution jumps to the address that was passed into the hello function
+
+84
+00:04:46,066 --> 00:04:49,099
+程序执行被转移到栈中
+program execution gets transferred into the stack
+
+85
+00:04:49,200 --> 00:04:52,500
+跳转到了name变量所在的位置
+where my name that I inputted lives
+
+86
+00:04:52,533 --> 00:04:53,499
+这很糟糕
+this is very bad
+
+87
+00:04:53,500 --> 00:04:54,100
+当然
+of course
+
+88
+00:04:54,100 --> 00:04:56,466
+现代计算机有对应的保护机制
+modern computers have mitigations against this
+
+89
+00:04:56,533 --> 00:04:58,733
+因为这是一个很常见的问题
+because this is such a common issue
+
+90
+00:05:00,500 --> 00:05:03,900
+不一定是这种特定的漏洞，但总的来说是常见的问题
+maybe not through this specific vulnerability pattern but in general
+
+91
+00:05:04,200 --> 00:05:07,900
+我们将在禁用保护机制(DEP)的情况下编译这个程序
+we're going to compile this program with these with mitigations disable
+
+92
+00:05:08,000 --> 00:05:10,100
+execstack
+this is what the execstack is
+
+93
+00:05:10,200 --> 00:05:13,600
+我将在后面的视频中它讨论如何使栈不再具有可执行权限
+I'll talk in a later video about how the stack is nolonger executable
+
+94
+00:05:13,800 --> 00:05:15,366
+这样才不会发生这种事
+so that this cannot happen
+
+95
+00:05:16,200 --> 00:05:18,933
+尽管（DEP）并没有使shellcode无用
+although this does not make shellcode useless
+
+96
+00:05:18,933 --> 00:05:21,766
+我在后面的视频中也会讲到，但是
+that I'll talk about in that video as well but
+
+97
+00:05:24,333 --> 00:05:26,266
+为了这次介绍的目的
+for the purposes of this introduction
+
+98
+00:05:26,200 --> 00:05:29,500
+我们将用这个选项禁用这种保护机制
+we're going to disable that mitigation with this option
+
+99
+00:05:29,600 --> 00:05:32,266
+让我们来看看它是如何工作的
+so let's take a look out of how this works
+
+100
+00:05:32,566 --> 00:05:33,199
+好吧
+all right
+
+101
+00:05:33,200 --> 00:05:35,866
+这是我们的程序，hello.c
+here is our program hello.C
+
+102
+00:05:37,100 --> 00:05:38,900
+和幻灯片上的一样
+exactly as on the slides
+
+103
+00:05:38,900 --> 00:05:41,500
+如果我们编译它
+if we compile it
+
+104
+00:05:43,900 --> 00:05:48,400
+我们要取消所有的警告
+we're gonna just disable all of the warnings
+
+105
+00:05:48,733 --> 00:05:50,799
+有一个警告是不能禁用的
+there's one warning that you cannot disable in
+
+106
+00:05:50,800 --> 00:05:53,700
+那就是你永远永远永远不要在任何情况使用gets
+that is that you should never ever ever ever use gets in anything 
+
+107
+00:05:53,900 --> 00:05:59,900
+gets函数接收输入直到新行
+the gets function it receives input until a new line
+
+108
+00:05:59,966 --> 00:06:01,499
+不管输入有多少
+and doesn't care how much input
+
+109
+00:06:01,500 --> 00:06:08,300
+所以它会溢出你试图存储输入的任何变量
+so it'll overflow any sort of variables that  that you try to contain the input in
+
+110
+00:06:08,333 --> 00:06:11,299
+好的，但是我们用它是因为它很简单
+alright but we're using it because it's easy
+
+111
+00:06:13,466 --> 00:06:14,899
+我们运行hello函数
+so we run the hello function
+
+112
+00:06:14,900 --> 00:06:17,100
+它要我输入我的名字，然后等待
+it asks for my name just hangs
+
+113
+00:06:17,100 --> 00:06:18,933
+我输入了Yan，幸运的是
+I hit Yan and luckily
+
+114
+00:06:19,166 --> 00:06:20,933
+恰巧是farewell输出
+we hit the farewell case
+
+115
+00:06:20,933 --> 00:06:22,066
+如果你还记得
+if you recall
+
+116
+00:06:22,700 --> 00:06:24,466
+farewell输出代表调用的bye2
+the farewell case is bye2 
+
+117
+00:06:24,666 --> 00:06:27,399
+这时调用传参没有问题
+and bye2 is properly passed in
+
+118
+00:06:27,500 --> 00:06:30,100
+Bye1是传入错误位置的那个
+bye1 is the one that's passed in in the wrong location
+
+119
+00:06:30,266 --> 00:06:32,533
+让我们继续试试
+let's keep trying yon
+
+120
+00:06:33,600 --> 00:06:35,966
+再试一次，再试一次
+hit it again try again
+
+121
+00:06:36,733 --> 00:06:37,666
+boom
+boom
+
+122
+00:06:38,266 --> 00:06:39,166
+程序崩溃
+program crashes
+
+123
+00:06:39,166 --> 00:06:41,999
+这里你可以看到它打印了一些垃圾
+so here you can see that it printed some garbage
+
+124
+00:06:43,700 --> 00:06:45,966
+最有可能的情况是它打印了hello
+most likely what happened is it printed hello
+
+125
+00:06:46,466 --> 00:06:49,199
+然后遇到一个return字符(\r)
+and then there was a character return
+
+126
+00:06:49,866 --> 00:06:52,933
+它把光标放回了行首
+which puts the print back to the beginning of the line
+
+127
+00:06:52,933 --> 00:06:55,099
+然后继续输出了些东西（!号）
+then the prints have more stuff right
+
+128
+00:06:56,800 --> 00:07:02,000
+最后输出非法指令
+and then there was an illegal instruction
+
+129
+00:07:03,066 --> 00:07:04,799
+然后程序崩溃了
+and the program crashed
+
+130
+00:07:04,800 --> 00:07:09,500
+好的，让我们用GDB更深入地看一下
+alright let's take a look a little bit deeper in GDB
+
+131
+00:07:09,733 --> 00:07:11,466
+进入调试器
+so here we are in a debugger
+
+132
+00:07:11,700 --> 00:07:14,200
+让我们运行启动程序
+let's run starting program
+
+133
+00:07:14,466 --> 00:07:17,199
+输入Yan，运气好没崩
+put in Yan got lucky
+
+134
+00:07:18,133 --> 00:07:19,199
+很幸运
+got lucky
+
+135
+00:07:20,100 --> 00:07:22,566
+boom 崩了
+boom okay here's our illegal instruction
+
+136
+00:07:22,900 --> 00:07:25,700
+你马上就能看到一些东西
+immediately you can see a couple of things
+
+137
+00:07:26,733 --> 00:07:28,333
+如果你看一下进程内存映射
+ if you look at the process mapped memory
+
+138
+00:07:28,333 --> 00:07:29,199
+你们可以看到
+so you can see that
+
+139
+00:07:29,333 --> 00:07:32,366
+hello映射在这个地址
+hello is loaded at this address here
+
+140
+00:07:32,300 --> 00:07:37,900
+5...54000, 之后还有几页内存
+there's 5 5 000 000 and you know a couple of pages after that
+
+141
+00:07:38,266 --> 00:07:39,499
+如果你不熟悉这个
+if this isn't familiar to you
+
+142
+00:07:39,500 --> 00:07:41,766
+请回去看
+please go back and watch the
+
+143
+00:07:42,300 --> 00:07:49,200
+pwn学院的计算机基础系列Linux二进制或Linux进程加载视频
+Linux binary or Linux process loading video in the computer fundamentals of pwn college
+
+144
+00:07:50,100 --> 00:07:54,400
+这也在pwn.college这个模块上给出了链接
+it'll be also LinkedIn from this module on pwn.college
+
+145
+00:07:54,500 --> 00:07:57,000
+你很容易就能找到那个视频
+so you can easily find that video
+
+146
+00:07:59,733 --> 00:08:00,966
+我们在这里看到的
+what we see here
+
+147
+00:08:01,000 --> 00:08:05,400
+我们离那个程序的位置很远
+is that we are nowhere near that the location of that program
+
+148
+00:08:05,466 --> 00:08:08,666
+事实上，程序崩溃的时候处在栈上
+in fact we are in the stack where we're crashing
+
+149
+00:08:09,466 --> 00:08:10,966
+如果你看一下
+and if you see
+
+150
+00:08:11,800 --> 00:08:17,700
+rip的值或者说在哪里崩溃的
+what is at the instruction point or where we're crashing
+
+151
+00:08:17,866 --> 00:08:20,466
+能看到我名字最后两个字母
+we see that it is the last 2 letters of my name
+
+152
+00:08:21,066 --> 00:08:22,266
+所以我名字的第一个字母
+so the 1st letter my name
+
+153
+00:08:22,266 --> 00:08:23,733
+是一条对应的有效指令
+must have been a valid instruction
+
+154
+00:08:23,733 --> 00:08:26,199
+我们来看看这是什么
+which it is let's take a look at what that is
+
+155
+00:08:27,900 --> 00:08:29,566
+我名字的第一个字母
+the 1st letter my name is
+
+156
+00:08:29,966 --> 00:08:34,299
+在x86 64汇编语法中尝试弹出RCX
+trying to  pop RCX in x86 64 assembly
+
+157
+00:08:34,300 --> 00:08:35,400
+很酷的东西
+pretty cool stuff
+
+158
+00:08:36,133 --> 00:08:39,599
+我们注入了shellcode
+okay so we have injected shellcode
+
+159
+00:08:39,600 --> 00:08:44,400
+我们将二进制代码直接注入到了应用程序中
+we have injected binary code directly into the application in a way
+
+160
+00:08:44,600 --> 00:08:47,700
+应用程序会执行它
+that application will execute it
+
+161
+00:08:49,400 --> 00:08:51,800
+这非常简单
+this was super simple
+
+162
+00:08:51,900 --> 00:08:57,400
+它是由程序员混淆了2个参数的顺序引起的
+it it was caused by a programmer mixing up the order of 2 arguments
+
+163
+00:08:57,666 --> 00:08:59,533
+想象一下，好吧
+imagine that all right
+
+164
+00:09:01,800 --> 00:09:05,000
+这不仅仅是理论上的事情
+this isn't just a theoretical thing 
+
+165
+00:09:05,700 --> 00:09:08,200
+这在现实已经出现了20多年
+this has been seen in the wild for over 20 years
+
+166
+00:09:09,066 --> 00:09:13,133
+事实上超过30年
+ in fact over 30 years 
+
+167
+00:09:15,333 --> 00:09:17,666
+1988年罗伯特·塔潘·莫里斯
+in 1988 Robert Tappan Morris a
+
+168
+00:09:19,200 --> 00:09:20,000
+我记得
+I think
+
+169
+00:09:20,700 --> 00:09:24,600
+他刚从哈佛毕业，或者是和一个哈佛学生一起
+he had either just graduated from Harvard or with a Harvard student at the time
+
+170
+00:09:24,800 --> 00:09:29,800
+创建了第一个文档版本
+created the 1st documented version 
+
+171
+00:09:30,000 --> 00:09:32,000
+计算机蠕虫的第一个有记载的例子
+the 1st documented example of all computer worm
+
+172
+00:09:32,300 --> 00:09:35,900
+使用第一个记录的shellcode示例
+using the 1st documented example of shellcode
+
+173
+00:09:37,266 --> 00:09:39,966
+也是第一个有记录的缓冲区溢出
+ and of actually a buffer overflowing
+
+174
+00:09:39,966 --> 00:09:42,299
+打破了很多第一次
+a lot of you know 1st right
+
+175
+00:09:42,700 --> 00:09:47,900
+这些想法和概念当时已经流传了一段时间
+these ideas and concepts have been floating around in the wild for a while
+
+176
+00:09:48,166 --> 00:09:48,966
+但
+but
+
+177
+00:09:49,500 --> 00:09:54,700
+摩尔斯蠕虫是第一个在实践中展示证明它们的
+the morse worm was the 1st to demonstrate them in practice 
+
+178
+00:09:55,900 --> 00:10:01,200
+所以莫尔斯虫作为同类中的第一个，实际上是非常复杂的
+so the morse worm was actually surprisingly complicated for the 1st worm of its kind
+
+179
+00:10:01,500 --> 00:10:04,566
+但它利用的其中之一是缓冲区溢出
+but one of the vectors that it exploited was a buffer overflow
+
+180
+00:10:05,066 --> 00:10:08,199
+在fingerd服务中的栈缓冲区溢出
+ a stack buffer overflow in fingerd
+
+181
+00:10:08,200 --> 00:10:12,000
+实际上和这里的一个漏洞非常相似
+actually something very similar very very similar to the vulnerability
+
+182
+00:10:12,400 --> 00:10:16,900
+和我们示例程序中的gets函数漏洞很相似
+the other vulnerability that gets call in our example program
+
+183
+00:10:16,900 --> 00:10:18,866
+我们会在以后的课上讲到
+but we'll talk about that in a future module
+
+184
+00:10:20,000 --> 00:10:23,266
+它使用这个注入shellcode来运行命令
+it used this to inject shellcode to run commands
+
+185
+00:10:23,300 --> 00:10:27,300
+从受害机器中获得立足之地
+to gain a foothold in the machine from the victim machine
+
+186
+00:10:27,300 --> 00:10:31,700
+然后控制受害机器扫描邻近的主机并感染它们来传播蠕虫
+from which we just scanned adjacent host and infected them to propagate the worm
+
+187
+00:10:31,866 --> 00:10:34,799
+这件事让整个互联网瘫痪了
+and this thing shut down the internet
+
+188
+00:10:35,133 --> 00:10:38,199
+为了让互联网恢复正常
+in order to bring the internet back up
+
+189
+00:10:38,400 --> 00:10:41,900
+人们基本上切断了整个互联网
+people disconnected essentially the whole internet
+
+190
+00:10:42,700 --> 00:10:47,600
+然后关闭各个网络来修复蠕虫病毒
+and then shut there individual networks down to fix the worm
+
+191
+00:10:48,100 --> 00:10:49,166
+重新启动
+bring them back up
+
+192
+00:10:49,400 --> 00:10:52,300
+然后重新连接到网络上
+and then reconnect it to the reconnected the internet
+
+193
+00:10:52,300 --> 00:10:55,400
+好吧，想象一下如果现在有什么东西关闭了互联网
+right imagine something shutting down the internet today
+
+194
+00:10:55,400 --> 00:10:56,733
+那将十分混乱
+will be chaos
+
+195
+00:10:56,800 --> 00:11:00,000
+尤其是现在
+you know especially nowadays
+
+196
+00:11:00,100 --> 00:11:04,000
+我录制视频这段时间COVID - 19大流行
+as I'm recording this video during the COVID 19 pandemic
+
+197
+00:11:04,066 --> 00:11:06,733
+基本上什么都依赖互联网
+where be relying internet for basically everything
+
+198
+00:11:07,266 --> 00:11:09,166
+有趣的是你可以试试
+interestingly you can try
+
+199
+00:11:09,400 --> 00:11:13,500
+自己玩玩这个链接中的莫尔斯蠕虫
+to mess with the morse worm yourself at this link down here
+
+200
+00:11:13,900 --> 00:11:21,900
+或者至少尝试利用莫尔斯蠕虫所利用的漏洞
+or at least try to exploit the vulnerability that the morse worm took advantage of
+
+201
+00:11:22,200 --> 00:11:27,700
+这可能和其他几个模块相关
+this might be more relevant a couple of modules away so
+
+202
+00:11:28,266 --> 00:11:30,666
+你可能不具备所需的背景知识
+you might not have the background knowledge needed
+
+203
+00:11:30,766 --> 00:11:32,166
+但请先记住这一点
+yet but keep that in mind
+
+204
+00:11:32,100 --> 00:11:35,100
+当我认为时间到了的时候，也会提醒你
+also give it a shout out when I think it is time for you
+
+205
+00:11:35,366 --> 00:11:37,533
+试一试这种漏洞利用
+to give that exploitation a try
+
+206
+00:11:37,866 --> 00:11:38,666
+好吧
+all right
+
+207
+00:11:39,300 --> 00:11:41,133
+为什么叫它shellcode呢
+so why do we call it shellcode
+
+208
+00:11:41,133 --> 00:11:42,333
+我们称之为shellcode
+well we call it shellcode
+
+209
+00:11:42,500 --> 00:11:43,766
+因为这是典型的传统目标
+because the typical kind of traditional goal of this exploit
+
+210
+00:11:44,700 --> 00:11:50,100
+是在机器上获得shell
+ is to gain get a shell on the machine
+
+211
+00:11:50,266 --> 00:11:52,599
+运行/bin/sh之类的程序
+is to run something like bin sh
+
+212
+00:11:53,066 --> 00:11:54,366
+因此我们称之为shellcode
+thus we call it shellcode
+
+213
+00:11:54,366 --> 00:11:56,466
+这是一个例子
+so this is an example that
+
+214
+00:11:57,000 --> 00:12:01,600
+它调用了execve系统调用 使用了bin sh和2个空参数
+cause this system call execve bin sh with 2 null arguments
+
+215
+00:12:01,666 --> 00:12:03,999
+如果你不熟悉系统调用这个词
+if the word system calls unfamiliar to you
+
+216
+00:12:04,100 --> 00:12:08,300
+请回头看汇编语言基础的视频
+please go back and watch the assembly language fundamentals video
+
+217
+00:12:09,333 --> 00:12:12,266
+或者Linux进程执行基础视频
+or the Linux process execution fundamentals video
+
+218
+00:12:12,266 --> 00:12:14,133
+最好都看看
+ideally both all right so
+
+219
+00:12:15,733 --> 00:12:17,899
+这将设置一个execve系统调用
+this sets up an execve system call
+
+220
+00:12:18,333 --> 00:12:22,333
+59是execve的系统调用号
+59 is the syscall number of execve
+
+221
+00:12:23,133 --> 00:12:24,733
+它把它放入RAX
+so it puts that into RAX
+
+222
+00:12:24,733 --> 00:12:26,733
+rax是传入系统调用号的位置
+that's where the syscall number goes
+
+223
+00:12:26,733 --> 00:12:31,599
+然后它加载第一个参数到RDI中
+then it loads into the 1st argument a slot RDI
+
+224
+00:12:31,700 --> 00:12:34,100
+字符串bin sh 的地址
+the address of the string bin sh
+
+225
+00:12:34,100 --> 00:12:35,533
+这是我们要执行的程序
+that's what we'll be executed
+
+226
+00:12:35,533 --> 00:12:37,066
+它实际在这里
+and we have this down here
+
+227
+00:12:37,500 --> 00:12:42,700
+rip + binsh 这种格式
+this format rip plus binsh
+
+228
+00:12:42,700 --> 00:12:47,400
+这当然是指令指针加上到binsh的偏移量
+so this is of course the instruction pointer plus the offset to binsh
+
+229
+00:12:47,466 --> 00:12:48,699
+这就是它的含义
+that's what this stands for
+
+230
+00:12:48,733 --> 00:12:51,199
+LEA全称加载有效地址
+LEA stands for load effective address
+
+231
+00:12:51,200 --> 00:12:57,300
+binsh的地址是一个相对于rip的偏移
+and so the address of binsh as it is relative from rip
+
+232
+00:12:57,600 --> 00:12:58,900
+它被加载到RDI中
+gets loaded into RDI
+
+233
+00:12:59,100 --> 00:13:00,400
+这很酷，因为
+this is very cool because
+
+234
+00:13:01,266 --> 00:13:03,399
+这意味着这个shellcode
+this means that this shellcode just
+
+235
+00:13:04,733 --> 00:13:07,099
+形成一个可以放在内存中任何位置的块
+forms a block that you can put anywhere in memory
+
+236
+00:13:07,100 --> 00:13:13,900
+这将找到bin sh路径
+and this will find the  bin sh path
+
+237
+00:13:15,933 --> 00:13:18,933
+然后我们参数2和3都传null
+then we null out argument 2 and 3
+
+238
+00:13:19,800 --> 00:13:21,066
+这个方法是正确的
+the way exactly works
+
+239
+00:13:21,000 --> 00:13:24,900
+这很好，它运行时没有命令行参数，没有环境变量
+this is good this just runs it with no arguments and and no environment variables 
+
+240
+00:13:25,600 --> 00:13:30,700
+如果你不熟悉这些术语
+again if those terms are unfamiliar with you
+
+241
+00:13:30,766 --> 00:13:32,699
+请回去看
+please go back and watch the
+
+242
+00:13:32,900 --> 00:13:35,266
+Linux进程执行基础视频
+Linux process execution fundamentals video
+
+243
+00:13:35,900 --> 00:13:37,533
+然后触发系统调用
+and then it triggers the syscall
+
+244
+00:13:37,500 --> 00:13:44,700
+这是AMD 64也称为x8664汇编的shellcode，
+so this is shellcode in AMD 64 also known as x8664 assembly
+
+245
+00:13:44,900 --> 00:13:46,700
+这将得到一个shell
+that gains a shell
+
+246
+00:13:46,700 --> 00:13:49,133
+让我们来看看它是如何工作的
+let's take a look at how it works
+
+247
+00:13:49,600 --> 00:13:52,000
+让我们退出之前的GDB
+let's get out of our GDB session from earlier
+
+248
+00:13:54,400 --> 00:13:59,600
+所以实际上我会
+so actually I'll
+
+249
+00:14:00,566 --> 00:14:02,699
+请稍等，我等一下再讲它是如何工作的
+bear with me I'll take a look at how it works in a 2nd
+
+250
+00:14:02,700 --> 00:14:04,900
+当我讲到如何编译shell代码时
+when I talk about how to actually compile the shellcodes
+
+251
+00:14:04,900 --> 00:14:06,766
+所以我们要先讨论一下如何编译shellcode
+so we have to talk about that 1st
+
+252
+00:14:06,766 --> 00:14:07,333
+好吧
+all right
+
+253
+00:14:07,333 --> 00:14:10,399
+首先我要讲一下这个.string
+1st thing I'll point out there's this dot string thing 
+
+254
+00:14:10,866 --> 00:14:13,066
+好的，再次声明
+right so again
+
+255
+00:14:14,733 --> 00:14:16,733
+冯·诺曼建筑的数据编码都是不区分的
+von Norman architecture's data encode all mixed up
+
+256
+00:14:17,066 --> 00:14:20,599
+你可以把数据放在你的shellcode中
+ you can put data in your shellcode
+
+257
+00:14:20,600 --> 00:14:23,133
+这里，我们把这个字符串放在这里
+in this case we put this string here
+
+258
+00:14:23,533 --> 00:14:25,499
+你也可以放任意字节
+you can also put arbitrary bytes
+
+259
+00:14:25,900 --> 00:14:27,300
+实际上还有很多其他的
+there's actually a lot of other
+
+260
+00:14:29,066 --> 00:14:31,566
+用于输入浮点数的指令
+directives for putting in floating point numbers
+
+261
+00:14:31,566 --> 00:14:32,933
+等等等等等等
+et cetera et cetera et cetera
+
+262
+00:14:33,366 --> 00:14:36,133
+你可能在编写shellcode的过程中
+you likely in the course of writing shellcode
+
+263
+00:14:36,133 --> 00:14:38,699
+仅用.byte添加数据
+only really interact with adding data with .byte
+
+264
+00:14:40,500 --> 00:14:43,666
+或使用.string添加数据
+ and adding data with .string
+
+265
+00:14:43,600 --> 00:14:47,600
+因此.string添加了一个字符串，并在它后面放了一个空字节
+so .string adds a string and puts a null byte after it
+
+266
+00:14:50,500 --> 00:14:54,600
+如果您不熟悉以null结尾的字符串的概念
+if the concept of nul terminated strings is not familiar to you please
+
+267
+00:14:56,400 --> 00:14:59,800
+回顾一下你的C语言知识
+go back and review your C knowledge
+
+268
+00:14:59,800 --> 00:15:04,500
+这应该是你在学习C语言时学到的一个概念
+that should be a concept that you learn when you learn C
+
+269
+00:15:07,000 --> 00:15:10,166
+当你输入.byte时，它会直接存储字节
+when you put .byte it just dumps the bytes directly
+
+270
+00:15:10,666 --> 00:15:13,666
+这是在shellcode中嵌入数据的一种方式
+this is one way of embedding data in your shellcode
+
+271
+00:15:13,766 --> 00:15:14,399
+好
+right
+
+272
+00:15:14,400 --> 00:15:17,700
+这是我们在这个例子中使用的方法
+and that's the way that we used in our example here
+
+273
+00:15:17,700 --> 00:15:20,533
+我们把这个字符串放在这里
+we put this string right here
+
+274
+00:15:22,500 --> 00:15:25,300
+其他方式，我在这里讲一个
+other ways I'll go through one here
+
+275
+00:15:25,400 --> 00:15:27,366
+你可以把它压倒栈上
+so you can push it onto the stack
+
+276
+00:15:27,366 --> 00:15:31,199
+这里我们把数据加载RBX上
+so here what we do is we move this data to RBX
+
+277
+00:15:31,200 --> 00:15:33,366
+然后我们把RBX压到栈上
+and we push RBX onto the stack
+
+278
+00:15:34,166 --> 00:15:35,699
+然后我们把
+and then we move
+
+279
+00:15:38,400 --> 00:15:42,900
+栈指针当前所指向的地址
+the address where the stack pointer are currently points to
+
+280
+00:15:42,933 --> 00:15:45,299
+就是我们刚写入数据的位置
+which is where our data was just written
+
+281
+00:15:45,566 --> 00:15:47,799
+加载到RDI
+to RDI 
+
+282
+00:15:48,533 --> 00:15:49,733
+在这个例子中，我们做了同样的事情
+so in this case we did the same thing
+
+283
+00:15:51,600 --> 00:15:53,700
+抱歉，回到第一种情况
+sorry back in the 1st case
+
+284
+00:15:53,900 --> 00:15:56,600
+这将binsh的地址加载到rdi中
+this loaded the address of binsh into rdi
+
+285
+00:15:57,100 --> 00:16:00,800
+然而这个将bin sh压入栈
+and then this pushes bin sh onto the stack
+
+286
+00:16:00,866 --> 00:16:02,299
+在栈上有/ bin / sh
+so on the stack you have slash bin slash sh 
+
+287
+00:16:02,500 --> 00:16:07,600
+你可以看到这些ASCII值
+and you can see that this is the ASCII values 
+
+288
+00:16:08,200 --> 00:16:09,766
+是反过来的字符
+of the bytes of the characters backwards
+
+289
+00:16:09,766 --> 00:16:11,933
+因为这是个小端序系统
+because this is a little endian system
+
+290
+00:16:12,966 --> 00:16:15,299
+我们把它压到栈中，然后
+and we push it to the stack and then 
+
+291
+00:16:17,700 --> 00:16:19,900
+我们取栈指针
+we take the stack pointer
+
+292
+00:16:19,900 --> 00:16:22,266
+它指向我们刚才压入栈的字符串
+which is pointing at that string we just pushed
+
+293
+00:16:22,266 --> 00:16:23,666
+然后把它加载到RDI
+and remove that to RDI
+
+294
+00:16:23,666 --> 00:16:25,933
+所以这两种方式
+so in both of these routes
+
+295
+00:16:26,533 --> 00:16:29,133
+RDI都指向堆栈（口误）
+RDI is pointing to the stack
+
+296
+00:16:30,200 --> 00:16:33,166
+对不起，RDI都指向bin sh
+there is sorry RDI is pointing to bin sh
+
+297
+00:16:34,100 --> 00:16:38,800
+有一个shellcode不是为获取shell而设计的
+there is a shellcode that is not designed to get a shell
+
+298
+00:16:38,900 --> 00:16:40,366
+那并不总是你的目标
+that's not always your goal
+
+299
+00:16:40,400 --> 00:16:44,600
+事实上，在这门课上，它是你的目标
+in fact in this class it will work as your goal
+
+300
+00:16:44,700 --> 00:16:48,500
+但要求更低
+but it's much easier to just
+
+301
+00:16:52,900 --> 00:16:57,200
+不好意思，读取flag就行
+sorry it's much easier to just read the flag directly
+
+302
+00:16:57,200 --> 00:16:59,700
+尽管shell代码实际上有点复杂
+although the shellcode is actually a little more complicated
+
+303
+00:16:59,733 --> 00:17:00,766
+这个shellcode
+so this shellcode
+
+304
+00:17:00,966 --> 00:17:04,533
+是打开flag文件的shellcode
+is a shellcode that opens the flag file
+
+305
+00:17:04,600 --> 00:17:10,800
+然后用一个叫send file的系统把文件发送过来
+and uses a system called send file to send the file over
+
+306
+00:17:12,800 --> 00:17:16,700
+这个shellcode使用了
+this shellcode uses the concepts of 
+
+307
+00:17:16,733 --> 00:17:19,366
+Linux文件描述符，这是Linux跟踪文件的方式
+Linux file descriptors which is how Linux tracks files
+
+308
+00:17:19,533 --> 00:17:21,699
+这是一个open系统调用
+so here is the open syscall the
+
+309
+00:17:22,733 --> 00:17:27,866
+使用了压栈的方法传入/flag
+use the pushing method to push the slash flag file name
+
+310
+00:17:27,866 --> 00:17:30,399
+所以我们把/flag加载到RBX
+right so we move slash flag into RBX 
+
+311
+00:17:31,500 --> 00:17:33,766
+我们压RBX入栈
+we push RBX
+
+312
+00:17:33,766 --> 00:17:36,666
+然后我们将rsp加载到RDI
+and then later on we move that rsp into RDI
+
+313
+00:17:36,666 --> 00:17:39,533
+这是open的第一个参数，然后
+that's the 1st argument to open and then
+
+314
+00:17:41,000 --> 00:17:43,733
+open是2号系统调用
+open is system call number 2
+
+315
+00:17:44,566 --> 00:17:46,133
+所以我们把2移到RAX中
+so we move 2 into RAX 
+
+316
+00:17:48,166 --> 00:17:50,666
+然后是RSI
+and then into RSI
+
+317
+00:17:50,666 --> 00:17:52,466
+最后一个参数是null
+this last argument we put a null
+
+318
+00:17:52,400 --> 00:17:57,900
+这实际上是只读打开文件的值
+which is actually the value of signifying to open the file read only
+
+319
+00:17:58,133 --> 00:17:59,599
+我们会做一个系统调用
+and we're gonna do a syscall
+
+320
+00:17:59,600 --> 00:18:01,400
+这个会打开 /flag文件
+so this open slash flag
+
+321
+00:18:02,300 --> 00:18:05,900
+然后我们设置sendfile参数
+and then we set up the sendfile arguments and so
+
+322
+00:18:06,066 --> 00:18:08,899
+您可以调出手册页查看sendfile
+sendfile and you can pull up the man page
+
+323
+00:18:09,200 --> 00:18:11,966
+我展示一下
+and I will show you that you can pull up the man page
+
+324
+00:18:14,200 --> 00:18:17,800
+这里，sendfile在2个文件描述符之间传输数据
+here sendfile transfer data between 2 file descriptors
+
+325
+00:18:17,966 --> 00:18:20,466
+参数是输出文件的描述符
+and arguments are the output file descriptor
+
+326
+00:18:20,966 --> 00:18:23,566
+输入文件描述符
+the input file descriptor 
+
+327
+00:18:24,100 --> 00:18:25,566
+以字节为单位的文件偏移量
+the offset into the file in bytes
+
+328
+00:18:25,700 --> 00:18:27,100
+我们只想从头读
+we just want to read from the beginning
+
+329
+00:18:27,100 --> 00:18:29,700
+以及要读取的字节数
+and the number of bytes to read and go to read a bunch
+
+330
+00:18:29,933 --> 00:18:31,966
+调用的方法是
+right and the way that we set it up
+
+331
+00:18:32,366 --> 00:18:36,099
+先设置第一个参数为1
+ is we set up the 1st argument 1
+
+332
+00:18:36,166 --> 00:18:38,299
+这是Linux的标准输出
+so that's standard output in Linux
+
+333
+00:18:38,333 --> 00:18:40,866
+它会把结果打印到屏幕上
+so that you know it just prints it out to the screen
+
+334
+00:18:42,300 --> 00:18:46,100
+第二个参数是第一个系统调用的返回值
+the 2nd argument is the return from the 1st syscall
+
+335
+00:18:46,100 --> 00:18:48,400
+被打开文件的文件描述符
+the file descriptor of the open file
+
+336
+00:18:48,400 --> 00:18:50,866
+这个可能是3
+this will likely be 3
+
+337
+00:18:52,866 --> 00:18:55,899
+但不一定是。可能是
+but doesn't have to be. there could be some random stuff
+
+338
+00:18:58,066 --> 00:18:58,766
+一个随机数
+a random number
+
+339
+00:18:58,766 --> 00:19:01,466
+这取决于之前打开过多少文件
+depending on how many files have previously been opened
+
+340
+00:19:02,266 --> 00:19:04,566
+我们从头读，读1000字节
+and we read from the beginning and we read 1000
+
+341
+00:19:04,700 --> 00:19:05,800
+我们把这些都准备好了
+and we set all that up
+
+342
+00:19:05,966 --> 00:19:08,899
+sendfile的系统调用号是40
+the syscall number for sendfile is 40
+
+343
+00:19:08,900 --> 00:19:10,166
+然后我们调用系统调用
+and then we call syscall
+
+344
+00:19:10,866 --> 00:19:11,999
+现在我们调用了
+and so now we do
+
+345
+00:19:12,800 --> 00:19:14,466
+open sendfile
+open sendfile
+
+346
+00:19:14,500 --> 00:19:18,900
+然后这里我们调用了系统调用exit
+and then here we have a system call exit 
+
+347
+00:19:19,600 --> 00:19:22,600
+这样shellcode就干净地退出了
+so that the shellcode exits cleanly
+
+348
+00:19:22,700 --> 00:19:24,800
+我们在之前的execve shellcode中没有这样做
+we didn't do that in our previous execve shellcode 
+
+349
+00:19:25,700 --> 00:19:32,600
+因为在Linux加载基础知识视频中讨论过
+because execve as discussed in the Linux loading fundamentals video
+
+350
+00:19:32,866 --> 00:19:35,333
+execve实际上是将整个进程替换为一个新的进程
+actually replaces the whole process with a new process
+
+351
+00:19:35,300 --> 00:19:38,900
+因此，用bin sh完全替换了您正在利用的进程
+so to replace your process that you're exploiting with bin sh completely
+
+352
+00:19:38,966 --> 00:19:41,799
+这个shellcode没有
+ this shellcode does not
+
+353
+00:19:41,800 --> 00:19:43,733
+为了避免崩溃
+so in order to avoid crashes
+
+354
+00:19:43,733 --> 00:19:45,133
+因为这让人很难理解
+which make it very hard to understand
+
+355
+00:19:45,133 --> 00:19:46,399
+你的shellcode崩溃了吗
+did your shellcode crash
+
+356
+00:19:46,500 --> 00:19:49,300
+或者在shellcode执行后程序崩溃了
+or did the program crash after your shellcode executed
+
+357
+00:19:49,933 --> 00:19:51,666
+所以我们直接退出程序
+we cleanly exit the program
+
+358
+00:19:51,800 --> 00:19:53,900
+很好
+cool all right
+
+359
+00:19:54,500 --> 00:20:00,100
+现在我们终于开始构建我们的shellcode了
+now finally we have moved on to building our shellcode
+
+360
+00:20:00,300 --> 00:20:04,066
+所以我们把shellcode写成汇编代码
+so we write our shellcode as assembly code
+
+361
+00:20:04,533 --> 00:20:06,666
+代码有一些固定步骤
+there's some boilerplate that we need
+
+362
+00:20:07,200 --> 00:20:09,166
+建立一个全局符号
+to set up a global symbol 
+
+363
+00:20:09,766 --> 00:20:11,799
+它是shellcode的开始
+that is the start of the shellcode
+
+364
+00:20:13,466 --> 00:20:17,699
+当我们把它汇编成二进制文件时
+ that when we assemble it into a binary file
+
+365
+00:20:18,600 --> 00:20:20,866
+我们可以像普通文件一样执行它
+we can actually just execute it like a normal file
+
+366
+00:20:20,866 --> 00:20:22,299
+这有助于调试
+this really helps debugging
+
+367
+00:20:22,400 --> 00:20:26,400
+这里是开始标签的位置
+let me say okay here's where the start label is
+
+368
+00:20:26,700 --> 00:20:29,766
+顺便说一下，我们使用的是intel风格语法
+and then we say by the way we're using Intel syntax
+
+369
+00:20:30,000 --> 00:20:33,100
+默认情况下，这些工具将使用AT&T风格语法
+by default the tools will be using use at&t syntax
+
+370
+00:20:33,100 --> 00:20:34,066
+这个语法风格很烦人
+it's very annoying
+
+371
+00:20:34,066 --> 00:20:37,566
+两种语法不兼容，但是
+it is the wrong syntax but
+
+372
+00:20:38,933 --> 00:20:43,766
+幸运的是，我们可以使用一个选项来使用Intel风格语法
+be luckily we can use an option to use Intel syntax 
+
+373
+00:20:44,200 --> 00:20:50,700
+这里我们设置好了我们之前看过的shellcode
+and here we are setting up our binsh shellcode that we looked at earlier
+
+374
+00:20:51,133 --> 00:20:52,566
+然后我们把它汇编起来
+then we assemble it
+
+375
+00:20:52,500 --> 00:20:58,500
+把它汇编成一个ELF文件，一个可以执行的程序
+we'll assemble it into a an ELF file into a program that we can run
+
+376
+00:20:58,933 --> 00:21:00,199
+我们不将标准库汇编到程序种
+we assemble it without the standard libraries 
+
+377
+00:21:00,900 --> 00:21:02,966
+因为我们不需要他们
+because we don't need them
+
+378
+00:21:02,966 --> 00:21:03,799
+我们不用它们
+we don't use them
+
+379
+00:21:03,800 --> 00:21:07,700
+我们使用系统调用直接调用内核
+we directly call using system calls into the kernel
+
+380
+00:21:07,766 --> 00:21:09,666
+我们创建一个静态链接的程序
+and we create a static file
+
+381
+00:21:09,600 --> 00:21:13,000
+也因为这更容易演示
+also because this makes it easier in certain situations
+
+382
+00:21:13,066 --> 00:21:15,199
+动态加载器不会参与它的执行
+it doesn't invoke the dynamic loader at all
+
+383
+00:21:15,333 --> 00:21:16,899
+什么都没有
+nothing is  just 
+
+384
+00:21:17,333 --> 00:21:19,799
+只有你的shellcode在自己运行
+here is your shellcode running directly in the self
+
+385
+00:21:19,800 --> 00:21:20,966
+这很令人兴奋
+that's pretty exciting
+
+386
+00:21:22,133 --> 00:21:22,666
+这是
+this is
+
+387
+00:21:22,666 --> 00:21:25,133
+顺便说一下，这产生的是一个程序而不是shellcode
+by the way this produces a program not shellcode
+
+388
+00:21:25,200 --> 00:21:29,100
+它生成一个实际的程序，带有elf头等等
+it produces an actual program with an elf header etc etc
+
+389
+00:21:31,700 --> 00:21:33,500
+这你应该知道
+as you should know
+
+390
+00:21:33,600 --> 00:21:34,533
+如果你不知道
+and if you don't
+
+391
+00:21:34,500 --> 00:21:38,900
+请回顾一下关于什么是二进制文件的基础课程
+please go back and watch the fundamentals lecture on what is a binary file
+
+392
+00:21:39,700 --> 00:21:42,766
+ELF文件包含一个.text节
+your ELF file contains a .text section
+
+393
+00:21:44,800 --> 00:21:46,400
+.text节里存放的shellcode
+with the shellcode
+
+394
+00:21:47,200 --> 00:21:48,900
+准确的说是装着你程序的代码
+with the code of your program
+
+395
+00:21:48,900 --> 00:21:49,600
+但在这个情况下
+in this case
+
+396
+00:21:49,600 --> 00:21:51,900
+整个程序代码就是shellcode
+the whole code of your program is the shellcode
+
+397
+00:21:54,133 --> 00:21:56,766
+你可以使用objcopy
+and you can use objcopy
+
+398
+00:21:57,100 --> 00:21:59,100
+将shellcode复制出来
+to copy that shellcode out
+
+399
+00:21:59,100 --> 00:22:04,700
+得到的shellcode-raw是shellcode的字节码
+and now that resulting shellcode dash raw file are the bytes of your shellcode
+
+400
+00:22:04,700 --> 00:22:07,100
+你会将它注入到利用程序中
+that you would have inject in your exploit
+
+401
+00:22:07,866 --> 00:22:09,133
+这很令人兴奋
+that's pretty exciting
+
+402
+00:22:09,200 --> 00:22:12,166
+我们来看看具体怎么做
+so let's let's take a look at how this would work
+
+403
+00:22:15,166 --> 00:22:15,966
+好
+alright
+
+404
+00:22:16,766 --> 00:22:19,599
+这是我们的shellcode
+here is our shellcode shellcode s
+
+405
+00:22:19,666 --> 00:22:21,866
+和幻灯片上的shellcode是一样的
+it's the same shellcode that's on the slides
+
+406
+00:22:21,800 --> 00:22:25,300
+只是调用了execve binsh
+just calls execve binsh
+
+407
+00:22:26,266 --> 00:22:27,066
+如果我们编译它
+if we compile it
+
+408
+00:22:28,133 --> 00:22:30,699
+使用-nostdlib
+ -nostdlib
+
+409
+00:22:30,700 --> 00:22:32,100
+我们不需要标准库
+we don't need the standard library
+
+410
+00:22:32,133 --> 00:22:34,066
+静态链接，只是为了简单起见
+static just to simplify some things
+
+411
+00:22:34,366 --> 00:22:38,599
+shellcode.s -o shellcode-elf
+shellcode.s -o shellcode-elf
+
+412
+00:22:38,966 --> 00:22:42,099
+编译好了，当你运行shellcode-elf
+it compiles and when you run shellcode elf
+
+413
+00:22:43,100 --> 00:22:44,800
+boom
+boom 
+
+414
+00:22:45,166 --> 00:22:47,766
+它执行了binsh，我们获得了一个shell
+it runs the binsh and we have a shell
+
+415
+00:22:47,766 --> 00:22:49,266
+当然了我们之前就有一个shell
+of course we had a shell before
+
+416
+00:22:49,400 --> 00:22:50,166
+但
+but
+
+417
+00:22:50,166 --> 00:22:51,799
+没有人抱怨
+no one is complaining
+
+418
+00:22:52,333 --> 00:22:54,866
+我们先反汇编一下看看
+let's disassemble it real quick
+
+419
+00:22:55,866 --> 00:22:57,999
+看看我们需要的shellcode
+just to see that it has our shellcode
+
+420
+00:22:58,000 --> 00:22:59,466
+当然用intel格式看
+and Intel format of course
+
+421
+00:22:59,666 --> 00:23:02,366
+这里很简洁
+and here it is nice and simple
+
+422
+00:23:02,500 --> 00:23:04,566
+在程序开始时
+in the start of the program
+
+423
+00:23:05,166 --> 00:23:07,699
+这是mov rax59
+here we have our mov rax 59
+
+424
+00:23:07,800 --> 00:23:10,133
+十六进制是0x3b
+that is ox 3b in hexdecimal
+
+425
+00:23:10,500 --> 00:23:13,300
+加载rip+0x10地址
+load the address of rip+0x10
+
+426
+00:23:13,766 --> 00:23:15,299
+这是bin SH
+that's our bin SH
+
+427
+00:23:16,900 --> 00:23:17,700
+我们把0加载到RSI和RDX
+we move 0 to  RSI and RDX
+
+428
+00:23:18,500 --> 00:23:23,200
+它们是argv和环境变量
+ that is the RGV and the environment
+
+429
+00:23:23,766 --> 00:23:25,266
+然后触发系统调用
+then we trigger the syscall
+
+430
+00:23:25,766 --> 00:23:27,999
+很好，复制出来
+cool so let's copy out
+
+431
+00:23:33,900 --> 00:23:39,200
+这将把text节拷贝到
+this will dump the text section into 
+
+432
+00:23:39,300 --> 00:23:40,900
+到我们的shellcode原始文件
+into our shellcode raw file
+
+433
+00:23:42,400 --> 00:23:46,200
+好，现在我们可以用hexdump查看shellcode-raw
+all right and now we can hex dump shellcode-raw
+
+434
+00:23:46,300 --> 00:23:50,600
+你可以看到它们是相同的字节
+and you can see it's the same bytes 
+
+435
+00:23:51,666 --> 00:23:56,333
+48 c7 c0，一直到末尾的bin sh
+48 c 7 c0 and so on all the way to the end of bin sh
+
+436
+00:23:56,900 --> 00:23:58,533
+我应该指出一件事
+I should point out one thing
+
+437
+00:23:59,166 --> 00:24:00,599
+当我们反汇编我们的shellcode的时候
+when we were disassembling our shellcode
+
+438
+00:24:00,600 --> 00:24:04,900
+objdump认不出binsh是字符串，它也会把它当作指令反汇编
+of course not knowing any better objdump tried to disassemble binsh as well
+
+439
+00:24:04,900 --> 00:24:08,800
+知道就好了
+but you know you'll have to deal with that on your own all right
+
+440
+00:24:08,900 --> 00:24:14,900
+这就是objectum的工作方式。这就是我们的shellcode
+I mean it's just how objectum happens to work but here's our shellcode
+
+441
+00:24:15,000 --> 00:24:17,766
+这个shellcode我们现在可以
+this is the shellcode that we can now
+
+442
+00:24:20,300 --> 00:24:25,400
+直接注入到我们的漏洞程序中
+transferred directly into our vulnerable program
+
+443
+00:24:26,900 --> 00:24:30,700
+我们可以把这个shellcode cat输出到hello中
+so we can cat out this shellcode into our hello 
+
+444
+00:24:33,000 --> 00:24:37,100
+作为提醒，hello，输入我的名字
+as a reminder hello put in my name
+
+445
+00:24:37,166 --> 00:24:40,699
+后会直接执行一个shellcode（1/2的概率）
+and that gets excuted directly a shellcode um
+
+446
+00:24:45,066 --> 00:24:46,499
+这里本来没准备讲
+this is going off script a little bit
+
+447
+00:24:46,500 --> 00:24:52,900
+我本来没想要执行这个
+I didn't actually think to run this
+
+448
+00:24:53,266 --> 00:24:55,366
+而我现在所做的是
+and what I'm doing right here is 
+
+449
+00:24:55,900 --> 00:24:56,733
+首先打印出shellcode
+1st printing out the the shellcode 
+
+450
+00:24:56,700 --> 00:25:01,100
+然后放到一个交互环境
+and then just dropping in to an interactive
+
+451
+00:25:01,166 --> 00:25:04,166
+就像cat，可以接收输入并能打印输出
+like a cat that raise my input and rise the output
+
+452
+00:25:05,533 --> 00:25:07,966
+否则，如果我直接cat输出shellcode
+otherwise I'll cat out the shellcode
+
+453
+00:25:08,066 --> 00:25:10,733
+到运行的hello，它会启动一个bin sh
+run hello it'll run bin sh
+
+454
+00:25:10,800 --> 00:25:12,500
+然后bin sh将立即终止
+and then bin sh will terminate immediately
+
+455
+00:25:12,500 --> 00:25:13,733
+因为不会有后续输入
+because there's no further input
+
+456
+00:25:13,733 --> 00:25:14,599
+因为shellcode代码已经执行完了
+because the shellcode code is done
+
+457
+00:25:14,900 --> 00:25:17,100
+好了，开始吧
+ alright here we go
+
+458
+00:25:17,100 --> 00:25:18,966
+oops打错了，cat shellcode-raw
+oops cat shellcode raw
+
+459
+00:25:31,366 --> 00:25:34,099
+我们得到了一个shell。我按了回车键
+and we have a shell I to hit enter
+
+460
+00:25:34,300 --> 00:25:37,466
+因为gets会一直读取，直到遇到新的行
+because gets will keep reading until a new line appears
+
+461
+00:25:37,466 --> 00:25:38,966
+然而我没有加一条新行
+and I didn't put a new line in
+
+462
+00:25:39,000 --> 00:25:40,166
+我们加一个新行进去
+let's actually put a new line in 
+
+463
+00:25:41,200 --> 00:25:43,533
+这将会echo一个新的行
+so this will echo a new line
+
+464
+00:25:43,600 --> 00:25:46,533
+这将追加到shellcode原始文件
+and this will appended to the shellcode raw file
+
+465
+00:25:46,533 --> 00:25:48,466
+我们用hexdump看一下shellcode-raw
+now let's hex dump shellcode raw
+
+466
+00:25:48,866 --> 00:25:50,299
+这回有了一个新行
+there's now a new line here
+
+467
+00:25:50,300 --> 00:25:51,300
+这很酷
+that's very cool
+
+468
+00:25:51,900 --> 00:25:53,300
+然后我们再运行一次
+then we run it again
+
+469
+00:25:54,766 --> 00:25:55,466
+所以
+so
+
+470
+00:25:55,466 --> 00:25:57,166
+看，它走了farewell的分支
+see it did farewell
+
+471
+00:25:57,166 --> 00:25:58,799
+所以不是我们要的情况
+so it didn't hit the right case
+
+472
+00:25:59,100 --> 00:26:00,866
+现在是我们要的情况
+there now it hit the right case
+
+473
+00:26:01,000 --> 00:26:03,166
+现在我们黑进去了
+and now we are in
+
+474
+00:26:05,900 --> 00:26:10,900
+现在在我的机器上通过漏洞利用注入shellcode获得了yans用户shell
+we have a shell on my machine through an exploit by injecting shellcode as my user
+
+475
+00:26:12,000 --> 00:26:14,966
+很酷啊
+ pretty cool huh
+
+476
+00:26:15,333 --> 00:26:18,266
+按下退出，程序就退出了
+can hit exit and now that program's dead
+
+477
+00:26:18,500 --> 00:26:22,300
+这就是shellcode的工作原理
+all right so that is how shellcode works
+
+478
+00:26:22,366 --> 00:26:24,966
+我们现在已经构建了shellcode，接下来做什么
+we've now built shellcode what's next
+
+479
+00:26:25,466 --> 00:26:27,066
+我们已经知道如何运行它了
+we already saw how to run it
+
+480
+00:26:27,366 --> 00:26:29,066
+我刚刚演示过了
+actually I jumped ahead a little bit
+
+481
+00:26:29,666 --> 00:26:31,066
+但我要重申一下
+but just to reiterate
+
+482
+00:26:31,066 --> 00:26:33,533
+这样编译的好处
+the nice thing about compiling it in this
+
+483
+00:26:33,700 --> 00:26:38,100
+用我教的这个方法汇编shellcode的好处是
+assembling your shellcode in this method that I've taught you
+
+484
+00:26:38,966 --> 00:26:39,866
+你可以直接运行它
+is that you can run it directly
+
+485
+00:26:39,900 --> 00:26:42,700
+调试它等等
+ and also debug it and so forth
+
+486
+00:26:42,700 --> 00:26:44,500
+我们很快就会讲到这些
+as we will get to very shortly
+
+487
+00:26:46,100 --> 00:26:47,066
+有趣的是
+interesting thing here
+
+488
+00:26:48,100 --> 00:26:52,800
+有很多不同的方法来编写shellcode和
+ there are a lot of different methods to write shellcode and
+
+489
+00:26:52,866 --> 00:26:54,566
+汇编shellcode
+and specifically to assemble shellcode
+
+490
+00:26:54,566 --> 00:26:55,966
+还有其他的汇编程序
+there are other assemblers
+
+491
+00:26:56,000 --> 00:26:57,266
+不光可以使用GCC内置的工具
+instead of using tooling built into GCC
+
+492
+00:26:57,600 --> 00:27:03,300
+还可以用其他汇编程序，如NASM和其他各种汇编程序
+ there are other assemblers such as NASM and various others
+
+493
+00:27:03,766 --> 00:27:04,933
+你可以使用这些
+you can use those
+
+494
+00:27:05,766 --> 00:27:06,899
+但根据我的经验
+but in my experience
+
+495
+00:27:06,900 --> 00:27:10,066
+这让事情变得更难了
+it makes things a little bit harder 
+
+496
+00:27:11,766 --> 00:27:14,399
+在这个课程中解决这些困难也不会让你受益
+for reasons that you won't benefit from for this course
+
+497
+00:27:14,666 --> 00:27:18,466
+我建议使用我教的方法
+ I'd recommend using the method I taught
+
+498
+00:27:18,600 --> 00:27:19,700
+因为该方法非常容易调试
+because that method is very easy to debug
+
+499
+00:27:19,800 --> 00:27:26,400
+而且对于amd64外的架构也非常适用，嗯超级适用
+ very applicable and actually is super applicable to other architectures than AMD 64
+
+500
+00:27:26,400 --> 00:27:33,200
+而其他汇编程序往往是特定于一种架构的
+as well whereas other assemblers tend to be specific for one architecture
+
+501
+00:27:33,566 --> 00:27:34,366
+好
+all right
+
+502
+00:27:35,100 --> 00:27:39,900
+如果你对编译为elf文件的shellcode运行器不满意
+if you're not happy with the shellcode runner that gets compiled as your elf file
+
+503
+00:27:40,000 --> 00:27:43,100
+它就是一个elf文件封装的shellcode
+which is just basically an elf wrapped around your shellcode
+
+504
+00:27:43,200 --> 00:27:48,100
+你可以创建一个C程序来加载你的shellcode
+you can create a C program that load your shellcode
+
+505
+00:27:49,066 --> 00:27:51,933
+将它映射为可执行内存，然后执行它
+map it as executable into memory and execute it
+
+506
+00:27:52,600 --> 00:27:56,100
+当您需要模拟非常棘手的条件时，这可能很有用
+this might be useful when you need to simulate really tricky conditions
+
+507
+00:27:56,600 --> 00:28:01,200
+比如打开不同的文件之类的
+ open up different files stuff like that
+
+508
+00:28:01,900 --> 00:28:05,300
+你不想把这些都写在汇编中作为shellcode的序言
+and you don't want to write that all in assembly as a preamble to your shellcode
+
+509
+00:28:06,166 --> 00:28:08,399
+那么这就是通常的做法
+and this is generally how you would do it
+
+510
+00:28:08,500 --> 00:28:16,000
+你会创建一个指针函数叫做page
+right you would create a pointer function pointer called page
+
+511
+00:28:16,133 --> 00:28:18,766
+申请一块可执行内存用来放代码
+memory map a bunch of code that's executable
+
+512
+00:28:19,200 --> 00:28:22,266
+读入你的shellcode，并执行它
+read your shellcode into it and execute it
+
+513
+00:28:22,900 --> 00:28:29,300
+然后注入它到测试程序，用和我们注入shellcode一样的方法
+then you inject that in the same way  that we injected our shellcode into that tester program
+
+514
+00:28:29,933 --> 00:28:32,199
+那么如何调试shellcode呢
+all right how do you debug shellcode
+
+515
+00:28:32,200 --> 00:28:34,933
+假设shellcode出错了
+let's say shellcode is going wrong
+
+516
+00:28:35,400 --> 00:28:37,566
+要被这个问题逼疯了
+something is driving you insane
+
+517
+00:28:37,566 --> 00:28:39,399
+很不顺利
+and things aren't working well
+
+518
+00:28:40,133 --> 00:28:43,699
+一种高层次的方法是使用strace
+one way from a high level is to use strace
+
+519
+00:28:43,700 --> 00:28:44,766
+对strace
+right strace
+
+520
+00:28:45,566 --> 00:28:47,533
+从基本原理上你应该知道
+as you should know from the fundamental
+
+521
+00:28:47,966 --> 00:28:50,166
+Strace是一个系统调用追踪器
+strace is a system called tracer
+
+522
+00:28:50,166 --> 00:28:52,366
+它只是简单地在调试器里运行你的程序
+it'll simply run your program with debugging 
+
+523
+00:28:54,900 --> 00:29:01,400
+然后打印出所有你的程序调用的系统调用
+and print out all of your all of the syscalls that your program does
+
+524
+00:29:01,566 --> 00:29:02,766
+让我们来看看
+so let's take a look
+
+525
+00:29:04,566 --> 00:29:06,733
+首先，我们破坏shellcode
+actually 1st let's break our shellcode
+
+526
+00:29:08,800 --> 00:29:14,300
+不如用binsh+1代替binsh
+how about instead of binsh let's actually have it go binsh plus one
+
+527
+00:29:14,300 --> 00:29:17,200
+我不知道这能不能行
+I have no idea of this will work
+
+528
+00:29:17,266 --> 00:29:18,066
+但
+but
+
+529
+00:29:19,666 --> 00:29:19,899
+让
+let
+
+530
+00:29:19,900 --> 00:29:20,866
+让我们编译一下
+let's compile it
+
+531
+00:29:21,566 --> 00:29:23,066
+好的，可以了
+okay it works alright
+
+532
+00:29:23,066 --> 00:29:23,966
+嗯
+um
+
+533
+00:29:24,933 --> 00:29:27,799
+确切地说，是汇编的
+or rather it come it is assembled
+
+534
+00:29:27,933 --> 00:29:31,333
+运行shellcode-elf  提示了非法指令
+so shellcode-elf run it illegal instruction
+
+535
+00:29:31,333 --> 00:29:32,533
+哦，是个坏消息
+oh that's bad news
+
+536
+00:29:32,600 --> 00:29:34,200
+我们的shellcode出了什么问题
+what went wrong with our shellcode
+
+537
+00:29:34,333 --> 00:29:35,566
+啊，我们Strace它
+ah we Strace it
+
+538
+00:29:35,700 --> 00:29:40,900
+这很酷很方便，得益于shellcode被放在elf文件中，很容易运行
+this is an awesome result of the shellcode being inside a elf file and easily runnable 
+
+539
+00:29:41,200 --> 00:29:44,700
+如果用strace查看它
+if srace it
+
+540
+00:29:44,866 --> 00:29:48,099
+我们马上看到哪里出错了，它执行了bin/sh
+we see right away what's wrong it executed bin sh
+
+541
+00:29:48,466 --> 00:29:50,399
+而不是/bin/sh
+instead of slash bin slash sh
+
+542
+00:29:50,400 --> 00:29:53,200
+结果得到了一个没有这样的父目录
+and got a no such father directory as a result
+
+543
+00:29:53,400 --> 00:29:55,166
+很好，然后我们修改它
+cool then we modify it
+
+544
+00:29:55,933 --> 00:29:56,799
+修复它
+fix it
+
+545
+00:29:58,066 --> 00:29:59,166
+重新汇编它
+reassemble it
+
+546
+00:29:59,533 --> 00:30:00,466
+重新运行它
+rerun it
+
+547
+00:30:00,533 --> 00:30:03,399
+然后我们看到它实际上在执行bin sh
+and then we see that it is actually now executing bin sh
+
+548
+00:30:03,733 --> 00:30:06,933
+往上滑，它就在这里
+ and if you scroll up it's right here
+
+549
+00:30:07,800 --> 00:30:09,266
+非常酷
+very cool all right
+
+550
+00:30:09,500 --> 00:30:14,700
+这就是用strace在高层次上调试shellcode的方法
+so that is strace that's how you debug your shellcode on a high level
+
+551
+00:30:15,300 --> 00:30:20,600
+这能捕捉到shellcode中大量的错误
+and this catches a shocking amount of errors that you make shellcoding
+
+552
+00:30:21,300 --> 00:30:22,733
+如果还不能解决
+if you need something more
+
+553
+00:30:22,733 --> 00:30:25,266
+你可以用GDB调试shellcode
+you can debug shellcode with GDB
+
+554
+00:30:25,266 --> 00:30:28,366
+因为它只是我们汇编出的一个普通Linux程序
+it's just a Linux program the way that we assemble it
+
+555
+00:30:28,400 --> 00:30:31,600
+好的，让我们快速看一下
+right so let's take a quick look
+
+556
+00:30:31,700 --> 00:30:34,766
+这张幻灯片可以作为很好的参考
+and then this slide can be a good reference for you
+
+557
+00:30:36,800 --> 00:30:43,900
+如果我们在shellcode里犯了些傻错
+if we again do something silly to our shellcode
+
+558
+00:30:48,000 --> 00:30:49,200
+如果我们
+if we
+
+559
+00:30:50,300 --> 00:30:55,300
+我们可能犯什么错？
+I don't know what what what might we do 
+
+560
+00:30:55,900 --> 00:30:57,966
+可能不小心用了一些解引用
+we might accidentally have some dereference here
+
+561
+00:30:57,966 --> 00:30:59,499
+这样是不好的
+that's not good right so maybe
+
+562
+00:30:59,700 --> 00:31:04,600
+好的，我们加载大小指向的内存到RDX中
+okay we're loading into RDX memory that our size pointing to
+
+563
+00:31:04,700 --> 00:31:10,000
+但是我们的大小指向0，所以它会崩溃
+but our size pointing to  0 so it's gonna crash all right
+
+564
+00:31:10,000 --> 00:31:11,333
+但是它能汇编成功
+but this will assemble
+
+565
+00:31:12,866 --> 00:31:15,866
+当我们运行它时，当然会报段错误
+and when we run it it's seg faults of course
+
+566
+00:31:16,000 --> 00:31:18,133
+在GDB运行它
+running in GDB run it
+
+567
+00:31:19,200 --> 00:31:19,766
+哦
+oops
+
+568
+00:31:19,766 --> 00:31:20,866
+Shellcode-elf
+shellcode dash elf
+
+569
+00:31:21,366 --> 00:31:22,166
+运行它
+run it
+
+570
+00:31:22,500 --> 00:31:25,200
+这是segg错误
+okay it's seg faulted 
+
+571
+00:31:25,200 --> 00:31:26,466
+我们马上就能看到它在哪里出现了段错误
+immediately we can see where did it seg fault
+
+572
+00:31:26,733 --> 00:31:28,799
+它在这里报的段错误
+it's seg faulted at this
+
+573
+00:31:28,900 --> 00:31:33,700
+加载 rsi指向的内存 到 rdx
+move into RDX the pointer to RSI
+
+574
+00:31:34,000 --> 00:31:36,100
+我们现在可以看到RSI的值
+we can see what is RSI right now
+
+575
+00:31:36,466 --> 00:31:37,933
+或者说它指向什么
+or what is it pointing to
+
+576
+00:31:39,300 --> 00:31:43,600
+你可以看到它是0，所以不能解引用
+and you see that it is 0 and so can't be dereference
+
+577
+00:31:43,800 --> 00:31:44,900
+现在我们知道问题出在哪里了
+now we know what's wrong
+
+578
+00:31:45,900 --> 00:31:49,700
+让我们快速看一下其他一些命令
+let's take a quick look at some other commands that
+
+579
+00:31:49,800 --> 00:31:51,866
+我们可以在GDB中做一些其他有用的事情
+some other useful things we can do in GDB
+
+580
+00:31:52,500 --> 00:31:57,300
+记住断点，因为示例没怎么用标签
+keep in mind break points because there are no labels or 
+
+581
+00:31:57,600 --> 00:32:00,200
+实际上，如果你在汇编代码中添加了标签，gdb里也会有标签
+actually there can be labeled if you put in the labels
+
+582
+00:32:00,300 --> 00:32:02,133
+举个例子，你可以在GDB中
+so you can actually set for example in GDB
+
+583
+00:32:02,400 --> 00:32:04,366
+尽管这（示例）毫无意义
+ although this makes no sense
+
+584
+00:32:04,900 --> 00:32:08,700
+在binsh处设置断点，gdb会设置好断点
+break binsh and it sets it
+
+585
+00:32:08,733 --> 00:32:11,099
+可以（中断在断点处）。如果能运行到这个位置
+and you can actually if if that was ever run
+
+586
+00:32:11,733 --> 00:32:13,733
+但实际上在这里你可以看到
+but actually here you can see
+
+587
+00:32:14,400 --> 00:32:18,300
+添加更多的标签，这些标签没有实际意义
+add more labels right these labels mean nothing really
+
+588
+00:32:18,366 --> 00:32:20,866
+好，标签1
+say okay label one
+
+589
+00:32:22,100 --> 00:32:23,133
+标签2
+label 2
+
+590
+00:32:23,966 --> 00:32:25,599
+然后我们汇编它
+and then when we assemble it
+
+591
+00:32:26,533 --> 00:32:28,666
+GDB它，然后我们可以设置label1断点
+GDB and we can do break label 1
+
+592
+00:32:29,266 --> 00:32:30,133
+设置label2断点
+break label 2
+
+593
+00:32:30,566 --> 00:32:33,199
+运行并到达标签1 断点
+run and we hit the break point label 1
+
+594
+00:32:33,200 --> 00:32:38,700
+这对于你的（调试）shellcode来说是一个很棒的功能
+this is awesome functionality to be able to do for your shellcode
+
+595
+00:32:38,800 --> 00:32:40,700
+它也不会改变你的shellcode
+and it doesn't actually modify your shellcode at all 
+
+596
+00:32:40,700 --> 00:32:43,600
+加上这些标签后，你仍然可以提取你的shellcode
+to have these labels you can still extract your shellcode
+
+597
+00:32:43,666 --> 00:32:46,366
+标签都在elf的其他部分
+the labels are all in other parts of the elf
+
+598
+00:32:47,200 --> 00:32:49,866
+它只是让调试变得更加容易
+it just makes debugging much much easier
+
+599
+00:32:52,100 --> 00:32:53,400
+我们还可以做其他事情
+other things that we can do
+
+600
+00:32:53,600 --> 00:32:55,700
+如果你不想用这些标签
+if you don't want to use those labels
+
+601
+00:32:55,866 --> 00:32:56,799
+记住
+just keep in mind
+
+602
+00:32:56,800 --> 00:32:59,600
+要在你想要设置断点的地址前，放一个星号
+before the address where you want to break you have to put a star
+
+603
+00:32:59,700 --> 00:33:03,100
+原因之一是程序是静态编译的
+and one of the reasons that we compiled things statically
+
+604
+00:33:03,133 --> 00:33:05,099
+我稍后再讲另一个原因
+I'll talk about another reason later
+
+605
+00:33:05,100 --> 00:33:07,666
+回忆一下我们创建了一个静态链接的elf执行文件
+if you recall this creates a static elf
+
+606
+00:33:08,500 --> 00:33:15,200
+我们在二进制文件基础中讨论过静态链接的和动态链接的elf
+again we talk about static and dynamic elfs in the binary files fundamentals
+
+607
+00:33:16,066 --> 00:33:19,999
+当你有一个静态链接的ELF时
+but one of the reasons is when you have a static ELF
+
+608
+00:33:20,066 --> 00:33:21,733
+它总是映射或者说
+it always maps or
+
+609
+00:33:23,066 --> 00:33:26,166
+它被编译成默认情况总是映射
+it gets compiled in a way by default that it maps
+
+610
+00:33:26,100 --> 00:33:28,100
+所有东西到固定地址
+everything into this fixed for all
+
+611
+00:33:28,933 --> 00:33:29,733
+而不是随机地址
+instead of random memory 
+
+612
+00:33:29,933 --> 00:33:32,933
+这样调试起来更容易一些
+so it's a little easier to debug
+
+613
+00:33:33,733 --> 00:33:34,533
+好
+alright
+
+614
+00:33:35,366 --> 00:33:37,966
+如果你想在某个内存地址中断
+if you want to break at a memory location
+
+615
+00:33:37,966 --> 00:33:40,199
+记得在前面打个星号就行了
+just remember put a star in front of it
+
+616
+00:33:41,200 --> 00:33:43,566
+有几件事运行起来有点奇怪
+a couple of things that work kind of weirdly
+
+617
+00:33:44,300 --> 00:33:45,266
+在平常的开发中
+in source code you're used to hitting
+
+618
+00:33:45,266 --> 00:33:48,199
+当你用GDB
+ when you're in GDB
+
+619
+00:33:48,200 --> 00:33:57,500
+调试一个你用-g编译的有调试符号的程序时
+debugging a C program that you built with dash G for debug symbols
+
+620
+00:33:58,000 --> 00:34:01,800
+您可能习惯于按 s 来 步入一行代码
+you're probably used to hitting s to step one line of code
+
+621
+00:34:02,000 --> 00:34:03,933
+这不是源代码，这是汇编代码
+this is ain't source code this is assembly code
+
+622
+00:34:03,933 --> 00:34:06,266
+si 表示 步入执行一个指令
+si  will step one instruction
+
+623
+00:34:06,266 --> 00:34:08,166
+不要用s，用si
+don't use s use s I
+
+624
+00:34:08,500 --> 00:34:11,400
+si会跟进call指令（步入）
+si will follow call instructions
+
+625
+00:34:11,533 --> 00:34:12,766
+有时候这就是你想要的
+sometimes this what you want
+
+626
+00:34:12,700 --> 00:34:19,700
+有时你想call执行后
+sometimes you want  call to execute and 
+
+627
+00:34:19,800 --> 00:34:21,600
+再获得控制
+then you want to get control again
+
+628
+00:34:21,666 --> 00:34:24,166
+这应该用ni
+that is ni
+
+629
+00:34:24,733 --> 00:34:25,866
+下一个指令
+next instruction
+
+630
+00:34:25,900 --> 00:34:27,866
+ni将跳过call（步过）
+so next instruction will step over a call
+
+631
+00:34:27,800 --> 00:34:35,000
+call会先执行完，然后才会得到GDB shell
+of course the call will execute and then you'll get your the GDB shell back
+
+632
+00:34:35,500 --> 00:34:37,333
+Si会步入这个调用
+si will step into the call
+
+633
+00:34:37,500 --> 00:34:38,500
+两者都很有用
+both are useful
+
+634
+00:34:38,500 --> 00:34:39,933
+但知道其中的区别很重要
+but it's important to know the difference
+
+635
+00:34:40,400 --> 00:34:44,800
+使用这些修饰符会用不同的方法查看数据
+there are different ways that you can look at data with these modifiers
+
+636
+00:34:45,766 --> 00:34:49,299
+这代表检查RSP指向的数据
+this means examine the data that are RSP points to
+
+637
+00:34:49,300 --> 00:34:52,800
+并把它视为一个4字（64位）
+and treated as one gigantic word
+
+638
+00:34:52,900 --> 00:34:56,200
+就是8字节，以十六进制展示
+and this is 8 bytes in hexadecimal format
+
+639
+00:34:57,166 --> 00:34:59,533
+除了十六进制格式，还有其他选项包括
+other options for the hexa decimal format includes
+
+640
+00:34:59,500 --> 00:35:05,100
+字符串，我在最开始演示hello程序的时候用过
+string you saw me use that at the beginning when we were looking at hello the program
+
+641
+00:35:06,100 --> 00:35:07,766
+I表示整数
+I for integer
+
+642
+00:35:10,266 --> 00:35:14,399
+不，不好意思，i表示指令，我记得d 表示
+no sorry I for instruction and I think d for for for
+
+643
+00:35:14,900 --> 00:35:17,300
+十进制整数，x表示十六进制
+decimal integer and X for hex
+
+644
+00:35:17,933 --> 00:35:18,733
+然后你当然可以
+and then you can of course
+
+645
+00:35:18,733 --> 00:35:20,566
+直接用p来打印它们的值
+use P to just print out their value
+
+646
+00:35:20,500 --> 00:35:25,300
+不使用这个表达式，不解引用这个寄存器
+without the value of this expression or this register without dereferencing them
+
+647
+00:35:25,500 --> 00:35:29,200
+g表示8B， d表示4B， h表示2B和b表示1B
+and we have G 1B d 4B H 2B and B 1B 
+
+648
+00:35:29,600 --> 00:35:35,900
+你可以打印多个（2d表示2个4B）
+and then you can print multiple
+
+649
+00:35:35,900 --> 00:35:40,800
+所以这些都表示打印8B
+so all of these invocations will print 8B of whatever you're looking at
+
+650
+00:35:41,500 --> 00:35:44,166
+运行，继续，所有这些东西都正常工作
+run and continue and all of this stuff works as normal
+
+651
+00:35:44,333 --> 00:35:45,566
+这只是一个Linux程序
+this just a Linux program
+
+652
+00:35:45,566 --> 00:35:47,766
+恰好只包含了你的shellcode
+just happens to only contain your shellcode
+
+653
+00:35:47,900 --> 00:35:50,766
+事实上，有用的反向执行
+and in fact a useful thing is that reverse execution
+
+654
+00:35:50,700 --> 00:35:53,800
+你可以按这个链接设置反向执行
+and you can go follow this link and set up reverse execution
+
+655
+00:35:53,866 --> 00:35:54,866
+也可以正常工作
+also works as normal
+
+656
+00:35:55,166 --> 00:35:56,866
+所以你可以都试一下
+so you can check all of that out
+
+657
+00:35:57,400 --> 00:36:01,300
+好了，最后一件关于调试shellcode的事
+alright final thing we'll talk about in terms of debugging your shellcode
+
+658
+00:36:01,333 --> 00:36:02,899
+是硬编码断点
+is hard coding in break points
+
+659
+00:36:02,900 --> 00:36:06,300
+事实证明，当在GDB中创建断点
+it turns out that when you create a break point in GDB
+
+660
+00:36:06,766 --> 00:36:07,566
+我想说的是
+I mean
+
+661
+00:36:07,766 --> 00:36:09,299
+断点有几种不同的类型
+there are several different styles of break points
+
+662
+00:36:09,300 --> 00:36:12,700
+当您在GDB中创建一个普通的默认软件断点时
+when you create a normal default software break point in GDB
+
+663
+00:36:12,766 --> 00:36:14,766
+它实际上会替换指令
+it'll actually replace the instruction
+
+664
+00:36:16,266 --> 00:36:19,399
+在要添加断点的位置放上int 3指令
+where you have a break point with an INT 3 instruction
+
+665
+00:36:19,400 --> 00:36:24,200
+Int 3指令是一条解码为cc的指令
+int 3 instruction is a single instruction that decodes into cc
+
+666
+00:36:24,366 --> 00:36:25,366
+实际上你可以
+you can actually
+
+667
+00:36:25,466 --> 00:36:29,266
+编码，抱歉，汇编成字节cc
+or that encode sorry assembles into the byte cc
+
+668
+00:36:29,900 --> 00:36:36,600
+你可以看这里，我现在要试一下
+you can look at it right here where I will now try it out
+
+669
+00:36:37,400 --> 00:36:38,333
+shellcode.s
+shellcode.s
+
+670
+00:36:39,600 --> 00:36:44,500
+让我们把这个bug和这些标签去掉
+so let's take away this buggy thing and take away these labels
+
+671
+00:36:44,500 --> 00:36:46,466
+我们在这里放一个INT 3
+instead we'll put an INT 3 here
+
+672
+00:36:46,700 --> 00:36:56,700
+这将在系统调用运行前注入一个硬代码断点到我们的shellcode中
+so this will inject a hardcode break point into our shellcode right before syscall gets run
+
+673
+00:36:57,300 --> 00:36:59,166
+我们把它汇编起来
+let's assemble it
+
+674
+00:36:59,666 --> 00:37:02,366
+如果你现在运行它，它会崩溃
+great if you run it now it's gonna crash
+
+675
+00:37:02,366 --> 00:37:03,333
+因为我们没有附加调试器
+because we don't have a debugger attached 
+
+676
+00:37:05,200 --> 00:37:09,000
+我们也没有捕捉这个信号
+and we're not capturing this sig trap
+
+677
+00:37:10,700 --> 00:37:12,566
+如果你用GDB运行它
+if you run it with GDB
+
+678
+00:37:16,966 --> 00:37:17,766
+boom
+boom
+
+679
+00:37:17,800 --> 00:37:21,700
+我们正好在预期的位置进入断点
+we get into a break point at exactly where we expected to
+
+680
+00:37:21,700 --> 00:37:22,966
+就在系统调用之前
+right before that syscall
+
+681
+00:37:23,666 --> 00:37:25,899
+很酷，这很有用
+very cool so this is a useful
+
+682
+00:37:26,400 --> 00:37:29,566
+当然在GDB中，通常你可以
+I mean of course in GDB normally you can just say okay
+
+683
+00:37:29,566 --> 00:37:32,566
+在标签处中断或在地址处中断
+break at the label or break at address
+
+684
+00:37:32,500 --> 00:37:37,500
+但是当你调试你正在利用的漏洞程序时
+but when you are actually debugging the vulnerable program that you're exploiting
+
+685
+00:37:37,700 --> 00:37:39,766
+想在系统调用时中断
+and you want to break at the syscall
+
+686
+00:37:39,866 --> 00:37:40,933
+这就简单多了
+this is much easier
+
+687
+00:37:40,900 --> 00:37:43,700
+因为不总是知道你的shell最终会在哪里被调用等原因
+it's much harder because you don't always know where your shell could will end up and so forth
+
+688
+00:37:43,700 --> 00:37:54,800
+所以在GDB调试器中设置断点要困难的多
+to put in to set the debugger the break points in GDB
+
+689
+00:37:54,800 --> 00:37:56,900
+如果你在shellcode的开头放一个断点
+so if you put a break point at the beginning of your shellcode
+
+690
+00:37:57,166 --> 00:37:59,199
+汇编
+ assemble
+
+691
+00:37:59,333 --> 00:38:00,699
+然后我们看一下
+and then let's look at
+
+692
+00:38:00,900 --> 00:38:03,200
+你知道我们以前的版本
+you know our old version of this
+
+693
+00:38:07,100 --> 00:38:08,266
+哇，真的
+wow there really
+
+694
+00:38:08,600 --> 00:38:09,566
+什么鬼
+what the hack
+
+695
+00:38:09,566 --> 00:38:11,699
+这就像连续抛5次硬币（每次都是一个结果）
+this is like flipping like 5 in a row 
+
+696
+00:38:12,866 --> 00:38:15,399
+好的，所以我们
+all right and so we we
+
+697
+00:38:15,900 --> 00:38:17,300
+不再
+of course we no longer
+
+698
+00:38:19,100 --> 00:38:19,900
+哦
+oh
+
+699
+00:38:19,966 --> 00:38:21,399
+我们没用objcopy更新shellcode
+we didn't objcopied out
+
+700
+00:38:21,400 --> 00:38:23,866
+现在我们有了带有调试器的版本
+okay so now we have the version with the debugger
+
+701
+00:38:29,666 --> 00:38:30,666
+发生了什么
+what's going on
+
+702
+00:38:31,566 --> 00:38:32,866
+你真的在执行吗
+are you really hitting it
+
+703
+00:38:39,166 --> 00:38:40,933
+哦，我忘了按回车键
+oh I forgot to hit enter 
+
+704
+00:38:41,766 --> 00:38:42,799
+不好意思
+sorry about this
+
+705
+00:38:42,900 --> 00:38:46,600
+我们现在已经覆盖了我们为get放入的新行
+of course we've now overwrote that new line that we had put in there for the gets
+
+706
+00:38:47,333 --> 00:38:49,333
+现在好了，嘣
+the gets okay now boom
+
+707
+00:38:49,566 --> 00:38:50,366
+好吧
+okay
+
+708
+00:38:51,800 --> 00:38:54,133
+好了，执行了hello
+there we go we hit hello
+
+709
+00:38:54,400 --> 00:38:58,200
+我们执行到了断点
+and we hit that break point trap
+
+710
+00:38:58,266 --> 00:38:59,666
+现在如果在GDB中运行hello
+now if you were running hello in GDB
+
+711
+00:39:01,766 --> 00:39:05,266
+它会进入调试器交互界面
+ it would have dropped us into a debugger
+
+712
+00:39:05,266 --> 00:39:06,499
+就像你之前看到的
+just like you saw earlier
+
+713
+00:39:06,500 --> 00:39:08,400
+然后我们就可以调试shellcode了
+and we can now debug the shellcode
+
+714
+00:39:08,400 --> 00:39:09,966
+不是必须要把它放在开头
+and you don't have to put it in the beginning
+
+715
+00:39:09,966 --> 00:39:12,199
+这个int 3你可以把它放在任何你想要的地方
+this int 3 you can put it anywhere you want
+
+716
+00:39:13,333 --> 00:39:14,133
+很酷的
+cool
+
+717
+00:39:14,366 --> 00:39:16,766
+好的，接下来是什么
+alright what is next
+
+718
+00:39:17,866 --> 00:39:20,299
+如何为其他架构编写shell代码
+how do you write shellcode for other architectures
+
+719
+00:39:20,300 --> 00:39:23,133
+到目前为止，我们一直在谈论x86_64 AMD64
+right so so far we've been talking about x8664 AMD64
+
+720
+00:39:23,766 --> 00:39:27,533
+用这个方法汇编获得shellcode
+ well it turns out with this method of assembling shellcode
+
+721
+00:39:28,200 --> 00:39:37,400
+用GCC中的工具，具体是GAS汇编器
+ using GCC essentially in this tool specifically gas assembler
+
+722
+00:39:39,300 --> 00:39:40,766
+方法几乎是一样的
+turns out that it's almost the same
+
+723
+00:39:40,766 --> 00:39:42,999
+你可以在你的系统中安装一个交叉编译器
+you can install a cross compiler in your system
+
+724
+00:39:43,566 --> 00:39:45,966
+你可以使用交叉编译器
+and you can use that cross compiler
+
+725
+00:39:46,166 --> 00:39:48,866
+来编译MIPS的shellcode
+to compile shellcode for MIPS
+
+726
+00:39:49,066 --> 00:39:51,899
+为MIPS组装外壳代码，这非常令人兴奋
+assemble shellcode for MIPS which is super exciting
+
+727
+00:39:51,900 --> 00:39:56,600
+你也可以用模拟器运行那个shellcode
+and you can also run that shellcode with an emulator
+
+728
+00:39:57,366 --> 00:40:00,699
+并在将其部署到实际系统之前进行测试
+and test it out before deploying it on some real system
+
+729
+00:40:02,533 --> 00:40:04,099
+如果您使用qemu作为模拟器
+if you use qemu as your emulator
+
+730
+00:40:04,100 --> 00:40:06,500
+Qemu有一个-strace选项
+qemu has a dash strace option
+
+731
+00:40:06,500 --> 00:40:08,100
+如果你用strace查看qemu
+if you strace qemu itself
+
+732
+00:40:08,100 --> 00:40:10,400
+qemu调用了很多系统调用
+there's a lot of syscalls that qemu is calling
+
+733
+00:40:10,933 --> 00:40:12,666
+但如果你执行qemu -strace
+but if you do qemu dash strace
+
+734
+00:40:12,666 --> 00:40:13,566
+Qemu会打印出所有
+qemu itself will print out all the system calls 
+
+735
+00:40:13,500 --> 00:40:21,600
+shellcode或者你模拟的程序调用的系统调用
+that the shellcode or whatever program you're emulating is calling
+
+736
+00:40:22,300 --> 00:40:27,900
+如果你给它-g选项
+and if you pass it the G option 
+
+737
+00:40:29,000 --> 00:40:31,733
+它会为你的shellcode打开一个远程调试端口，这也非常棒
+it'll open up a port for remote debugging for your shellcode which is pretty awesome too
+
+738
+00:40:31,700 --> 00:40:36,400
+这组工具对编写shellcode非常有用
+so this set of tooling is really nice for shellcode
+
+739
+00:40:37,266 --> 00:40:38,066
+好吧
+all right
+
+740
+00:40:38,900 --> 00:40:44,800
+如果你想要，需要练习的话
+let's say you want to practice right which you do of course
+
+741
+00:40:44,866 --> 00:40:46,299
+这就是PWN大学的意义所在
+that's what pwn college is all about
+
+742
+00:40:46,300 --> 00:40:47,600
+熟能生巧
+practice makes perfect
+
+743
+00:40:47,766 --> 00:40:49,299
+去PWN学院
+head over to pwn college
+
+744
+00:40:50,300 --> 00:40:55,400
+选择一个级别的shellcode作业
+choose a level of the shellcoding homework
+
+745
+00:40:56,966 --> 00:40:58,733
+分析代码
+analyze that code
+
+746
+00:40:58,700 --> 00:41:03,400
+理解你的shellcode必须满足的条件
+and understand the constraints that your shellcode um must satisfy
+
+747
+00:41:03,466 --> 00:41:05,533
+以及修改你的shellcode
+and the changes that will be made to your shellcode
+
+748
+00:41:05,866 --> 00:41:07,699
+并编写shellcode绕过它们
+and write shellcode to bypass them
+
+749
+00:41:08,100 --> 00:41:12,600
+取决于你是哪一年看这个视频的
+um depending on when in the year you're watching this video
+
+750
+00:41:12,600 --> 00:41:16,300
+作业服务可能会停半个星期
+the challenges might be down for about half a week
+
+751
+00:41:16,300 --> 00:41:24,700
+我们要为下一届（这一届如果有的话）做准备
+as we um prepare them for the next for this current class if there is one
+
+752
+00:41:24,766 --> 00:41:26,666
+那样的话，你就稍等一下
+in that case just hold tight
+
+753
+00:41:26,666 --> 00:41:28,999
+挑战开始的时候我会宣布的
+I'll announce when the challenges are available
+
+754
+00:41:29,133 --> 00:41:31,699
+然后你就可以去解决了。祝你好运
+and then you can go solve them good luck

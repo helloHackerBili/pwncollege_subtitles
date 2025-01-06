@@ -1,0 +1,8 @@
+01 Privilege Escalation
+    https://www.youtube.com/watch?v=ZWxYWdiXqD8&list=PL-ymxv0nOtqoaG9YCGR36tCfRoXqVcE1E&index=1
+
+02 Mitigations
+    https://www.youtube.com/watch?v=kzbyvr_PJ9k&list=PL-ymxv0nOtqoaG9YCGR36tCfRoXqVcE1E&index=2
+
+practice here
+    https://pwn.college/fundamentals/program-misuse/

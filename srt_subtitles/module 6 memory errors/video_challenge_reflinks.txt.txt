@@ -1,0 +1,26 @@
+01 Introduction
+    https://www.youtube.com/watch?v=z_XOhfsVKnU&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL
+
+02 High-level Problems
+    https://www.youtube.com/watch?v=4PJvcZZIyT8&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=2
+
+03 Smashing the Stack
+    https://www.youtube.com/watch?v=PVx1hUlMxtQ&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=3
+    
+04 Causes of Corruption 1
+    https://www.youtube.com/watch?v=u80_j06HkpM&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=4
+
+05 Causes of Corruption 2
+    https://www.youtube.com/watch?v=fVa2xahshik&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=5
+
+06 Stack Canaries
+    https://www.youtube.com/watch?v=55zWlEFflgE&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=6
+
+07 Address Space Layout Randomization
+    https://www.youtube.com/watch?v=SBqERAbDdAk&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=7
+
+08 Causes of Disclosure
+    https://www.youtube.com/watch?v=S9IIGVK6K0I&list=PL-ymxv0nOtqpmHdeii3NsBurJSvuMTKLL&index=8
+
+practice here
+    https://pwn.college/program-security/memory-errors/

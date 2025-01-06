@@ -1,0 +1,2835 @@
+1
+00:00:00,500 --> 00:00:01,900
+你好黑客
+hello hackers
+
+2
+00:00:02,666 --> 00:00:06,666
+欢迎收看PWN学院的视频
+welcome to another video on pwn college
+
+3
+00:00:07,166 --> 00:00:09,400
+本片主要讲权限提升
+this one is on privilege escalation
+
+4
+00:00:09,733 --> 00:00:13,400
+我们先介绍一下，再深入
+all right let's introduce privilege escalation and dive in
+
+5
+00:00:14,366 --> 00:00:19,366
+之后演示三个习题
+and then send you along to try your hand at the practice problems
+
+6
+00:00:19,733 --> 00:00:23,133
+好的，回想一下Linux权限模型
+all right so recall the Linux permission model 
+
+7
+00:00:23,133 --> 00:00:24,333
+我说“回想”
+and i say recall
+
+8
+00:00:24,333 --> 00:00:27,900
+是因为我假设，在这个模块以及这门课中
+because i assume in this module and in this course
+
+9
+00:00:28,000 --> 00:00:31,900
+你已经对Linux权限模型有所了解
+that you have an understanding of the Linux permission model already 
+
+10
+00:00:32,600 --> 00:00:34,300
+至少是从使用者的角度
+from a user's perspective
+
+11
+00:00:36,066 --> 00:00:36,733
+如果不知道
+if you don't 
+
+12
+00:00:36,733 --> 00:00:38,233
+若有足够的需求
+if there's enough demand 
+
+13
+00:00:38,233 --> 00:00:43,133
+我们可能出一期Linux权限模型的基础视频
+we might create a fundamentals video about the Linux permission model
+
+14
+00:00:43,133 --> 00:00:47,700
+但这里，我就浅浅的讲一下
+but here i'm just gonna talk about a very high level in Linux 
+
+15
+00:00:47,700 --> 00:00:49,866
+希望这是个复习
+hopefully this is review 
+
+16
+00:00:49,866 --> 00:00:53,566
+每个进程都有一个uid和一个gid
+every process has a user id and a group id
+
+17
+00:00:53,666 --> 00:00:55,900
+这是个终端的截图
+so here as a screenshot of my terminal
+
+18
+00:00:55,900 --> 00:00:57,733
+我执行了id命令
+i ran the id command 
+
+19
+00:00:57,800 --> 00:01:04,600
+打印出了uid，为1000
+id printed out its user id which is 1000 
+
+20
+00:01:04,700 --> 00:01:06,933
+当然，对内核来说，它们只是数字
+of course to the kernel they're all numbers
+
+21
+00:01:07,000 --> 00:01:12,800
+但这些uid数字，有对应的名字
+but these numeric user ids have names associated with them
+
+22
+00:01:12,800 --> 00:01:14,800
+这样方便人用
+so that they're more approachable by humans
+
+23
+00:01:16,800 --> 00:01:20,733
+我还有个gid，也是1000
+and i have a group id of also 1000
+
+24
+00:01:20,733 --> 00:01:24,666
+这些是Ubuntu中默认的主要用户的id
+these are the default primary user ids on Ubuntu
+
+25
+00:01:26,166 --> 00:01:29,166
+我们这里不讨论groups（附加组）
+all right we won't talk about the secondary groups i have 
+
+26
+00:01:29,166 --> 00:01:31,200
+之后你可以自行研究
+you might dig into that in a later time
+
+27
+00:01:33,100 --> 00:01:38,100
+重要的是每个用户都有一个uid和gid
+but essentially every user has a user id and a group id
+
+28
+00:01:38,366 --> 00:01:45,266
+Linux中每个文件和目录都归属于一个组中用户
+and every file and every directory in Linux is owned by a user in a group
+
+29
+00:01:45,500 --> 00:01:47,300
+我这里看了一下/bin/cat
+so here i look at /bin/cat 
+
+30
+00:01:47,300 --> 00:01:50,133
+/bin/cat属于root
+and i see that /bin/cat is owned by root 
+
+31
+00:01:50,133 --> 00:01:53,166
+也属于root组
+and has a group owner of root as well 
+
+32
+00:01:53,166 --> 00:01:56,000
+它属于root组和root用户
+so the root group and the root user
+
+33
+00:01:56,533 --> 00:01:58,533
+在左边，你能看到它的权限
+and on the left you see its permissions 
+
+34
+00:01:58,666 --> 00:02:00,933
+重要的是：rwx
+and the relevant thing here is rwx 
+
+35
+00:02:01,000 --> 00:02:03,400
+接着 rx 和 rx
+and then r x and then r x 
+
+36
+00:02:03,666 --> 00:02:05,933
+或者说 r-x 和 r-x
+or r-x and r-x 
+
+37
+00:02:06,066 --> 00:02:07,166
+它代表着什么
+and what this means
+
+38
+00:02:07,300 --> 00:02:09,500
+第一个rwx是针对用户的
+the first rwx is for the user 
+
+39
+00:02:09,766 --> 00:02:12,366
+所以，它的拥有者root
+so the root user that's who owns it 
+
+40
+00:02:12,700 --> 00:02:15,200
+可以读、写和执行这个文件
+can read write and execute this file 
+
+41
+00:02:15,433 --> 00:02:19,300
+root组的可以读和执行这个文件
+the root group can read and execute this file 
+
+42
+00:02:19,466 --> 00:02:21,733
+所以在root组的所有进程
+so any process that is in the root group
+
+43
+00:02:22,500 --> 00:02:24,500
+我说“进程”，而不是用户
+and i said process not user
+
+44
+00:02:24,533 --> 00:02:27,900
+是因为实际被检查权限的是进程
+because it's the process on which these permissions are checked
+
+45
+00:02:27,966 --> 00:02:29,700
+当然，创建一个进程时
+but of course when you create a process
+
+46
+00:02:29,700 --> 00:02:32,666
+或者说登录账号创建初始会话时
+or when you create your initial session as a user
+
+47
+00:02:32,733 --> 00:02:38,566
+进程初始化时会收到这些权限（应该是说euid）
+your initial process receives these permissions as it set up
+
+48
+00:02:40,400 --> 00:02:46,800
+然后不在root组中的其余用户，也可以读和执行
+and then anyone not in the root group the rest of the world can also read and execute 
+
+49
+00:02:49,133 --> 00:02:52,366
+我一直说权限
+i keep mentioning you know permissions 
+
+50
+00:02:53,400 --> 00:02:56,400
+这些凭据存在于进程级别
+these credentials exist on the process level
+
+51
+00:02:56,800 --> 00:03:01,400
+一般来说，子进程从父进程继承它们
+child processes inherit them from their parent generally speaking
+
+52
+00:03:01,400 --> 00:03:03,100
+有一些特殊的情况是不同的
+there're exotic situations that are different
+
+53
+00:03:03,100 --> 00:03:06,100
+但一般来说，父进程会设置一些
+but generally speaking the parent will set up some 
+
+54
+00:03:06,166 --> 00:03:08,733
+实际上马上会讲一种特殊情况
+and actually one of the exotic situations will go into right now
+
+55
+00:03:08,733 --> 00:03:10,400
+但一般来说
+but generally speaking the
+
+56
+00:03:12,900 --> 00:03:14,800
+父进程启动子进程，而子进程
+parent runs the child and child
+
+57
+00:03:15,533 --> 00:03:19,466
+回忆一下基础模块中的进程加载
+if you recall from the fundamental series on Linux process loading
+
+58
+00:03:19,566 --> 00:03:20,866
+父进程执行fork时
+when the parent forks
+
+59
+00:03:20,866 --> 00:03:26,500
+子进程会继承父进程的所有，包括凭据
+the child will inherit everything that the parent has in terms of credentials
+
+60
+00:03:27,900 --> 00:03:29,000
+也有例外
+there are exceptions 
+
+61
+00:03:31,333 --> 00:03:34,533
+这里又有一个终端的截图
+so here i have on my terminal again a screenshot
+
+62
+00:03:34,533 --> 00:03:40,300
+我写了个程序叫getuid，只调用了getuid
+i created a getuid program that just calls getuid
+
+63
+00:03:40,533 --> 00:03:42,300
+这个系统调用
+it is a system call that
+
+64
+00:03:43,733 --> 00:03:45,266
+好吧，这是个c函数
+well this is a C function 
+
+65
+00:03:45,266 --> 00:03:49,266
+它最终会调用系统调用，获得我的uid
+that eventually calls a system call that gets me my user id 
+
+66
+00:03:50,566 --> 00:03:51,933
+我执行了它
+i executed it
+
+67
+00:03:51,933 --> 00:03:56,400
+当然此时的用户id还是1000，我执行了它
+and of course here i still have my 1000 user and then i run it
+
+68
+00:03:56,400 --> 00:03:59,366
+输出1000
+and it also says 1000
+
+69
+00:03:59,800 --> 00:04:01,300
+好吧
+all right um
+
+70
+00:04:01,933 --> 00:04:04,800
+有1000之外的uid
+there are user ids other than 1000 
+
+71
+00:04:04,900 --> 00:04:06,733
+比如，0
+one very specific one is 0 
+
+72
+00:04:07,666 --> 00:04:12,400
+在Linux和其他类unix系统上
+on Linux and other unix like systems
+
+73
+00:04:13,133 --> 00:04:15,266
+uid 0是特殊的
+user id 0 is special 
+
+74
+00:04:15,433 --> 00:04:16,166
+它表示root
+that is root
+
+75
+00:04:16,166 --> 00:04:18,333
+它是系统管理员用户
+it's the system administrator user
+
+76
+00:04:19,466 --> 00:04:21,033
+它用于
+it's used for 
+
+77
+00:04:21,033 --> 00:04:25,666
+你必须是root才能对系统做大的修改
+you need to be root for making large system changes
+
+78
+00:04:25,666 --> 00:04:26,966
+安装软件
+installing software 
+
+79
+00:04:27,000 --> 00:04:30,833
+修改大多数的系统范围的配置
+and most configurations system wide at least 
+
+80
+00:04:30,833 --> 00:04:32,600
+加载设备驱动
+loading device drivers
+
+81
+00:04:32,600 --> 00:04:35,966
+修改系统状态和设置，等等
+changing the system state and settings and so forth
+
+82
+00:04:36,000 --> 00:04:41,600
+如果你的uid是1000或1001
+and so if you are user id 1000 or 1001 or whatever other one
+
+83
+00:04:41,600 --> 00:04:44,300
+你该如何成为uid 0
+how do you become user id 0
+
+84
+00:04:44,300 --> 00:04:46,900
+好吧，我们开始深入
+well let's dig in
+
+85
+00:04:46,900 --> 00:04:50,966
+要想提升权限，成为uid 0
+so you become user id zero by elevating your privileges
+
+86
+00:04:50,966 --> 00:04:53,666
+可以通过利用setuid的程序
+by using for example a setuid binary 
+
+87
+00:04:53,800 --> 00:04:55,000
+最有名的
+the most famous example of this
+
+88
+00:04:55,000 --> 00:04:58,566
+也是现在最常见的，是sudo
+the most common one nowadays is sudo right
+
+89
+00:04:58,700 --> 00:05:05,133
+右上角有个关于它的流行的xkcd漫画
+so there's a popular xkcd comic about it on the top right there 
+
+90
+00:05:05,533 --> 00:05:06,966
+尝试运行某个命令
+you try to run a command
+
+91
+00:05:07,533 --> 00:05:08,600
+没有权限
+you don't have the permission
+
+92
+00:05:08,666 --> 00:05:10,000
+执行sudo 接上那个命令
+ do sudo that command
+
+93
+00:05:10,533 --> 00:05:11,733
+然后你就有权限了
+and then you have the permissions
+
+94
+00:05:11,733 --> 00:05:14,900
+大概你最常用sudo的时候是
+the most common thing that you probably sudo for 
+
+95
+00:05:15,100 --> 00:05:17,133
+用apt安装软件
+is apt to install software 
+
+96
+00:05:18,400 --> 00:05:21,500
+我最开始接触Linux时
+back when i first started using Linux
+
+97
+00:05:21,766 --> 00:05:23,700
+我们不用sudo
+we didn't really use sudo 
+
+98
+00:05:23,933 --> 00:05:25,333
+大多数人使用su
+most people used su 
+
+99
+00:05:25,433 --> 00:05:30,033
+功能很类似
+very similar sort of conceptual functionality 
+
+100
+00:05:30,366 --> 00:05:33,600
+至少和大多数人用到的sudo的功能很类似
+that at least to what most people use sudo for
+
+101
+00:05:36,766 --> 00:05:37,566
+基本上
+basically
+
+102
+00:05:39,266 --> 00:05:40,000
+是的，非常相似
+yeah very similar
+
+103
+00:05:40,000 --> 00:05:43,033
+就是要root的密码
+just required the root users to have its own password 
+
+104
+00:05:43,333 --> 00:05:46,266
+那么sudo、su
+all right how does sudo and su 
+
+105
+00:05:46,566 --> 00:05:50,133
+还有newgrp，它能让你切换到
+and things like newgrp which actually allows you to swap into 
+
+106
+00:05:50,166 --> 00:05:55,066
+之前看到的附加组中的某一组
+one of those secondary groups that you saw on my profile on my user id and so forth 
+
+107
+00:05:56,166 --> 00:05:57,266
+它们用了什么原理
+how does this work 
+
+108
+00:05:57,400 --> 00:06:04,200
+它们用了linux权限模型中的额外位
+well they work using additional bits in the Linux permission model
+
+109
+00:06:04,266 --> 00:06:08,200
+我们讲文件权限模型时，没讲它们
+that file permission model that we didn't talk about
+
+110
+00:06:08,766 --> 00:06:11,333
+我们讨论了所属用户的读、写、执行
+we talked about the user read write execute
+
+111
+00:06:11,333 --> 00:06:12,500
+所属组内的读、写、执行
+the group read write execute
+
+112
+00:06:12,500 --> 00:06:14,000
+和其它用户的读、写、执行
+and the world read write execute
+
+113
+00:06:14,066 --> 00:06:17,733
+但还有3位没说
+but there are three more bits that we haven't discussed
+
+114
+00:06:17,800 --> 00:06:21,266
+其中最重要的是setuid位
+the most important of these is the SetUID bit
+
+115
+00:06:21,333 --> 00:06:23,033
+紧接着setgid位
+followed by the SetGID bit 
+
+116
+00:06:23,133 --> 00:06:24,900
+如果设置了这些位
+if these bits are set 
+
+117
+00:06:25,433 --> 00:06:32,366
+那么有效id
+then the effective
+
+118
+00:06:33,966 --> 00:06:36,000
+等一下，我需要解决一件事
+hold on i need to fix one thing
+
+119
+00:06:37,966 --> 00:06:41,166
+好吧，我不知道为什么没有更新
+all right i'm not sure why that didn't update
+
+120
+00:06:41,166 --> 00:06:42,266
+但它现在改好了
+but it is there now 
+
+121
+00:06:42,533 --> 00:06:45,000
+当你运行一个文件
+so when you run a file
+
+122
+00:06:45,666 --> 00:06:46,500
+执行一个文件时
+when you execute a file
+
+123
+00:06:46,500 --> 00:06:48,566
+并且它设置了setuid位
+and it has the SetUID bit set
+
+124
+00:06:49,166 --> 00:06:54,200
+进程的euid
+the process executes with an effective user id
+
+125
+00:06:54,200 --> 00:06:55,533
+稍后会讨论euid的含义
+and we'll talk about what this means 
+
+126
+00:06:55,866 --> 00:07:04,933
+会是文件的所有者，而不是父进程的euid
+of the file owner rather than the parent process
+
+127
+00:07:05,166 --> 00:07:06,466
+gid也一样
+same with the group id 
+
+128
+00:07:06,566 --> 00:07:13,466
+如果执行了一个设置了setgid位的文件
+if you have the SetGID bit set and you execute a file
+
+129
+00:07:13,966 --> 00:07:18,100
+那么进程的egid是文件个gid
+then the resulting process will have the group id of the file 
+
+130
+00:07:18,100 --> 00:07:21,400
+而不是父进程的egid
+rather than of the parent process
+
+131
+00:07:21,600 --> 00:07:23,700
+还有第三位，粘滞位
+there's the third bit the sticky bit
+
+132
+00:07:23,700 --> 00:07:26,600
+它在相对于所属用户和组的其它
+that's you know the world equivalent of the user and group
+
+133
+00:07:26,600 --> 00:07:27,566
+它是完全不同的
+it's completely different
+
+134
+00:07:27,566 --> 00:07:29,000
+它用于目录
+it's used on directories 
+
+135
+00:07:29,000 --> 00:07:35,366
+如果你有一个可供多个用户写的共享目录
+if you have a shared directory that's writable by multiple users
+
+136
+00:07:35,466 --> 00:07:38,100
+粘滞位可以保证
+then the sticky bit will ensure that 
+
+137
+00:07:38,100 --> 00:07:40,866
+用户只能删除自己添加的文件
+a user can only remove files that they have added
+
+138
+00:07:40,866 --> 00:07:42,566
+他们不能删除别人的文件
+they can't remove other people's files
+
+139
+00:07:42,566 --> 00:07:43,666
+完全不同
+completely separate
+
+140
+00:07:44,500 --> 00:07:46,066
+但也是权限模型的一部分
+but also part of this permission model 
+
+141
+00:07:46,766 --> 00:07:48,733
+通常用于/tmp目录
+usually used for /tmp directories
+
+142
+00:07:48,733 --> 00:07:51,933
+或者作业目录之类的东西
+or homework directories or something along these lines
+
+143
+00:07:54,566 --> 00:07:57,000
+我刚刚说了euid
+i mentioned the effective user id
+
+144
+00:07:57,000 --> 00:07:58,200
+什么是euid
+so what is the euid
+
+145
+00:07:58,200 --> 00:08:01,233
+我在第一次直播中做了简化
+it turns out that i simplified things in the first live 
+
+146
+00:08:01,233 --> 00:08:09,600
+每个进程实际有三类uid或gid
+so every process has actually three types of user and group ids 
+
+147
+00:08:09,866 --> 00:08:11,500
+有效id、实际id和保存id
+effective real and saved 
+
+148
+00:08:11,733 --> 00:08:17,166
+有效用户id（euid）是用来
+the effective user id is what is used for 
+
+149
+00:08:17,300 --> 00:08:18,933
+找不到一个更好的词
+lack of a better different term 
+
+150
+00:08:18,933 --> 00:08:21,700
+更不起冲突的词
+less colliding term
+
+151
+00:08:22,066 --> 00:08:25,333
+euid用于访问控制检查
+the effective user id is used for access control checks
+
+152
+00:08:25,333 --> 00:08:27,533
+打开文件时
+so when you try to open a file
+
+153
+00:08:27,533 --> 00:08:30,000
+会检查你的euid
+it checks okay what is your effective id
+
+154
+00:08:30,733 --> 00:08:36,700
+实际id基本表示进程的真实身份
+the real id is basically the the true identity of the process
+
+155
+00:08:38,466 --> 00:08:41,400
+例如，尝试发信号时
+for example if you are trying to send signals to a process
+
+156
+00:08:41,400 --> 00:08:43,733
+检查的就是它
+that is what will be checked
+
+157
+00:08:45,066 --> 00:08:50,533
+保存的id用于
+the saved id is used for 
+
+158
+00:08:50,566 --> 00:08:52,433
+如果你是一个特权进程
+if you are a privileged process
+
+159
+00:08:52,600 --> 00:08:56,800
+你为了更安全，想执行些非特权操作
+and you want to perform some action unprivileged for extra safety
+
+160
+00:08:56,866 --> 00:08:59,133
+你可以保存你的特权uid
+you can save your privileged user id
+
+161
+00:09:00,333 --> 00:09:04,333
+假设成一个非特权进程的euid与实际id
+assume an effective and real id of a non privileged process
+
+162
+00:09:04,333 --> 00:09:11,100
+等不需要降低特权时，再用保存id恢复特权
+and then restore from your saved user id when you're done needing to lower your privileges
+
+163
+00:09:11,200 --> 00:09:15,600
+这实际上会导致安全漏洞
+this usually actually leads to security vulnerabilities
+
+164
+00:09:16,300 --> 00:09:19,800
+不管你在以非特权方式做什么
+ if you're unprivileged whatever you're doing in an unprivileged way
+
+165
+00:09:19,800 --> 00:09:21,966
+它都会访问保存的uid
+it gets access to that saved user id and
+
+166
+00:09:23,366 --> 00:09:24,800
+因为这就是系统的运作方式
+because this is how the system works
+
+167
+00:09:24,800 --> 00:09:26,600
+保存uid的意义
+the whole point of that save user id
+
+168
+00:09:26,866 --> 00:09:29,700
+就是能重置euid
+is to be able to reset your effective user id
+
+169
+00:09:30,533 --> 00:09:32,900
+然后还能重新提升权限
+then they can reelevate their privileges 
+
+170
+00:09:32,900 --> 00:09:34,166
+这不是很重要
+this isn't quite as important 
+
+171
+00:09:34,233 --> 00:09:37,200
+过于深入了
+i probably went way deeper into it than necessary 
+
+172
+00:09:37,200 --> 00:09:39,133
+重点是euid
+the point is that effective user id
+
+173
+00:09:39,800 --> 00:09:47,500
+setuid位的作用是什么呢
+and what happens when you have a SetUID bit 
+
+174
+00:09:47,666 --> 00:09:51,700
+它会修改euid吗
+is it sets that effective user id
+
+175
+00:09:51,700 --> 00:09:52,766
+我们来看看
+so let's take a look
+
+176
+00:09:52,866 --> 00:09:53,666
+好吧
+all right
+
+177
+00:09:53,900 --> 00:09:57,100
+这是getuid.c
+so i have my getuid.c 
+
+178
+00:09:57,233 --> 00:09:59,600
+还有一个getgid.c
+i also have a getgid.c
+
+179
+00:10:02,300 --> 00:10:04,000
+cat拼错了
+wrong cat
+
+180
+00:10:04,366 --> 00:10:05,600
+好
+okay cool
+
+181
+00:10:06,866 --> 00:10:08,299
+编译它们
+let's compile them 
+
+182
+00:10:08,733 --> 00:10:09,866
+关闭警告
+turn off warnings
+
+183
+00:10:09,866 --> 00:10:12,733
+因为我没include
+because i didn't add any includes
+
+184
+00:10:12,733 --> 00:10:14,666
+这样ppt上占地能小点
+so these are smaller for the slides
+
+185
+00:10:21,300 --> 00:10:22,200
+好的
+awesome
+
+186
+00:10:22,500 --> 00:10:25,700
+我们运行getuid
+so let's run getuid 
+
+187
+00:10:25,700 --> 00:10:28,066
+输出uid 1000
+says user 1000
+
+188
+00:10:29,500 --> 00:10:32,800
+执行getgid，输出gid 1000
+getgid group 1000 
+
+189
+00:10:32,966 --> 00:10:34,766
+当然，这是我的用户和组
+of course that's my user and my group
+
+190
+00:10:35,933 --> 00:10:39,066
+我们看一下getgid和getuid
+let's take a look at getgid and uid 
+
+191
+00:10:39,500 --> 00:10:44,400
+对于用户yans，它们都是可读可写可执行的
+they are readable writeable executable by user yans 
+
+192
+00:10:44,400 --> 00:10:48,166
+对于用户yans（口误），也是可读可写可执行
+readable writeable and executable by user(group) yans 
+
+193
+00:10:48,166 --> 00:10:50,766
+可读和可执行
+readable and executable by 
+
+194
+00:10:50,766 --> 00:10:52,466
+抱歉，第二个是yans组
+sorry the second one was group yans 
+
+195
+00:10:52,466 --> 00:10:55,400
+对于非yans组的，只是可读可执行
+and readable and executable by not group yans 
+
+196
+00:10:55,400 --> 00:10:58,066
+任何非yans用户，或不在yans组的
+anyone that is not user yans or group yans
+
+197
+00:10:58,066 --> 00:11:00,600
+就是说系统上的其他用户
+so other users on the system
+
+198
+00:11:00,600 --> 00:11:02,966
+我希望这个系统上没有其他用户
+i hope there are no other users on this system
+
+199
+00:11:03,333 --> 00:11:04,833
+因为那对我来说将是个惊吓
+because that would be a surprise to me 
+
+200
+00:11:06,733 --> 00:11:13,066
+我们加上setuid位
+so let's add the setuid bit
+
+201
+00:11:16,366 --> 00:11:19,066
+我们用这种语义方法
+we're gonna use these sort of semantic meaning 
+
+202
+00:11:19,066 --> 00:11:26,233
+你也该认识这个
+you should also know what this means 
+
+203
+00:11:27,400 --> 00:11:38,900
+现在这会把setuid位加到用户这部分
+but right now this will add the setuid bit to the user part of this 
+
+204
+00:11:41,600 --> 00:11:42,300
+太棒了
+awesome 
+
+205
+00:11:42,300 --> 00:11:43,833
+运行getuid
+let's run getuid 
+
+206
+00:11:45,200 --> 00:11:46,300
+好吧，看看
+all right let's take a look
+
+207
+00:11:48,300 --> 00:11:48,700
+好的
+all right 
+
+208
+00:11:48,800 --> 00:11:52,066
+现在它是个特殊的二进制程序
+so now this is a special binary
+
+209
+00:11:52,166 --> 00:11:54,600
+它能执行
+it will run 
+
+210
+00:11:54,600 --> 00:11:56,200
+我还拥有对它的执行权限
+i still have execute permissions to it
+
+211
+00:11:56,200 --> 00:11:57,366
+你得相信我说的
+you have to take my word for it
+
+212
+00:11:57,366 --> 00:11:58,766
+我没有移除它的可执行权限
+i didn't remove them 
+
+213
+00:11:58,766 --> 00:12:02,933
+这只表示在用户部分加了setuid位
+all this says is to the user permissions add the setuid
+
+214
+00:12:03,333 --> 00:12:10,766
+如果没有可执行权限，setuid是无用的
+setuid is kind of useless without executable permissions 
+
+215
+00:12:10,933 --> 00:12:12,133
+因为你要执行文件
+because you have to execute the file
+
+216
+00:12:12,133 --> 00:12:17,300
+目前用户能读、写、执行加setuid位
+so i have read write and execute with the setuid as user
+
+217
+00:12:17,366 --> 00:12:18,666
+组能读、写、执行
+still read write and execute as group
+
+218
+00:12:18,833 --> 00:12:20,533
+其它用户能读、执行
+read execute as the world
+
+219
+00:12:20,900 --> 00:12:22,733
+如果我执行它
+and if i execute it 
+
+220
+00:12:22,733 --> 00:12:23,800
+我会显示为root吗
+will i be root 
+
+221
+00:12:24,000 --> 00:12:24,333
+不会
+no
+
+222
+00:12:24,933 --> 00:12:25,766
+有两个原因
+there are two reasons 
+
+223
+00:12:25,766 --> 00:12:27,100
+我们稍后讨论第二个原因
+we'll get into the second one later
+
+224
+00:12:27,100 --> 00:12:31,800
+第一个原因是文件所有者是yans
+the first one is that the owner is yans
+
+225
+00:12:32,000 --> 00:12:39,100
+所以euid要被设为的，是yans
+so the id that i'm assuming that i'm becoming the effective user id is yans 
+
+226
+00:12:39,133 --> 00:12:40,166
+第二个原因是
+the second one 
+
+227
+00:12:40,166 --> 00:12:42,600
+我们先解决第一个问题
+so let's actually fix that first one
+
+228
+00:12:45,133 --> 00:12:47,566
+让它归root所有
+let's make this owned by root
+
+229
+00:12:49,000 --> 00:12:50,200
+现在我们来看一看
+now let's take a look 
+
+230
+00:12:50,200 --> 00:12:54,066
+能看到设置的setuid位消失了
+one thing you'll notice that happened is the setuid bit is gone
+
+231
+00:12:55,166 --> 00:12:56,466
+这是一种安全措施
+this is a security precaution 
+
+232
+00:12:56,533 --> 00:12:59,466
+当你改变，或者说用chown后
+when you change you or at least when you use chown 
+
+233
+00:12:59,566 --> 00:13:02,333
+我不确定用chown系统调用，会不会这样
+i'm not sure if you use the chown syscall this will happen
+
+234
+00:13:02,400 --> 00:13:06,966
+用chown修改文件归属后
+when you use chown to change ownership of a file
+
+235
+00:13:09,466 --> 00:13:11,966
+会重置setuid位
+it'll also reset the setuid bit
+
+236
+00:13:12,800 --> 00:13:13,600
+好吧
+all right
+
+237
+00:13:14,333 --> 00:13:15,133
+所以
+so
+
+238
+00:13:15,400 --> 00:13:18,666
+我们重新设置好
+let's set it back over there all right
+
+239
+00:13:19,266 --> 00:13:20,066
+好的
+cool
+
+240
+00:13:22,733 --> 00:13:25,300
+现在我们有了个root的文件
+now we have a file owned by root 
+
+241
+00:13:25,800 --> 00:13:28,933
+并且设置了setuid位
+that has setuid in the user 
+
+242
+00:13:28,933 --> 00:13:30,166
+如果我执行这个
+so if i run this
+
+243
+00:13:31,200 --> 00:13:34,033
+我应该是root，对吧
+i should be root right 
+
+244
+00:13:34,033 --> 00:13:35,266
+错。为什么？
+wrong why 
+
+245
+00:13:35,266 --> 00:13:37,200
+其实很简单
+well it's very simple
+
+246
+00:13:38,900 --> 00:13:40,600
+我用的这个getuid函数
+getuid this function i'm using 
+
+247
+00:13:40,600 --> 00:13:42,533
+它会获取实际uid
+it gets the real user id 
+
+248
+00:13:42,533 --> 00:13:43,700
+如果执行geteuid
+if you do geteuid
+
+249
+00:13:43,700 --> 00:13:49,300
+才会获得euid
+that'll get me the effective user id 
+
+250
+00:13:49,400 --> 00:13:51,633
+okay了
+and then will be good to go 
+
+251
+00:13:51,633 --> 00:13:52,866
+编译它
+so i compile it
+
+252
+00:13:55,300 --> 00:13:57,300
+又成yans的文件了
+okay here it is again owned by me
+
+253
+00:13:59,366 --> 00:14:01,500
+chown改下
+let's chown it
+
+254
+00:14:04,900 --> 00:14:07,000
+好的，chmod改下
+awesome chmod it 
+
+255
+00:14:07,000 --> 00:14:09,733
+我们看一下
+let's take a look okay
+
+256
+00:14:11,000 --> 00:14:15,466
+执行getuid。euid 为 0
+run getuid effective user id zero
+
+257
+00:14:15,866 --> 00:14:17,633
+那egid呢
+what about my effective group id 
+
+258
+00:14:17,700 --> 00:14:24,000
+与其费时间说它是怎样的
+so rather than spend time showing you that it's the real okay
+
+259
+00:14:24,000 --> 00:14:26,100
+我们直接看例子
+let's just look straight at the effective one
+
+260
+00:14:32,300 --> 00:14:34,200
+这是getgid
+so here is getgid 
+
+261
+00:14:35,333 --> 00:14:37,100
+chown改一下
+you're gonna chown
+
+262
+00:14:41,800 --> 00:14:42,733
+好了
+there we go 
+
+263
+00:14:42,733 --> 00:14:45,333
+没权限，就sudo
+operation not permitted sudo boom
+
+264
+00:14:45,600 --> 00:14:46,400
+好的
+okay
+
+265
+00:14:52,100 --> 00:14:57,866
+我在用户部分加上了setuid位
+now i chmod it user setuid
+
+266
+00:14:58,100 --> 00:15:01,666
+目前setuid位加在了用户部分
+or setuid which is on the user
+
+267
+00:15:03,333 --> 00:15:06,400
+那么yans执行它会是什么情况
+so what will this run as group wides 
+
+268
+00:15:06,533 --> 00:15:12,066
+egid还是1000
+well group wides the effective group id should still be 1000
+
+269
+00:15:12,066 --> 00:15:13,533
+因为不会用文件gid修改进程egid
+because there's nothing that'll change it
+
+270
+00:15:13,533 --> 00:15:16,400
+没设置setgid位
+the setgid isn't there 
+
+271
+00:15:16,400 --> 00:15:16,800
+是的
+yep
+
+272
+00:15:17,500 --> 00:15:25,000
+那么如果我们设置gid呢
+so what if we set the group gid 
+
+273
+00:15:25,300 --> 00:15:26,266
+我们来看一看
+let's take a look
+
+274
+00:15:26,500 --> 00:15:29,333
+设置好了
+now it's set very cool
+
+275
+00:15:30,500 --> 00:15:31,433
+运行，是0
+run it zero 
+
+276
+00:15:31,433 --> 00:15:32,166
+好的
+okay awesome 
+
+277
+00:15:32,166 --> 00:15:38,333
+我展示了setuid和setgid是有用的
+i've shown to you that setuid and setgid work
+
+278
+00:15:40,466 --> 00:15:41,866
+还有一件事
+one thing by the way 
+
+279
+00:15:42,666 --> 00:15:43,533
+让我们
+let's
+
+280
+00:15:46,166 --> 00:15:49,766
+这是重置它们的一个简单方法
+just that was an easy way to reset them
+
+281
+00:15:50,333 --> 00:15:55,633
+ls查看一下
+get you ls to get uid and gid cool
+
+282
+00:15:55,733 --> 00:15:56,633
+都重置了
+it's all reset 
+
+283
+00:15:56,700 --> 00:16:01,200
+现在执行sudo ./getgid
+now i'm gonna do sudo ./getgid
+
+284
+00:16:01,500 --> 00:16:05,400
+用sudo，会启动一个新会话
+one thing that to give my sudo will start a new session 
+
+285
+00:16:05,433 --> 00:16:08,666
+新会话的用户是sudo的目标用户，通常是root
+as whatever user you're sudo into usually root
+
+286
+00:16:11,366 --> 00:16:17,433
+一般来说，它会设置好需要的有效id、实际id、保存id
+and it'll properly set the effective real saved everything you need generally speak 
+
+287
+00:16:17,433 --> 00:16:18,700
+除非有bug
+unless there are bugs
+
+288
+00:16:18,700 --> 00:16:20,366
+这也时有发生
+which happen all right
+
+289
+00:16:21,466 --> 00:16:23,400
+我们继续
+let's roll on
+
+290
+00:16:24,200 --> 00:16:25,000
+所以
+so
+
+291
+00:16:26,733 --> 00:16:28,766
+你可以成为uid 0
+you can become user id 0 
+
+292
+00:16:28,766 --> 00:16:32,133
+但是，权力越大，责任越大
+but with great power comes great responsibility
+
+293
+00:16:33,533 --> 00:16:35,600
+root很强大
+root is extremely powerful
+
+294
+00:16:35,600 --> 00:16:38,566
+除了能更改你的系统
+aside from making changes on your system 
+
+295
+00:16:38,866 --> 00:16:43,400
+你还能打开或删除任意文件
+you can open any file or remove any file
+
+296
+00:16:43,400 --> 00:16:46,033
+可以违反所有的文件权限
+or actually violate file permissions altogether 
+
+297
+00:16:46,133 --> 00:16:49,666
+我们稍后讨论为什么这样
+we'll talk later about why this occurs
+
+298
+00:16:51,100 --> 00:16:54,466
+其中包括了特殊的/proc
+this includes the special /proc file system
+
+299
+00:16:54,466 --> 00:16:59,533
+作为root你能，比如，读取任意进程的内存
+so as root you can for example read the memory of any process
+
+300
+00:17:00,066 --> 00:17:06,966
+因为内存中有个特殊的文件
+because there's a special file in the memory 
+
+301
+00:17:07,033 --> 00:17:09,366
+/proc/self/mem
+so you can do /proc/self/mem
+
+302
+00:17:09,433 --> 00:17:11,466
+你能打开这个特殊文件
+this is a special file that you can open
+
+303
+00:17:11,466 --> 00:17:16,166
+通过它读出虚拟内存中的数据
+and read out the memory contents in virtual memory of this file
+
+304
+00:17:16,366 --> 00:17:18,466
+这是一件很严肃的事情
+that's you know pretty serious thing
+
+305
+00:17:18,466 --> 00:17:22,333
+同样，它也可以写入数据
+it can also by the way write these memory content
+
+306
+00:17:22,333 --> 00:17:25,933
+所以root基本上能做任何事
+so root can already do basically anything
+
+307
+00:17:27,200 --> 00:17:28,000
+哦
+oops
+
+308
+00:17:28,133 --> 00:17:32,566
+我切到终端，展示一下，这是那个文件
+let me jump to the terminal to show you here is that file
+
+309
+00:17:32,566 --> 00:17:35,666
+里面是内存中的内容
+there's the memory of your content
+
+310
+00:17:35,666 --> 00:17:39,633
+这对你的进程的内存来说，是个坏消息
+pretty bad news for the memory of your process 
+
+311
+00:17:39,633 --> 00:17:42,066
+实际上，如果你看一下/proc
+and actually if you look at /proc
+
+312
+00:17:42,466 --> 00:17:45,566
+这是我系统上运行的所有进程
+this is all of the different processes running on my system
+
+313
+00:17:45,733 --> 00:17:48,866
+root可以获取任意一个进程的内存
+and root could grab the memory of any of them all right
+
+314
+00:17:50,466 --> 00:17:52,700
+你可以更改配置改变这个情况
+there are things you can do to change this configuration
+
+315
+00:17:52,700 --> 00:17:56,600
+但我们讨论的是最常见的情况
+but we're talking about most common cases
+
+316
+00:18:00,133 --> 00:18:01,900
+root用户可以执行任何程序
+root can execute any program
+
+317
+00:18:01,900 --> 00:18:03,666
+假设成任意的uid、gid
+assume any other user group id 
+
+318
+00:18:03,666 --> 00:18:04,666
+调试任意程序
+debug any program
+
+319
+00:18:04,666 --> 00:18:06,800
+将调试器附加到任意程序
+attached to programs with debuggers etc 
+
+320
+00:18:07,100 --> 00:18:09,533
+这是常规情况
+again in in normally
+
+321
+00:18:09,600 --> 00:18:11,066
+有方法可以改变这个状况
+there are ways to change this
+
+322
+00:18:11,533 --> 00:18:13,200
+但正常情况下
+but obviously in the normal case
+
+323
+00:18:13,266 --> 00:18:15,333
+这是一场安全灾难
+this is a security disaster right 
+
+324
+00:18:15,333 --> 00:18:18,900
+你不想任何
+you really don't want anyone to
+
+325
+00:18:19,566 --> 00:18:23,500
+不该有root权限的用户成为root
+that is not supposed to be root to be root
+
+326
+00:18:24,733 --> 00:18:28,166
+但人们总是想成为root
+but people try to become root all the time
+
+327
+00:18:28,866 --> 00:18:35,700
+漏洞利用中的这一步，或一类漏洞称为提权
+this step of an exploit or class of vulnerability is called a privilege escalation
+
+328
+00:18:36,100 --> 00:18:39,566
+在提权时
+in a privilege escalation exploit 
+
+329
+00:18:39,600 --> 00:18:45,100
+攻击者，通常已经在系统中获得立足点
+an attacker generally after gaining a foothold on the system
+
+330
+00:18:45,333 --> 00:18:47,300
+不管是利用有漏洞的网络服务
+whether through a vulnerable network service
+
+331
+00:18:47,300 --> 00:18:52,133
+或者他们找到了能访问的shell
+or maybe they have intended shell access 
+
+332
+00:18:52,133 --> 00:18:55,666
+比如，在课堂自动评分系统中
+so for example in a class auto grading system
+
+333
+00:18:55,766 --> 00:19:00,533
+或者攻击者可以控制你设备上应用程序中的一些代码
+or maybe the attacker can control some code in an app on your device
+
+334
+00:19:00,533 --> 00:19:04,766
+比如，这个应用就在你的手机中
+but the app is running on your phone for example
+
+335
+00:19:04,766 --> 00:19:07,533
+它运行在一个非常受限的环境中
+right it's running in a very constrained environment
+
+336
+00:19:08,000 --> 00:19:10,966
+下一步通常是找到
+the next step is usually to identify 
+
+337
+00:19:10,966 --> 00:19:15,533
+该设备中有漏洞的特权进程
+some sort of vulnerable privilege process on that device
+
+338
+00:19:15,533 --> 00:19:18,333
+或者是在作业评分的服务器中找
+or on the shared homework grading server
+
+339
+00:19:18,333 --> 00:19:20,033
+或者你在的什么设备上
+or wherever you are 
+
+340
+00:19:20,033 --> 00:19:23,533
+利用它，获取它的权限
+exploit that to gain his privileges right
+
+341
+00:19:25,066 --> 00:19:30,133
+一个常见的攻击面是setuid程序
+a good a common attack surface for this is a setuid binary
+
+342
+00:19:30,133 --> 00:19:35,366
+有程序带有setuid或setgid位
+so there's something running with as setuid or setgid or something
+
+343
+00:19:35,366 --> 00:19:36,500
+且它有漏洞
+and it is vulnerable
+
+344
+00:19:36,733 --> 00:19:40,366
+这在课程评分系统中很常见
+very frequently happens for course grading systems
+
+345
+00:19:42,200 --> 00:19:43,600
+攻击者可以利用它
+attackers can use it
+
+346
+00:19:45,533 --> 00:19:47,666
+获得特权
+exploit it to gain its privileges
+
+347
+00:19:47,666 --> 00:19:49,533
+这有点像一个高地
+it's kind of like a highlander thing 
+
+348
+00:19:49,533 --> 00:19:52,733
+两个程序为此争斗，只有一个获得它
+two programs will fight and there can only be one
+
+349
+00:19:54,933 --> 00:19:56,800
+可能这是一个非常过时的描述
+probably that's a very outdated reference 
+
+350
+00:19:57,000 --> 00:19:59,133
+不管怎样，我们继续
+anyways let's move on
+
+351
+00:20:00,000 --> 00:20:01,933
+会有人这么粗心
+so would anyone be careless enough 
+
+352
+00:20:01,933 --> 00:20:04,433
+给有漏洞的程序设置setuid位吗
+to have vulnerable setuid programs thing at all
+
+353
+00:20:04,500 --> 00:20:05,800
+事实证明，是的
+it turns out absolutely
+
+354
+00:20:05,800 --> 00:20:09,066
+我刚刚说的sudo，无处不在
+i mean we just talking about sudo installed everywhere
+
+355
+00:20:09,166 --> 00:20:10,366
+所以setuid无处不在
+setuid everywhere
+
+356
+00:20:10,366 --> 00:20:11,400
+往回看
+if you go back
+
+357
+00:20:11,533 --> 00:20:16,466
+每一年，谷歌下一页都点烦了
+every single year until i got bored googling back in time 
+
+358
+00:20:16,466 --> 00:20:20,300
+sudo都有高危漏洞
+sudo has had serious critical vulnerabilities
+
+359
+00:20:20,300 --> 00:20:22,766
+这能让攻击者
+that would allow attackers to
+
+360
+00:20:26,300 --> 00:20:31,733
+在很多不同配置或情况，提权
+acquire elevated privileges in many different configurations and use cases
+
+361
+00:20:32,300 --> 00:20:36,000
+这很可怕，因为sudo无处不在
+which is very scary because sudo is everywhere 
+
+362
+00:20:36,000 --> 00:20:37,300
+sudo有漏洞
+so sudo is vulnerable
+
+363
+00:20:37,300 --> 00:20:42,766
+其他不太常见的很少被关注的setuid程序
+it's very likely that other less common setuid programs and thus less looked at 
+
+364
+00:20:42,766 --> 00:20:44,200
+很可能也有漏洞
+are vulnerable as well
+
+365
+00:20:44,333 --> 00:20:48,600
+另一个，我们提到的课程自动评分系统
+i mean another we mentioned the course auto grading system
+
+366
+00:20:49,200 --> 00:20:52,100
+另一个大的攻击面是
+another large attack surface is 
+
+367
+00:20:52,200 --> 00:20:56,700
+没必要但被sudo
+programs that are unnecessarily either sudoed 
+
+368
+00:20:56,766 --> 00:20:59,766
+我想说的是，但被设置了setuid的程序
+or setuid is what i meant to type on this slide
+
+369
+00:21:00,166 --> 00:21:02,733
+或者通过其他方式以root执行的
+or run as root by some other means
+
+370
+00:21:06,333 --> 00:21:07,300
+这很常见
+this is very common 
+
+371
+00:21:07,966 --> 00:21:09,700
+就像我刚说的课程评分系统
+like i said in course grading systems
+
+372
+00:21:09,700 --> 00:21:12,800
+以及共享服务器管理软件
+and shared server management software 
+
+373
+00:21:13,000 --> 00:21:14,400
+我还在业界的时候
+when i was in industry
+
+374
+00:21:14,400 --> 00:21:15,633
+我经常看到这种情况
+i saw this quite a lot 
+
+375
+00:21:16,666 --> 00:21:20,766
+它也变得越来越普遍
+it is also increasingly becoming common 
+
+376
+00:21:20,833 --> 00:21:24,566
+随着容器化以及docker的兴起
+with the rise of containerization and docker
+
+377
+00:21:24,733 --> 00:21:27,200
+有很多docker容器
+there's a lot of docker containers 
+
+378
+00:21:27,433 --> 00:21:29,466
+就以root用户执行所有东西
+that unnecessarily run everything as root
+
+379
+00:21:29,533 --> 00:21:31,233
+因为他们能，和方便
+because they can and it's easier 
+
+380
+00:21:31,900 --> 00:21:34,933
+这打开了些攻击面
+this opens up some level of attack surface
+
+381
+00:21:34,933 --> 00:21:38,400
+虽然docker容器通常被隔离了
+even though a docker container is generally contained
+
+382
+00:21:38,966 --> 00:21:41,833
+但这是一些额外的访问途径
+but it is some additional access
+
+383
+00:21:41,833 --> 00:21:44,766
+攻击者不一定非要能获得它
+that is not strictly necessary for an attacker to be able to acquire 
+
+384
+00:21:45,833 --> 00:21:51,300
+另一种非常常见的提权方法
+another very common way to do privilege escalation 
+
+385
+00:21:51,466 --> 00:21:56,033
+是通过操作系统级，内核级漏洞
+is through OS level kernel level vulnerabilities 
+
+386
+00:21:56,033 --> 00:21:59,400
+我们将在几个月后讨论这个问题
+we'll be talking about this in a several months
+
+387
+00:21:59,400 --> 00:22:00,766
+请继续关注
+so stay tuned on that
+
+388
+00:22:02,200 --> 00:22:03,166
+好的
+all right so
+
+389
+00:22:03,166 --> 00:22:07,333
+这个模块的介绍视频到此结束
+this brings us to the end of this introductory video for this module
+
+390
+00:22:08,300 --> 00:22:10,800
+我们接下来讨论习题
+and we will talk about the practice problems
+
+391
+00:22:10,800 --> 00:22:13,800
+我会现场做几个
+now i'll actually do a few live
+
+392
+00:22:13,900 --> 00:22:16,100
+这个模块有一些
+so this module has several 
+
+393
+00:22:16,500 --> 00:22:18,933
+准确的说是有100个习题
+specifically one hundred practice problems
+
+394
+00:22:18,933 --> 00:22:24,200
+你必须解决100个习题才能得到满分
+or rather you have to solve one hundred practice problems to get full points
+
+395
+00:22:24,533 --> 00:22:27,266
+一般来说，我们会连接到pwn.college
+generally speaking we're going to connect to pwn college 
+
+396
+00:22:27,266 --> 00:22:33,666
+选一个习题
+we're going to select one of the 100 instances of practice problem
+
+397
+00:22:33,866 --> 00:22:36,233
+每个都要求我们
+each one will let us 
+
+398
+00:22:36,233 --> 00:22:41,266
+输入一个linux程序的路径
+input a program path of like a Linux utility
+
+399
+00:22:41,900 --> 00:22:45,533
+该程序会被设置setuid位
+that utility will just be granted setuid access 
+
+400
+00:22:45,833 --> 00:22:49,400
+或会检查setuid位
+or the setuid bit will be checked
+
+401
+00:22:49,466 --> 00:22:54,700
+你要用这个工具来读取/flag
+and you have to use that utility to read /flag
+
+402
+00:22:54,700 --> 00:22:56,066
+它只有root用户可读
+which is only readable by root
+
+403
+00:22:56,066 --> 00:22:59,066
+所以你要用它提权
+so you have to use that to either escalate your privileges
+
+404
+00:22:59,066 --> 00:23:01,566
+或者直接读文件
+or just read the file all right
+
+405
+00:23:01,566 --> 00:23:03,533
+我们要演示第三个
+we're gonna demo three 
+
+406
+00:23:03,633 --> 00:23:06,500
+这些解题方法都可以用
+these are free solutions for you if you want to use them
+
+407
+00:23:06,500 --> 00:23:09,233
+如果你不想用它们，想要更大的挑战
+if you don't want to use them and want a bigger challenge 
+
+408
+00:23:09,266 --> 00:23:11,600
+就别用，换种方法
+don't use them do something else
+
+409
+00:23:12,166 --> 00:23:13,200
+我展示一下
+let me show you 
+
+410
+00:23:13,266 --> 00:23:16,133
+我们开始吧
+so let's start all right
+
+411
+00:23:23,566 --> 00:23:24,466
+好的
+okay
+
+412
+00:23:29,100 --> 00:23:32,766
+这是我们的网站
+here is the website 
+
+413
+00:23:33,133 --> 00:23:34,700
+pwn.college 的首页
+the front page of pwn college 
+
+414
+00:23:35,333 --> 00:23:37,900
+如果刷新一下
+if you refresh it
+
+415
+00:23:46,500 --> 00:23:47,300
+稍等
+hold on 
+
+416
+00:23:47,300 --> 00:23:50,500
+我电脑出问题了
+my computer's having issues okay
+
+417
+00:23:50,500 --> 00:23:51,666
+问题解决了
+issue solved 
+
+418
+00:23:51,666 --> 00:23:55,466
+好的，如果你点击模块一
+all right if you click through module one
+
+419
+00:23:55,700 --> 00:23:57,500
+就是这个模块
+so here is the module 
+
+420
+00:23:57,500 --> 00:23:59,733
+这是到该视频的链接
+here's a link to this video
+
+421
+00:24:00,133 --> 00:24:03,600
+这些是你可能想知道的Linux基础系列视频
+these are fundamentals that you might want to know
+
+422
+00:24:04,166 --> 00:24:09,400
+如果我们做了Linux进程权限相关的基础视频
+if we end up creating fundamentals of Linux process permissions
+
+423
+00:24:09,400 --> 00:24:10,700
+或Linux权限模型的
+or the Linux permission model
+
+424
+00:24:10,700 --> 00:24:11,900
+我会把它加在这里
+i'll add that there
+
+425
+00:24:14,066 --> 00:24:18,933
+还有一些其它解题思路的描述
+and some descriptions involving other free solutions 
+
+426
+00:24:18,933 --> 00:24:19,800
+如果你感兴趣的话
+if you're interested
+
+427
+00:24:20,000 --> 00:24:23,466
+我们点击它，看看习题
+so let's click through to get to the challenges
+
+428
+00:24:23,866 --> 00:24:24,866
+我已经登录了
+i'm already logged in 
+
+429
+00:24:24,966 --> 00:24:26,666
+来到习题页面
+you go to the challenges
+
+430
+00:24:26,866 --> 00:24:30,700
+这有100个习题
+here are the 100 instances
+
+431
+00:24:31,133 --> 00:24:32,800
+点击习题1
+so you click on instance 1 
+
+432
+00:24:32,800 --> 00:24:34,266
+我已经解决了这个 cat
+i've already solved cat
+
+433
+00:24:34,266 --> 00:24:35,733
+我马上告诉你怎么做
+but i'm just going to show you how to do it 
+
+434
+00:24:36,466 --> 00:24:37,833
+这里输入/bin/cat
+here we do /bin/cat 
+
+435
+00:24:38,866 --> 00:24:39,600
+运行它
+run it
+
+436
+00:24:43,866 --> 00:24:45,166
+哦，多了个空格
+oh it put a space 
+
+437
+00:24:45,166 --> 00:24:46,900
+要确保路径是正确的
+make sure that you have the path correct 
+
+438
+00:24:48,033 --> 00:24:48,600
+运行它
+run it
+
+439
+00:24:50,166 --> 00:24:52,500
+它告诉我可以连接了
+alright so it tells me i can connect 
+
+440
+00:24:52,500 --> 00:24:54,066
+我当然可以用SSH登录
+i can of course ssh in
+
+441
+00:24:54,066 --> 00:24:56,866
+但我这里就用web终端
+but i'm going to use the terminal on the web page 
+
+442
+00:24:56,966 --> 00:24:57,866
+这更容易
+it's easier
+
+443
+00:25:00,666 --> 00:25:05,100
+能看到/bin/cat设置了setuid，且归属于root
+i can see that /bin/cat is now setuid root 
+
+444
+00:25:05,100 --> 00:25:07,000
+我可以查看/flag文件
+i can look at /flag
+
+445
+00:25:07,600 --> 00:25:09,100
+它只有root可读
+which is only readable by root
+
+446
+00:25:09,100 --> 00:25:10,133
+这题很简单
+but it's nice and easy
+
+447
+00:25:10,133 --> 00:25:11,833
+我可以直接用cat输出
+because i can cat it out 
+
+448
+00:25:11,833 --> 00:25:13,200
+这个就是flag
+and here's the flag 
+
+449
+00:25:13,200 --> 00:25:14,266
+这是我的flag
+this is my flag
+
+450
+00:25:14,266 --> 00:25:15,366
+不要提交我的flag
+don't submit my flag 
+
+451
+00:25:15,366 --> 00:25:17,266
+每个人都有自己的flag
+everyone gets their own flag 
+
+452
+00:25:17,266 --> 00:25:19,066
+去拿你自己的flag吧
+get your own flag all right
+
+453
+00:25:19,800 --> 00:25:22,966
+这很简单
+so that was nice and easy let's 
+
+454
+00:25:23,733 --> 00:25:26,100
+我可以复制这个flag
+so i can of course copy this flag
+
+455
+00:25:28,600 --> 00:25:29,233
+复制
+copy 
+
+456
+00:25:29,233 --> 00:25:33,333
+回到习题列表页面
+i can go back to the challenges 
+
+457
+00:25:34,233 --> 00:25:35,233
+粘贴flag
+paste the flag 
+
+458
+00:25:35,233 --> 00:25:36,433
+不对，这是
+nope that's the 
+
+459
+00:25:36,433 --> 00:25:38,100
+粘贴flag，提交
+paste the flag submit 
+
+460
+00:25:38,100 --> 00:25:39,966
+我已经解决过这题了
+and i already solved cats
+
+461
+00:25:40,000 --> 00:25:41,733
+所以没提示成功
+so it's not gonna let me do it again all right
+
+462
+00:25:41,900 --> 00:25:43,200
+我们再做几个
+so let's do more
+
+463
+00:25:43,200 --> 00:25:44,500
+我已经解了/bin/cat
+so i already solve /bin/cat 
+
+464
+00:25:45,200 --> 00:25:45,800
+我们
+let's do
+
+465
+00:25:46,500 --> 00:25:48,100
+是/bin/more，还是/usr/bin/more
+is it /bin/more or /usr/bin/more
+
+466
+00:25:48,100 --> 00:25:48,966
+我们两种都试试
+let's try both
+
+467
+00:25:53,533 --> 00:25:54,100
+是的
+yep
+
+468
+00:25:54,100 --> 00:25:55,366
+是/bin/more
+it is /bin/more 
+
+469
+00:25:55,366 --> 00:25:56,000
+好
+awesome 
+
+470
+00:25:56,000 --> 00:25:58,466
+现在来到终端
+so you go into the terminal now
+
+471
+00:25:59,800 --> 00:26:03,166
+看，/bin/more有setuid位，归属于root
+see /bin/more is setuid root 
+
+472
+00:26:03,166 --> 00:26:05,766
+我们的flag还在/flag
+our flag is still /flag
+
+473
+00:26:05,766 --> 00:26:07,500
+cat是一个输出程序
+so cat was a program that just 
+
+474
+00:26:08,200 --> 00:26:10,400
+你可以在命令行上给它一个文件
+you would give it a file on the command line
+
+475
+00:26:10,400 --> 00:26:13,700
+或者默认情况下，它就将你输入的回显出来
+or by default it just echoed whatever you said back to it 
+
+476
+00:26:13,800 --> 00:26:14,800
+我们直接运行cat
+let's just run cat 
+
+477
+00:26:15,000 --> 00:26:16,133
+看到了吧
+see cool
+
+478
+00:26:16,133 --> 00:26:19,666
+现在我展示一下，cat /flag是没用的
+actually now let me show you that cat flag doesn't work 
+
+479
+00:26:20,900 --> 00:26:24,333
+more类似cat，但它会中断
+more is similar but it stops and
+
+480
+00:26:25,466 --> 00:26:26,800
+它是一个分页的程序
+it's a pager application 
+
+481
+00:26:26,900 --> 00:26:28,133
+一次输出一页
+gives you one page at a time
+
+482
+00:26:28,133 --> 00:26:28,666
+没分页
+there's no 
+
+483
+00:26:28,966 --> 00:26:30,400
+因为这个flag不够长
+the flag isn't long enough for that
+
+484
+00:26:30,400 --> 00:26:31,800
+所以如果执行more /flag
+so if you just do more /flag
+
+485
+00:26:31,800 --> 00:26:34,033
+我们就能拿到flag
+and we get the flag 
+
+486
+00:26:34,333 --> 00:26:35,133
+复制它
+copy that 
+
+487
+00:26:35,133 --> 00:26:37,200
+回到习题列表
+go back to challenges
+
+488
+00:26:38,333 --> 00:26:40,966
+很好
+nice and easy okay
+
+489
+00:26:41,700 --> 00:26:42,233
+正确
+correct 
+
+490
+00:26:42,233 --> 00:26:43,900
+如果我打开这个
+so now if i pull this up
+
+491
+00:26:43,900 --> 00:26:45,700
+能看到我解决了cat和more
+i see i've solved cat and more 
+
+492
+00:26:46,266 --> 00:26:52,500
+这些都是用来读取文件的简单程序
+those are easy programs that are designed to read a file 
+
+493
+00:26:52,500 --> 00:26:54,700
+有一些程序不是为读取文件而设计的
+so there are some programs that aren't designed to read a file
+
+494
+00:26:54,700 --> 00:26:56,433
+但你可以诱导他们读取文件
+that you can trick into reading files 
+
+495
+00:26:56,433 --> 00:26:57,900
+我再演示一个
+but i want to show you one more
+
+496
+00:26:57,900 --> 00:26:59,900
+我展示一下find
+i want to show you find 
+
+497
+00:26:59,900 --> 00:27:02,766
+find不是为读取文件而设计的
+find isn't designed to read a file
+
+498
+00:27:03,466 --> 00:27:07,166
+如何解决/usr/bin/find呢
+so how do we solve /usr/bin/find
+
+499
+00:27:13,333 --> 00:27:14,133
+好的
+okay
+
+500
+00:27:14,500 --> 00:27:15,466
+它上线了
+they're alive
+
+501
+00:27:16,400 --> 00:27:19,566
+我们切到终端
+let's go to challenges terminal sorry
+
+502
+00:27:20,500 --> 00:27:22,866
+看一下/usr/bin/find
+and we look at /usr/bin/find 
+
+503
+00:27:23,500 --> 00:27:26,600
+好的，有setuid位
+setuid all right
+
+504
+00:27:27,066 --> 00:27:31,666
+flag依旧是不可读的
+our flag as always is unreadable
+
+505
+00:27:32,366 --> 00:27:34,733
+我们可以执行find /flag
+so i can do find /flag
+
+506
+00:27:35,266 --> 00:27:36,300
+find是做什么的?
+what does find do
+
+507
+00:27:36,300 --> 00:27:39,366
+看一下find --help
+well i look at find --help 
+
+508
+00:27:43,833 --> 00:27:46,033
+这至少告诉了我们，它的参数
+i mean this at least shows you the arguments 
+
+509
+00:27:46,166 --> 00:27:48,600
+find所做的是，为你查找文件
+what find does is find files for you right
+
+510
+00:27:48,600 --> 00:27:50,200
+你给它一些条件
+you give it a bunch of criteria
+
+511
+00:27:50,266 --> 00:27:51,133
+它会找到他们
+and it'll find them 
+
+512
+00:27:51,133 --> 00:27:53,700
+有趣的是
+the interesting thing is that 
+
+513
+00:27:53,700 --> 00:27:59,933
+find能做的事情之一
+one of the things that find can do 
+
+514
+00:28:00,200 --> 00:28:01,733
+这一点非常重要
+and this is very important
+
+515
+00:28:01,766 --> 00:28:03,700
+因为find不是唯一一个有该功能的
+because find is not the only one 
+
+516
+00:28:04,033 --> 00:28:05,733
+就是-exec
+is -exec 
+
+517
+00:28:06,500 --> 00:28:09,100
+所以find可以执行命令
+so find can execute commands 
+
+518
+00:28:09,266 --> 00:28:11,933
+如果你有个系统能查看man手册
+if you have a system where you have man pages
+
+519
+00:28:12,000 --> 00:28:16,000
+或者直接搜索man find
+or if you just go and do man find
+
+520
+00:28:18,133 --> 00:28:19,566
+打开这个man手册
+pull up this man page
+
+521
+00:28:22,100 --> 00:28:24,866
+仔细阅读-exec的功能
+read up on what -exec does
+
+522
+00:28:27,400 --> 00:28:30,033
+它会执行给定的命令
+it executes the command that's given 
+
+523
+00:28:30,033 --> 00:28:32,266
+以及你使用它的方式
+and the way that you use it 
+
+524
+00:28:32,266 --> 00:28:36,966
+我才发现这很难看清
+that's pretty unreadable in the text i realized 
+
+525
+00:28:36,966 --> 00:28:38,133
+用它的方法是
+the way that you use it is 
+
+526
+00:28:38,133 --> 00:28:39,966
+先输入-exec，然后是命令
+you give a -exec and then the command 
+
+527
+00:28:39,966 --> 00:28:47,766
+然后是这个花括号
+and then this curly braces
+
+528
+00:28:47,800 --> 00:28:49,766
+如果你读了这个就知道
+which are if you read this 
+
+529
+00:28:49,766 --> 00:28:52,233
+它会被找到的文件名替换
+will be replaced by the file name 
+
+530
+00:28:52,233 --> 00:28:53,866
+然后是分号
+and then a semicolon 
+
+531
+00:28:53,866 --> 00:28:56,200
+它表示命令在此结束
+which is where it'll terminate
+
+532
+00:28:56,200 --> 00:28:56,866
+所以我们
+so let's 
+
+533
+00:28:56,866 --> 00:28:58,400
+连接断了
+this loss connection 
+
+534
+00:28:58,400 --> 00:29:00,266
+好了，我们回来了
+all right we're back 
+
+535
+00:29:03,500 --> 00:29:06,900
+我们可以执行id
+so we could execute something like id
+
+536
+00:29:07,166 --> 00:29:08,066
+我们来试一下
+let's try it out 
+
+537
+00:29:08,633 --> 00:29:10,266
+用分号必须要转义
+with a semicon has to escape the semicon 
+
+538
+00:29:10,400 --> 00:29:11,866
+否则将终止执行命令
+otherwides it'll terminate the command 
+
+539
+00:29:12,433 --> 00:29:13,500
+因为我们在bash中
+because we're in bash here
+
+540
+00:29:14,300 --> 00:29:16,733
+执行吧
+so let's do this
+
+541
+00:29:18,100 --> 00:29:19,900
+路径必须跟着这个
+path must proceeds this 
+
+542
+00:29:20,533 --> 00:29:22,933
+我刚才没有正确使用find
+so i wasn't using find it correctly just now 
+
+543
+00:29:23,066 --> 00:29:25,966
+/flag放在前面
+the find /flag alright
+
+544
+00:29:26,466 --> 00:29:27,933
+有趣的是
+so here's an interesting thing 
+
+545
+00:29:28,433 --> 00:29:30,566
+find执行了id
+find executed id
+
+546
+00:29:30,900 --> 00:29:32,066
+你可以看到
+and you can see 
+
+547
+00:29:32,066 --> 00:29:38,100
+是以root的有效用户id运行的
+that i am running as euid effective user id of root
+
+548
+00:29:38,100 --> 00:29:39,466
+这太不可思议了
+so this is incredible 
+
+549
+00:29:39,466 --> 00:29:41,466
+到这应该就能解决问题了
+at this point we should be done
+
+550
+00:29:41,466 --> 00:29:43,100
+当然我们能解决
+and of course we are 
+
+551
+00:29:43,100 --> 00:29:44,266
+我们可以执行cat
+so i can do cat
+
+552
+00:29:44,800 --> 00:29:48,700
+我给它加一个花括号
+and i give it its curly brackets
+
+553
+00:29:50,466 --> 00:29:51,066
+flag出来了
+and here it is 
+
+554
+00:29:51,300 --> 00:29:52,166
+所以刚才发生了什么
+so what just happened 
+
+555
+00:29:52,266 --> 00:29:58,166
+它以root身份执行了cat /flag
+it executed cat /flag as root
+
+556
+00:29:58,266 --> 00:30:00,166
+用的是root的euid
+with an effective user id of root
+
+557
+00:30:00,366 --> 00:30:02,933
+所以通过了权限检查
+so that permission check passed 
+
+558
+00:30:02,933 --> 00:30:04,166
+可以复制它
+can copy this 
+
+559
+00:30:04,166 --> 00:30:05,866
+来到习题列表
+can go to the challenges 
+
+560
+00:30:06,400 --> 00:30:07,866
+打开第三题
+can go instance 3
+
+561
+00:30:09,166 --> 00:30:11,400
+粘贴flag
+and flag 
+
+562
+00:30:11,400 --> 00:30:12,100
+好了
+all right 
+
+563
+00:30:12,766 --> 00:30:18,133
+你现在获得了3分
+you now have three additional three freebies 
+
+564
+00:30:18,133 --> 00:30:21,666
+如果你看过pwn.college上的这个模块
+if you read the module on pwn college
+
+565
+00:30:21,733 --> 00:30:23,200
+里面还有几个
+there's a couple more in there
+
+566
+00:30:24,933 --> 00:30:26,333
+我觉得你能拿到100分
+i think you can get to a hundred 
+
+567
+00:30:27,300 --> 00:30:27,966
+祝你好运
+good luck
+

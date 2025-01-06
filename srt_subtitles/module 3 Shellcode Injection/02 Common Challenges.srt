@@ -1,0 +1,1464 @@
+1
+00:00:03,000 --> 00:00:04,266
+你好,学生
+hello students
+
+2
+00:00:04,366 --> 00:00:07,999
+欢迎来到PWN学院的下一个视频
+welcome to the next video in the pwn college
+
+3
+00:00:08,133 --> 00:00:09,866
+shellcoding模块
+shellcoding module
+
+4
+00:00:09,900 --> 00:00:12,066
+今天我们要讲的是
+today we're going to be talking about
+
+5
+00:00:12,200 --> 00:00:16,400
+在shell编码中可能面临的常见挑战
+common challenges that you might face in shellcoding
+
+6
+00:00:17,100 --> 00:00:20,200
+我希望你已经看过本模块之前的视频
+I hope you've seen the previous videos in this module
+
+7
+00:00:20,200 --> 00:00:22,133
+否则，可能无法理解
+otherwise this might not make sense
+
+8
+00:00:22,466 --> 00:00:23,766
+我们开始吧
+let's get rolling
+
+9
+00:00:24,900 --> 00:00:26,133
+我们先讲一个
+all right we're gonna start with something
+
+10
+00:00:26,133 --> 00:00:28,566
+你不一定会遇到
+ that is not necessarily a challenge that you'll run into
+
+11
+00:00:29,500 --> 00:00:36,600
+但是遇到时会被它困扰的问题
+ but more of a hurdle that a lot of people encounter
+
+12
+00:00:36,600 --> 00:00:39,700
+访问内存的大小
+we're going to talk about sizes of memory accesses
+
+13
+00:00:42,166 --> 00:00:44,566
+如果你还记得汇编基础那节课的话
+if you recall from the assembly fundamentals lecture 
+
+14
+00:00:44,900 --> 00:00:48,900
+你可以访问不同大小的寄存器
+you can access registers in different sizes
+
+15
+00:00:48,900 --> 00:00:56,300
+这些不同的大小在内存访问中也有类似的情况
+well those different sizes have an analog in memory access as well
+
+16
+00:00:56,400 --> 00:00:59,466
+你也可以访问不同大小的内存
+you can access memory in different sizes as well
+
+17
+00:00:59,466 --> 00:01:00,266
+所以
+so
+
+18
+00:01:01,000 --> 00:01:07,000
+比如将寄存器中数据加载到内存
+in the kind of simple case where you are moving a register into a memory location
+
+19
+00:01:07,266 --> 00:01:08,799
+这一举动
+this move
+
+20
+00:01:09,533 --> 00:01:12,133
+例如，第一个单字节的例子
+for example this 1st single byte example will 
+
+21
+00:01:12,466 --> 00:01:16,133
+会加载RBX的最低有效字节
+move the least significant byte of RBX
+
+22
+00:01:16,666 --> 00:01:19,599
+进入RAX所指向的内存位置
+into the memory location pointed to by RAX
+
+23
+00:01:20,300 --> 00:01:28,600
+这些写入的大小是根据寄存器的大小来确定的
+these writes are sized according to the size of the the register
+
+24
+00:01:28,700 --> 00:01:30,300
+这很简单
+right so that's nice and simple
+
+25
+00:01:30,300 --> 00:01:34,966
+如果你写BL，它会写一个字节。BX 2字节
+if you write BL it will write a single byte.  BX 2 bytes
+
+26
+00:01:35,200 --> 00:01:39,500
+EBX 4字节RBX 8字节
+EBX 4 bytes RBX 8 bytes
+
+27
+00:01:40,500 --> 00:01:41,600
+很简单
+nice and simple
+
+28
+00:01:41,666 --> 00:01:43,499
+没什么特别疯狂的
+nothing super crazy there
+
+29
+00:01:45,600 --> 00:01:50,400
+有时候，当你写一些立即数的时候，比如常数
+sometimes though when you're writing for example just immediate values constants
+
+30
+00:01:51,133 --> 00:01:52,666
+事情可能会变得有点棘手
+things might get a little trickier
+
+31
+00:01:52,666 --> 00:01:54,366
+假设你写入数字5
+let's say you're writing number 5
+
+32
+00:01:54,800 --> 00:01:56,600
+会写入多少字节？
+how many bytes is that
+
+33
+00:01:57,400 --> 00:02:00,666
+你可以用一字节存储5
+technically speaking you can fit the number 5 into 1B
+
+34
+00:02:01,666 --> 00:02:02,899
+但也许你想存储的是0....05
+but maybe you mean 0....05
+
+35
+00:02:03,933 --> 00:02:07,899
+这你就需要8个字节
+ and you want 8 bytes or something
+
+36
+00:02:07,900 --> 00:02:14,200
+在这些情况下，你可以显式地指定写入的大小以避免任何歧义
+right in these cases you can explicitly specify the size of the write to avoid any ambiguity
+
+37
+00:02:14,200 --> 00:02:18,400
+当然你也可以用上面的方式来指定大小
+you can also specify it in the original case as well
+
+38
+00:02:20,166 --> 00:02:22,566
+只是记住，存在下面例子中的情况
+just keep in mind there are cases such as this in the bottom case
+
+39
+00:02:22,500 --> 00:02:27,400
+你必须显示指定大小
+ you have to specify on this 
+
+40
+00:02:27,500 --> 00:02:33,900
+如果你不指定，汇编程序就会向你报一些难以理解的错误
+and the assembler if you don't specify it will complain to you with kind of a hard to understand errors
+
+41
+00:02:34,466 --> 00:02:38,199
+现在你知道了如何向内存写入特定大小的数据
+now you know how to write memory with certain sizes
+
+42
+00:02:38,200 --> 00:02:41,000
+好了，让我们开始真正的挑战吧
+all right let's move on to actual challenges
+
+43
+00:02:41,400 --> 00:02:44,900
+谈论在特定情况下该怎么做，比如
+talk about what to do in situations
+
+44
+00:02:45,000 --> 00:02:51,900
+你可以注入shellcode，但有些值不能出现在你的shellcode中
+where you can inject shellcode but  there are certain values that cannot be present in your shellcode
+
+45
+00:02:51,933 --> 00:02:54,199
+这其实是一种很常见的情况
+this is actually a very common situation
+
+46
+00:02:55,400 --> 00:02:59,800
+我们将在以后的模块中经常讨论
+often as we'll discuss later in future modules
+
+47
+00:02:59,866 --> 00:03:03,499
+strcpy是个问题
+strcpy is kind of a problem child 
+
+48
+00:03:04,900 --> 00:03:09,500
+经常导致缓冲区溢出的函数
+sort of function that leads to buffer overflows frequently
+
+49
+00:03:09,800 --> 00:03:12,100
+如果你用strcpy注入shellcode
+if you're injecting your shellcode with strcpy
+
+50
+00:03:12,500 --> 00:03:15,400
+那么你的shellcode不能包含空字节
+then your shellcode cannot contain null bytes 
+
+51
+00:03:15,500 --> 00:03:20,300
+因为当strcpy遇到空字节时，它将终止并停止复制
+because strcpy will terminate and stop copying when it hits a null byte
+
+52
+00:03:20,300 --> 00:03:21,966
+因为那是字符串结束的标志
+because that's when strings end
+
+53
+00:03:22,733 --> 00:03:25,533
+这是一个常见问题，还有其他常见问题
+so that's one common problem and other common problems
+
+54
+00:03:25,533 --> 00:03:28,133
+\n新行符，比如scanf gets getline fgets
+new lines if you're talking about something like scanf gets getline fgets
+
+55
+00:03:28,300 --> 00:03:33,900
+这些也是非常常见的不安全功能
+ these are also very common unsafe functions 
+
+56
+00:03:36,600 --> 00:03:39,866
+这会导致溢出等等
+that lead to overwrites and so forth and 
+
+57
+00:03:40,733 --> 00:03:42,533
+它们遇到\n就停止
+they terminate on a new line
+
+58
+00:03:42,500 --> 00:03:46,900
+实际上scanf遇到\r、空格、制表符也会结束
+and actually scanf also terminates on a character return space tab what have you write
+
+59
+00:03:47,000 --> 00:03:51,200
+还有一些特殊字符，比如0x7f
+then there are other kind of special characters like 0x7f
+
+60
+00:03:53,600 --> 00:03:57,300
+在某些协议中代表一些特殊的东西
+in certain protocols is mean something special 
+
+61
+00:03:57,866 --> 00:04:00,499
+在其它协议中就是普通字符
+and other ones these are just kind of common ones
+
+62
+00:04:01,500 --> 00:04:06,600
+所以你必须准备好编写不包含这些字符的shellcode
+so you have to be ready to write shellcode that optimally doesn't include these characters
+
+63
+00:04:07,100 --> 00:04:14,500
+否则你的shellcode在传输过程中
+because otherwise your shellcode will get messed up in  transfer basically 
+
+64
+00:04:15,100 --> 00:04:19,500
+或者在写入的过程中变得一团糟
+or in one of the write processes or something
+
+65
+00:04:20,700 --> 00:04:29,200
+如何确保你的shellcode不包含这些坏字符
+so how do you make sure that your shellcode doesn't contain these bad characters 
+
+66
+00:04:29,933 --> 00:04:32,766
+在汇编中有很多种表达同一件事的方法
+there's a lot of ways to express the same thing in assembly 
+
+67
+00:04:32,766 --> 00:04:34,666
+就像在C中一样
+just like there is in C
+
+68
+00:04:34,666 --> 00:04:35,699
+就像在python中一样
+just like there is in python
+
+69
+00:04:35,700 --> 00:04:39,900
+有很多方法可以做你想做的事情
+there are many ways to do some specific thing you're trying to do
+
+70
+00:04:40,300 --> 00:04:46,500
+这里有几个由坏到好的例子，都达到了同样的效果
+here a couple of kind of bad to good examples that achieve the same thing
+
+71
+00:04:46,600 --> 00:04:49,100
+首先，说说 mov RAX, 0
+at the top here we do move RAX comma zero
+
+72
+00:04:49,100 --> 00:04:51,100
+这里你想把0写到RAX中
+here you want to write 0 into RAX
+
+73
+00:04:51,400 --> 00:04:54,366
+这里面有大量的空字节
+this has a ton of null bytes in it
+
+74
+00:04:54,500 --> 00:04:59,100
+为什么? 因为mov rax 0
+why because move rax 0
+
+75
+00:04:59,133 --> 00:05:02,166
+它将一个64位的值移动到rax中
+it moves a 64 bit value into rax
+
+76
+00:05:02,100 --> 00:05:06,900
+64位的值是0，但是有8个字节的0
+that's 64 bit value is  0 but 8 bytes of zeros
+
+77
+00:05:07,733 --> 00:05:09,866
+在这种情况下，我们可以用xor rax rax来代替它
+instead we can replace it in this case with something like xor rax rax 
+
+78
+00:05:09,800 --> 00:05:20,300
+它清空了RAX也把它设为0，而且机器码更短
+which just clears out RAX also sets it to 0 and is much shorter right
+
+79
+00:05:20,366 --> 00:05:22,933
+实际上还有机器码更简短的形式
+there are actually even shorter forms of that call
+
+80
+00:05:22,933 --> 00:05:24,933
+你可以执行xor eax eax
+you can do xor EAX EAX
+
+81
+00:05:26,300 --> 00:05:30,166
+如果你还记得汇编基础那节课的话
+which if you remember the assembly fundamental lecture
+
+82
+00:05:30,500 --> 00:05:34,500
+它也将RAX中最重要的字节归零
+also zeros out the most significant bytes of RAX as well
+
+83
+00:05:35,366 --> 00:05:36,599
+但这只是一个例子
+but that's one example right
+
+84
+00:05:36,600 --> 00:05:40,600
+假设你想要加载一些值到RAX
+let's say you wanted to actually move some value to RAX
+
+85
+00:05:41,900 --> 00:05:44,800
+你可以，执行 mov rax 5
+you can you still can right if you do move rax 5
+
+86
+00:05:45,000 --> 00:05:47,700
+但你也会遇到和之前空字节同样的问题
+you have the same problem with just one of those null bytes
+
+87
+00:05:48,400 --> 00:05:52,900
+现在8字节其中之一是5，不是null
+one of those you know many bytes of nulls is now a 5 instead of a null
+
+88
+00:05:54,066 --> 00:05:56,933
+但其余的仍然是空字节
+ and but the rest are still null bytes
+
+89
+00:05:56,933 --> 00:05:58,333
+所以还是存在这个问题
+so you still have this problem
+
+90
+00:05:58,300 --> 00:06:05,700
+当然，你可以清零rax，然后加载5到al寄存器
+well you can of course 0 out rax and then move 5 into just al right
+
+91
+00:06:05,766 --> 00:06:07,366
+也很简单
+nice and simple there as well
+
+92
+00:06:08,966 --> 00:06:10,366
+你加载5到al
+you move 5 into al
+
+93
+00:06:10,300 --> 00:06:13,800
+那么rax只有0000…0005
+so the then rax has just 0000...0005
+
+94
+00:06:14,700 --> 00:06:15,533
+非常简单的
+very simple
+
+95
+00:06:16,733 --> 00:06:18,333
+好吧
+all right 
+
+96
+00:06:19,100 --> 00:06:22,700
+假设你想换一种方式
+let's say you want to move another way to do things
+
+97
+00:06:23,600 --> 00:06:29,500
+如果你试图避免使用的不是零而是\n
+if you are trying to avoid not zeros but a new line for example
+
+98
+00:06:29,566 --> 00:06:32,766
+你想把10加载到rax
+and you want to move 10 into rax 
+
+99
+00:06:33,066 --> 00:06:36,933
+10的十六进制是0x0a
+10 also known as in hexa decimal as 0x0a
+
+100
+00:06:38,600 --> 00:06:40,733
+是换行符的ASCII码值
+is the new line character in ASCII
+
+101
+00:06:40,733 --> 00:06:42,133
+这是个大问题
+so this is a big problem
+
+102
+00:06:42,100 --> 00:06:46,900
+如果你找到的是scanf或者其他类似的方式注入shellcode
+if you have a scanf or some other analogous way of injecting a shellcode
+
+103
+00:06:47,733 --> 00:06:50,566
+它遇到\n将终止读取
+it will terminate the read on that new line
+
+104
+00:06:53,133 --> 00:06:55,866
+但没关系，你也可以
+but that's okay you can instead
+
+105
+00:06:56,300 --> 00:07:01,100
+加载9到rax，然后增加rax或
+move 9 into it and then increment rax or 
+
+106
+00:07:01,533 --> 00:07:04,599
+你可以用xor清零rax，然后inc 10次
+you can xor it xor rax rax and then do inc 10 times 
+
+107
+00:07:04,666 --> 00:07:05,699
+或者使用其它方法
+ or it's not anything along those lines
+
+108
+00:07:05,700 --> 00:07:07,600
+有很多不同的方法可以做到这一点
+there are a lot of different ways to do this
+
+109
+00:07:07,700 --> 00:07:13,500
+做到避免在你的shellcode中有10
+that avoids having a literal 10 in your shellcode
+
+110
+00:07:14,066 --> 00:07:15,099
+也就是\n
+literal new line
+
+111
+00:07:16,000 --> 00:07:18,700
+好了，最后一个，第四件事
+all right final one the 4th thing here
+
+112
+00:07:20,300 --> 00:07:28,000
+如果我们想将flag值或/flag这部分字符串加载到RBX
+if we want to move the flag value into rbx or slash flag the partial string 
+
+113
+00:07:28,466 --> 00:07:30,733
+并且这里有空字节
+and there it has null bytes in it
+
+114
+00:07:31,366 --> 00:07:32,699
+你知道的
+and this is you know
+
+115
+00:07:32,933 --> 00:07:36,799
+这时再用xor清零rax然后用
+it would not be reasonable to xor rax rax and then have
+
+116
+00:07:37,000 --> 00:07:40,866
+大量的inc rax 来编写shellcode是不合理的
+you know gigabytes and gigabytes of inc rax shellcode
+
+117
+00:07:40,800 --> 00:07:44,000
+显然我们可以换一种方法
+obviously we can do something different
+
+118
+00:07:44,000 --> 00:07:50,200
+我们可以把flag这个词反序
+we can move just the word flag backwards
+
+119
+00:07:50,200 --> 00:07:51,500
+因为这是小端序
+this is little endian yeah
+
+120
+00:07:52,500 --> 00:07:59,300
+放到ebx中，然后左移ebx8位
+into ebx then we shift ebx to the left by 8 bits
+
+121
+00:07:59,400 --> 00:08:05,700
+然后我们向刚刚左移空出来的最低有效字节放入斜杠
+and then we move in to the least significant byte that just cleared up the forward slash
+
+122
+00:08:05,800 --> 00:08:11,100
+最后我们得到了这个galf/
+and then we end up with backwards this forward slash flag
+
+123
+00:08:11,200 --> 00:08:14,066
+然后当我们把它写到内存或者做其他事情的时候
+right then when we wirte it to memory or whatever we do
+
+124
+00:08:14,566 --> 00:08:16,199
+我们有了/flag
+we'll have slash flag right
+
+125
+00:08:16,200 --> 00:08:17,500
+所以我们构建了需要的值
+so we build the value
+
+126
+00:08:17,500 --> 00:08:19,166
+我们可以用很多不同的方式来构建
+we can build in in many different ways
+
+127
+00:08:19,166 --> 00:08:20,999
+我们可以用不同的指令
+and we can use different instructions
+
+128
+00:08:21,000 --> 00:08:27,800
+即使指令本身给我们带来了问题
+even if the instruction itself is causing a problem for us
+
+129
+00:08:29,933 --> 00:08:33,599
+例如，如果你不能用xor
+for example if you can't use xor
+
+130
+00:08:33,700 --> 00:08:37,600
+你可以使用其他的指令来做类似的事情
+there are other instructions that you can use that do similar things right
+
+131
+00:08:38,900 --> 00:08:41,133
+有一些工具可以自动帮你完成这些
+there are tools that will do this automatically for you
+
+132
+00:08:41,533 --> 00:08:42,799
+我推荐
+I would recommend
+
+133
+00:08:42,800 --> 00:08:45,100
+特别是当你学习shellcode的时候
+especially as you learn shellcode
+
+134
+00:08:45,100 --> 00:08:46,333
+尤其是在这个作业中
+and especially in this homework
+
+135
+00:08:46,333 --> 00:08:46,999
+不要使用它们
+don't use them
+
+136
+00:08:47,000 --> 00:08:48,466
+它们并不总是有效
+they don't always work
+
+137
+00:08:48,700 --> 00:08:49,500
+而且
+and
+
+138
+00:08:50,000 --> 00:08:51,066
+当它们不起作用的时候
+when they don't work
+
+139
+00:08:51,400 --> 00:08:54,866
+不清楚是你的shellcode不正确
+it's not clear if it's your shellcode that's incorrect
+
+140
+00:08:54,966 --> 00:08:56,999
+还是这些工具正在尝试的
+or these tools that are trying to
+
+141
+00:08:57,500 --> 00:09:00,100
+约束绕过方法不正确的
+make your shellcode pass certain constraints are incorrect
+
+142
+00:09:00,266 --> 00:09:03,599
+你最终会花费大量的时间进行调试
+you end up spending insane amounts of time debugging
+
+143
+00:09:03,733 --> 00:09:05,099
+我不推荐使用它们
+I wouldn't recommend it
+
+144
+00:09:05,166 --> 00:09:08,066
+只需编写你的shellcode，并找出如何绕过
+just write your shellcode and figure out how to bypass
+
+145
+00:09:09,066 --> 00:09:11,666
+不管有什么限制条件
+ whatever constraints that you have
+
+146
+00:09:11,600 --> 00:09:15,100
+不管有哪些字节不能用等等
+whatever bytes you can't use and so forth
+
+147
+00:09:15,466 --> 00:09:16,566
+用手
+by hand 
+
+148
+00:09:17,300 --> 00:09:18,466
+好的，继续
+all right rolling on
+
+149
+00:09:19,966 --> 00:09:22,266
+你可能会遇到这样的情况
+you might run into a situation where
+
+150
+00:09:22,200 --> 00:09:25,200
+某些指令是完全禁止的
+certain instructions are simply forbidden
+
+151
+00:09:25,200 --> 00:09:30,200
+或者有约束条件
+or where there are constraints 
+
+152
+00:09:30,500 --> 00:09:33,100
+很难保留shellcode的功能性并绕过约束
+where it's very hard to get around them and still have functional shellcode
+
+153
+00:09:33,100 --> 00:09:33,900
+好吧
+well
+
+154
+00:09:34,300 --> 00:09:37,500
+在冯·诺依曼架构中
+remember in a Von Neumann architecture
+
+155
+00:09:37,566 --> 00:09:39,399
+代码和数据是一回事
+code and data are the same thing
+
+156
+00:09:39,400 --> 00:09:42,700
+通常在你写shellcode的时候
+and oftentimes by the time you're wroting shellcode
+
+157
+00:09:42,700 --> 00:09:47,300
+你有一个区域，你可以写入，然后执行
+you have a region that you were able to write to and then are able to execute
+
+158
+00:09:47,333 --> 00:09:48,866
+这样你就有了可写入的代码
+so you have writable code
+
+159
+00:09:49,200 --> 00:09:50,366
+这很重要
+this is important
+
+160
+00:09:50,466 --> 00:09:52,333
+你可以做一些非常聪明的事情
+you can do very clever stuff
+
+161
+00:09:52,333 --> 00:09:53,133
+假设
+so let's say
+
+162
+00:09:53,300 --> 00:10:00,000
+出于某种原因，我禁止在shellcode中使用int 3的调试操作码
+for whatever reason I forbade int 3 the debug op code in shellcode or whatever
+
+163
+00:10:00,000 --> 00:10:02,133
+漏洞程序不会接受它
+the vulnerable program wouldn't accept that
+
+164
+00:10:02,300 --> 00:10:04,600
+或者应用了类似的约束条件可以阻止int 3
+or there was a constraint applied somewhere along the line that would negated
+
+165
+00:10:04,700 --> 00:10:08,300
+但你需要使用int 3
+ and you really need to use int 3 
+
+166
+00:10:08,600 --> 00:10:17,900
+int 3在二进制是cc字节十六进制的0x cc
+int 3 in assembly in binary is cc the byte 0x cc in Hexadecimal
+
+167
+00:10:19,500 --> 00:10:25,800
+所以你能做的就是写一个字节CB然后加1
+so what you can do is write a byte CB and increment it
+
+168
+00:10:25,866 --> 00:10:27,766
+这正是这段代码所做的
+and that's exactly what this little snippet does
+
+169
+00:10:27,700 --> 00:10:32,100
+它将rip指向的指令增加1
+it increments the instruction point into by the instruction pointer
+
+170
+00:10:32,200 --> 00:10:34,600
+也就是将要执行的下一条指令
+which is going to be the next instruction to execute
+
+171
+00:10:34,866 --> 00:10:36,999
+加一，然后执行
+increments it and then it'll execute
+
+172
+00:10:39,400 --> 00:10:42,166
+你必须确保在测试的时候
+you'll have to make sure when testing this that
+
+173
+00:10:43,600 --> 00:10:50,500
+你使用的是我们在本模块前面讨论过的shellcode运行和测试方法
+you're using the shellcode running and testing method that we talked about earlier in this module
+
+174
+00:10:50,500 --> 00:10:52,666
+你必须确保你编译的shellcode
+you have to make sure that you compile your shellcode
+
+175
+00:10:52,733 --> 00:10:56,199
+.text段是可写的
+with the .text segment being writable
+
+176
+00:10:56,266 --> 00:10:57,299
+这是非常重要的
+that's important
+
+177
+00:10:58,066 --> 00:11:01,199
+默认是不可写，只可读的
+otherwise by default it is not it's readable
+
+178
+00:11:02,666 --> 00:11:04,399
+那将很令人头疼
+and then it's it's a pain in the bottom
+
+179
+00:11:04,400 --> 00:11:07,300
+你可以这样做
+so you can do this right here
+
+180
+00:11:07,300 --> 00:11:10,900
+-Wl,-N
+this dash capital w low case L comma dash n
+
+181
+00:11:12,500 --> 00:11:18,800
+Wl告诉GCC将这个选项传递给链接器
+capital WL tells GCC to pass this option to the linker
+
+182
+00:11:18,866 --> 00:11:20,866
+这个选项可以做很多事情
+and this option does a number of things
+
+183
+00:11:20,900 --> 00:11:24,366
+一个副作用是使text段可写
+that as a side effect makes a wirteable text segment
+
+184
+00:11:24,300 --> 00:11:28,000
+然后你就可以在执行的时候做这些事情
+and then you can do this sort of thing of course at execution time
+
+185
+00:11:28,100 --> 00:11:29,133
+通常
+usually
+
+186
+00:11:29,600 --> 00:11:32,466
+通常你的shellcode需要是可写的，但并不总是如此
+frequently your shellcode is wirteable but not always
+
+187
+00:11:33,300 --> 00:11:34,100
+好吧
+all right
+
+188
+00:11:34,566 --> 00:11:35,799
+你还能做什么呢
+what else can you do
+
+189
+00:11:36,466 --> 00:11:39,933
+如果你的shellcode中的约束很难绕过
+well if constraints in your shellcode are so hard 
+
+190
+00:11:40,366 --> 00:11:44,899
+一个系统调用都用不了
+that you just can't get a system call out 
+
+191
+00:11:45,500 --> 00:11:50,900
+你无法实现想让shellcode实现的任何目标
+that you can't achieve whatever goal you want your shellcode to achieve
+
+192
+00:11:51,200 --> 00:11:57,700
+你总是可以加载更多的shellcode
+you can always load more shellcode
+
+193
+00:11:57,766 --> 00:12:00,099
+你一般可以加载更多的shellcode
+not always but frequently you can load more shellcode
+
+194
+00:12:00,100 --> 00:12:02,933
+这叫做多级shellcode
+right this called a multi stage shellcode
+
+195
+00:12:02,933 --> 00:12:07,266
+由阶段一加载阶段二
+you have stage one that reads in stage 2
+
+196
+00:12:07,266 --> 00:12:09,133
+假设你有阶段一
+so let's say that you had stage one
+
+197
+00:12:09,100 --> 00:12:13,600
+你只能勉强实现阶段1的shellcode
+and you could just barely create a stage one shellcode
+
+198
+00:12:13,900 --> 00:12:21,200
+它可以从标准输入读取到指令指针指向的缓冲区
+that could call read from standered input into the buffer point to by the instruction pointer
+
+199
+00:12:21,266 --> 00:12:23,266
+也就是下一条要执行的指令
+which will be the next instruction to execute
+
+200
+00:12:23,700 --> 00:12:28,400
+读入1000字节，如果你能做到
+of 1000 bytes if you manage to execute that
+
+201
+00:12:28,466 --> 00:12:30,499
+并且你的shellcode是可写的
+and your shellcode is wirteable
+
+202
+00:12:31,700 --> 00:12:33,800
+那么你就可以
+then you can
+
+203
+00:12:35,700 --> 00:12:39,700
+直接在指令指针前面读入更多的shellcode
+you would read in more shellcode directly in front of the instruction pointer
+
+204
+00:12:39,733 --> 00:12:41,899
+让它执行
+and have it execute right
+
+205
+00:12:42,266 --> 00:12:45,933
+这是绕过复杂过滤器的好方法
+that's a pretty good way of bypassing complex filters
+
+206
+00:12:47,300 --> 00:12:52,200
+在这个作业中，你们可能需要这样做
+and in this assignment you will likely have to do that
+
+207
+00:12:52,800 --> 00:12:54,666
+提示一下
+just as a quick note for
+
+208
+00:12:57,500 --> 00:13:01,200
+这很难做到，在不同的架构上更难做到
+this sort of thing is kind of hard to do harder to do on different architectures
+
+209
+00:13:01,300 --> 00:13:04,766
+在x86 32位架构上，这令人头疼
+on x86 32 bit it's a pain in the butt
+
+210
+00:13:04,700 --> 00:13:08,100
+我的意思是，这是可行的，但它有它的警告
+I mean it's doable but it has its caveat
+
+211
+00:13:08,366 --> 00:13:10,933
+在AMD 64上，这其实非常简单
+on AMD 64 this is actually super easy
+
+212
+00:13:10,900 --> 00:13:18,300
+例如，您可以将rip指向的内存有效地址加载到rax中
+you can load effective address of the memory pointed to by the instruction pointer into rax for example
+
+213
+00:13:18,366 --> 00:13:18,933
+超级简单
+super easy
+
+214
+00:13:18,900 --> 00:13:22,300
+我猜在这种情况下，我们想要加载到RSI中
+I guess in this case we'd wanted to be loaded into our RSI
+
+215
+00:13:22,466 --> 00:13:23,266
+好吧
+all right
+
+216
+00:13:24,066 --> 00:13:30,599
+很好，这就是你绕过
+cool um so that is um how you would bypass
+
+217
+00:13:31,300 --> 00:13:32,700
+非常强的过滤器
+let's say a really hard filter
+
+218
+00:13:32,700 --> 00:13:36,900
+能使实现有用shellcode变得很难的过滤器
+ that makes it very difficult to do reasonable things
+
+219
+00:13:37,100 --> 00:13:45,000
+所以你可以试着写更小的shellcode来读取更大的真实shellcode
+so instead you can try to just write smaller shellcode that reads in your bigger real shellcode
+
+220
+00:13:46,000 --> 00:13:46,800
+好吧
+all right
+
+221
+00:13:47,100 --> 00:13:50,066
+最后讲一下shellcode管理
+finally just a note on shellcode mangling
+
+222
+00:13:50,500 --> 00:13:55,400
+你的shellcode可能会乱糟糟的，无法识别
+your shellcode might be pretty messed up and unrecognizable
+
+223
+00:13:56,666 --> 00:13:57,666
+有的挑战题目可能会整理你的shellcode
+a challenge might sort your shellcode
+
+224
+00:13:57,900 --> 00:14:08,800
+一般来说，这可能只会出现在shellcode挑战题目中
+this is something that generally speaking will likely only happen in shellcoding challenges 
+
+225
+00:14:09,500 --> 00:14:13,900
+但我见过有shellcode必须以特定的方式编写
+but I've seen shellcode that had to be written in a way that
+
+226
+00:14:14,666 --> 00:14:17,733
+比如，首先你提供的数据是未压缩的
+the data you provided is 1st uncompressed
+
+227
+00:14:18,366 --> 00:14:20,899
+然后它会导致shellcode执行
+and then that results in shellcode execution right
+
+228
+00:14:20,900 --> 00:14:26,800
+shellcode被压缩后就无效了（估计漏洞程序会先压缩用户输入）
+so the shellcode has to not really survive compression
+
+229
+00:14:26,800 --> 00:14:29,800
+但未压缩的数据必须是你的shellcode
+but your data when uncompressed has to be your shellcode
+
+230
+00:14:30,066 --> 00:14:32,799
+可能会用密钥加解密输入的shellcode
+I might be encrypted or decrypted with some key
+
+231
+00:14:33,333 --> 00:14:36,299
+可能会遇到很多不同的情况
+a lot of different things that could happen
+
+232
+00:14:37,200 --> 00:14:40,700
+我的建议是逆推
+my advice to you is to start backwards 
+
+233
+00:14:41,100 --> 00:14:46,000
+先想想shellcode运行时的样子
+think about what do I want my shellcode to look like when it executes
+
+234
+00:14:46,333 --> 00:14:47,599
+然后想想
+and then think okay
+
+235
+00:14:48,200 --> 00:14:51,100
+要达到那个样子需要向程序提供什么
+now what do I have to provide to the program to make that happen
+
+236
+00:14:51,133 --> 00:14:52,599
+一步一步来
+just step by step right
+
+237
+00:14:52,600 --> 00:14:55,300
+如果程序先解压缩你的shellcode
+if the program uncompresses your shellcode
+
+238
+00:14:55,800 --> 00:14:59,100
+你想要shellcode在解压缩后执行
+and you want your shellcode to execute after being uncompressed
+
+239
+00:14:59,100 --> 00:15:01,600
+那么写完shellcode后先压缩一下再注入
+you start with your shellcode and you compress it
+
+240
+00:15:02,566 --> 00:15:03,133
+好的
+right
+
+241
+00:15:03,133 --> 00:15:05,166
+这很简单
+that's fairly straightforward 
+
+242
+00:15:06,200 --> 00:15:10,200
+但这个小概念，有时很难理顺
+but it's a small concept that is sometimes stricky to wrap your head around
+
+243
+00:15:10,666 --> 00:15:11,466
+好吧
+alright
+
+244
+00:15:12,666 --> 00:15:14,366
+我要提的最后一点
+final thing I'll mention
+
+245
+00:15:14,400 --> 00:15:18,200
+有时候你的shellcode不能直接与你交互
+there are times when your shellcode cannot directly talk to you
+
+246
+00:15:18,400 --> 00:15:21,000
+5个文件描述符全部关闭或
+all the 5 descriptors are closed or
+
+247
+00:15:21,800 --> 00:15:27,800
+你的shellcode实际上运行在某个电厂的嵌入式设备上
+your shellcode is actually running on some embedded device in a power plant somewhere
+
+248
+00:15:27,900 --> 00:15:31,700
+因为你发起了一些不应该做的疯狂攻击，
+because you're launching some crazy attack that you shouldn't be
+
+249
+00:15:33,666 --> 00:15:36,366
+除此之外你还能如何传递flag呢？
+how else can you communicate the flag right
+
+250
+00:15:36,366 --> 00:15:38,933
+如果shellcode和你没有直接的连接
+if you don't have a direct connection back to yourself
+
+251
+00:15:39,300 --> 00:15:41,600
+还是有很多不同的方法能通信
+there are a lot of different ways
+
+252
+00:15:42,300 --> 00:15:44,900
+当然，它们是非常依赖情境的
+they are very situational dependent of course
+
+253
+00:15:44,933 --> 00:15:46,566
+但是总的思想是
+but the general idea is
+
+254
+00:15:47,400 --> 00:15:49,766
+只要你能传递一位信息
+if you can communicate one bit of information 
+
+255
+00:15:50,400 --> 00:15:55,100
+那就一位一位地传
+then you can communicate just one bit
+
+256
+00:15:55,400 --> 00:15:59,900
+可能用程序挂起或者不挂起来表示1位信息
+and that one bit could be the program hung or didn't hang
+
+257
+00:15:59,900 --> 00:16:03,066
+或者是 程序崩溃或没有崩溃
+the program crashed or didn't crash 
+
+258
+00:16:04,700 --> 00:16:14,400
+又或者是其他可以从shellcode传递给观察者的东西
+or any other large amount of things  that you could convey from your shellcode back to you the observer
+
+259
+00:16:14,466 --> 00:16:17,099
+在非常偏远的情况下，它可以是DNS查找之类的东西
+in very remote scenarios it can be stuff like DNS lookups
+
+260
+00:16:17,100 --> 00:16:19,700
+它可以是很多不同的东西
+ it can be a lot of different things
+
+261
+00:16:21,600 --> 00:16:23,533
+但这超出了本模块的范围
+but that's out of the scope of this module
+
+262
+00:16:23,500 --> 00:16:26,400
+但是你需要理解这个概念
+but you will need to understand this concept
+
+263
+00:16:26,766 --> 00:16:29,366
+来通过我们发起的所有挑战
+to pass all of the challenges that we're launching
+
+264
+00:16:29,800 --> 00:16:30,133
+好
+alright
+
+265
+00:16:30,133 --> 00:16:33,733
+接下来讲讲shellcode编写和调试的有用工具
+useful tools for shellcode writing and debugging
+
+266
+00:16:34,200 --> 00:16:36,266
+我已经在汇编基础中提到了rappel
+I mentioned rappel already in the assembly fundamentals
+
+267
+00:16:36,900 --> 00:16:44,000
+我发了一个有AMD 64操作码列表的链接
+ and I sent a link or had a link to the AMD 64 opcode listing
+
+268
+00:16:44,100 --> 00:16:50,500
+对于查看在特定约束下可以使用哪些指令很有用
+that's very useful see what instructions you can use given certain constrains
+
+269
+00:16:50,700 --> 00:16:51,600
+再加一些其他的
+add a couple other ones
+
+270
+00:16:51,600 --> 00:16:54,100
+Pwntools是一个非常好的库
+pwntools is a very nice library
+
+271
+00:16:54,333 --> 00:16:56,366
+不仅仅是用来编写shellcode
+not just for writing the exploitation shellcode
+
+272
+00:16:56,300 --> 00:17:01,600
+而且还用于启动漏洞程序并与之交互
+but also for launching and interacting with the vulnerable program
+
+273
+00:17:01,866 --> 00:17:05,133
+这是非常好的，我强烈推荐使用它
+it's very good for that I highly recommend using it
+
+274
+00:17:06,700 --> 00:17:10,900
+Pwntools有内置shellcode
+pwntools has shellcode that it can generate for you
+
+275
+00:17:10,966 --> 00:17:13,299
+我建议这次作业不要用这个
+I would recommend not using that for this assignment
+
+276
+00:17:13,300 --> 00:17:15,566
+它只适用于前几关
+it'll work for the 1st couple of levels
+
+277
+00:17:15,566 --> 00:17:18,299
+但这在学习阶段不能帮助你
+but it's going to do you a big disservice afterwards 
+
+278
+00:17:19,500 --> 00:17:23,100
+当遇到它无法解决的挑战，你也无法解决
+when you kind of hit a wall on levels that can no longer solve
+
+279
+00:17:23,900 --> 00:17:26,966
+最后对于调试你的shellcode
+finally for debugging your source your shellcode
+
+280
+00:17:27,333 --> 00:17:30,866
+显然，你将学会爱上GDB
+obviously you will learn to love GDB
+
+281
+00:17:32,000 --> 00:17:36,500
+如果你对GDB进行一点修改，那么它会更容易
+GDB is a little easier to love if you customize it just a little bit
+
+282
+00:17:36,533 --> 00:17:39,266
+有几个插件可以让GDB变得更好
+there are several plugins that make GDB better
+
+283
+00:17:40,000 --> 00:17:41,966
+我强烈推荐其中一款
+I highly recommend one of these
+
+284
+00:17:41,966 --> 00:17:45,466
+此时我最熟悉的是pwndbg
+I'm most familiar with pwndbg at this point
+
+285
+00:17:46,333 --> 00:17:49,266
+但是PEDA有它的长处
+but PEDA has its adherence and
+
+286
+00:17:49,466 --> 00:17:51,133
+PWNGDB也有它的长处
+pwngdb has its adherence
+
+287
+00:17:52,500 --> 00:17:59,400
+选择一个并安装它，将使GDB更加简单
+pick one and install it to make GDB much much simpler
+
+288
+00:17:59,900 --> 00:18:01,000
+更容易使用
+much easier to use
+
+289
+00:18:01,000 --> 00:18:08,300
+你甚至可以把它安装在挑战环境的容器里
+you can actually even if you want to install it inside that container for the challenge problems 
+
+290
+00:18:08,700 --> 00:18:13,300
+设置好，它就会一直存在
+and set it up and then it'll stay around
+
+291
+00:18:13,333 --> 00:18:14,899
+因为你的主目录是会被持久化的
+because your home directory is persistent
+
+292
+00:18:15,166 --> 00:18:19,133
+真棒，这就是关于shellcode挑战要讲的全部内容
+awesome that is all I have for shellcode challenges
+
+293
+00:18:19,366 --> 00:18:21,399
+祝你好运
+good luck on those assignments

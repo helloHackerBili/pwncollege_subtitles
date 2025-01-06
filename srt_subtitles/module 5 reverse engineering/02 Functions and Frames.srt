@@ -1,0 +1,2036 @@
+1
+00:00:00,800 --> 00:00:05,166
+同学们好，我是Yan，今天我们要谈论的是
+hello students I'm Yan and today we're talking about
+
+2
+00:00:05,466 --> 00:00:07,166
+函数和栈帧
+functions and frames
+
+3
+00:00:07,166 --> 00:00:07,766
+作为
+as part
+
+4
+00:00:07,766 --> 00:00:11,200
+我们Pwn学院逆向工程模块的一部分
+of our reverse engineering module of Pwn College
+
+5
+00:00:11,333 --> 00:00:12,200
+让我们开始吧
+let's roll
+
+6
+00:00:13,500 --> 00:00:14,366
+简单的讲
+on a high level
+
+7
+00:00:14,700 --> 00:00:15,766
+什么是程序
+what is a program
+
+8
+00:00:15,800 --> 00:00:19,466
+程序是模块库、
+a program is a collection of modules libraries
+
+9
+00:00:19,466 --> 00:00:21,533
+主二进制或者叫main
+the main binary or the main
+
+10
+00:00:21,800 --> 00:00:23,133
+代码 的集合
+code whatever
+
+11
+00:00:23,866 --> 00:00:27,666
+他们都由函数组成
+that are each made up of a number of functions
+
+12
+00:00:27,666 --> 00:00:29,000
+这些函数包含
+these functions contain
+
+13
+00:00:29,300 --> 00:00:31,600
+指令块
+blocks collections of instructions
+
+14
+00:00:31,900 --> 00:00:34,400
+这些指令会操作数据结构中的变量
+that operate on variables in data structures
+
+15
+00:00:34,400 --> 00:00:36,466
+然后触发系统调用
+and then trigger system calls and do
+
+16
+00:00:37,266 --> 00:00:39,766
+并做你的程序要做的操作
+whatever it is that your program is supposed to do
+
+17
+00:00:39,766 --> 00:00:41,500
+来启用该功能
+to enable the functionality
+
+18
+00:00:41,700 --> 00:00:42,733
+没听清
+you know and love
+
+19
+00:00:43,900 --> 00:00:46,166
+我们今天要讲的重点是
+so the big thing here that we'll be talking about today
+
+20
+00:00:46,166 --> 00:00:49,400
+函数和它们由什么组成
+is functions and what they're made up of
+
+21
+00:00:51,100 --> 00:00:53,133
+模块
+of course modules you know
+
+22
+00:00:54,200 --> 00:00:57,966
+它们基本是装在
+they are basic collections of functions shipped in
+
+23
+00:00:57,966 --> 00:00:59,800
+假设是一个库里的函数集合
+let's say one library
+
+24
+00:01:00,866 --> 00:01:03,866
+它们被频繁调用
+and they're very frequently used
+
+25
+00:01:04,600 --> 00:01:04,900
+来
+to
+
+26
+00:01:04,900 --> 00:01:05,700
+来
+to
+
+27
+00:01:06,333 --> 00:01:08,266
+让开发人员的工作更轻松
+make developers lives easier
+
+28
+00:01:08,266 --> 00:01:10,000
+当你想编写
+when you want to write
+
+29
+00:01:10,533 --> 00:01:11,933
+动态内存分配的时候
+dynamic memory allocation
+
+30
+00:01:11,933 --> 00:01:13,700
+你不需要从头开始写
+you don't have to write it from scratch
+
+31
+00:01:13,700 --> 00:01:15,333
+你可以使用libc库
+you can use lib C
+
+32
+00:01:15,900 --> 00:01:19,300
+就是malloc free之类的
+and its you know malloc free and so forth
+
+33
+00:01:19,400 --> 00:01:21,733
+这样的好处，也是我讲它的原因是
+the nice thing and the reason I'm talking about this
+
+34
+00:01:22,066 --> 00:01:24,400
+它让逆向
+here is that this makes it
+
+35
+00:01:24,866 --> 00:01:26,000
+更容易
+much easier to reverse
+
+36
+00:01:28,500 --> 00:01:31,966
+通常情况下，除非你的逆向目标是
+typically unless your reversing target is a
+
+37
+00:01:35,900 --> 00:01:37,966
+库本身，否则你不需要
+library itself you don't have to
+
+38
+00:01:38,400 --> 00:01:40,200
+逆向库的代码
+reverse engineer library code
+
+39
+00:01:40,200 --> 00:01:41,733
+库有良好的文档记录
+libraries are well documented
+
+40
+00:01:41,866 --> 00:01:45,166
+你可以查阅他们的文档来理解
+you can look up their documentation and understand
+
+41
+00:01:45,733 --> 00:01:47,466
+这个程序
+what a program 
+
+42
+00:01:47,466 --> 00:01:47,766
+嗯
+that is
+
+43
+00:01:47,766 --> 00:01:50,000
+想要使用这个库实现什么功能
+using a library is trying to achieve with this library
+
+44
+00:01:50,000 --> 00:01:50,866
+所以
+right so
+
+45
+00:01:52,566 --> 00:01:55,466
+我们通常需要逆向的是
+what we do have to reverse engineer often is
+
+46
+00:01:55,500 --> 00:01:57,600
+程序的主要模块
+the main module of the program
+
+47
+00:01:58,066 --> 00:01:58,866
+好吧
+all right
+
+48
+00:01:59,733 --> 00:02:01,366
+我们讲过
+so we talked about
+
+49
+00:02:02,766 --> 00:02:05,533
+模块中有函数
+the modules that you know include these functions
+
+50
+00:02:05,533 --> 00:02:06,066
+（语气词）
+well
+
+51
+00:02:06,066 --> 00:02:10,166
+函数本身或多或少是一个功能单元
+the functions themselves are more or less an atomic
+
+52
+00:02:11,866 --> 00:02:12,666
+嗯
+um
+
+53
+00:02:14,900 --> 00:02:16,133
+一个功能单元
+an atomic
+
+54
+00:02:17,866 --> 00:02:19,333
+我要说啥来着
+my mind just went blank
+
+55
+00:02:19,533 --> 00:02:22,000
+原子，我要用的术语是什么来着
+an atomic what's the term I'm looking for
+
+56
+00:02:24,966 --> 00:02:25,766
+我忘了
+I don't know
+
+57
+00:02:26,166 --> 00:02:29,266
+模块（口误）是用于逆向的基础结构
+the modules are an atomic construct for reversing
+
+58
+00:02:29,266 --> 00:02:30,500
+额，函数是逆向的原子结构
+um the functions are atomic construct for reverse engineering
+
+59
+00:02:31,733 --> 00:02:32,933
+谢谢你对我的包容
+thank you for bearing with me
+
+60
+00:02:33,166 --> 00:02:37,500
+一个函数通常有一个明确的目标
+um a function has a well defined goal usually right
+
+61
+00:02:37,500 --> 00:02:38,666
+它实现了
+has some functionality
+
+62
+00:02:38,666 --> 00:02:40,266
+一些功能
+that it was written to implement
+
+63
+00:02:40,533 --> 00:02:42,766
+比如在面向对象编程中可能存在的
+uh you might have a getter or setter function
+
+64
+00:02:42,766 --> 00:02:44,300
+getter或setter函数
+object oriented programming
+
+65
+00:02:44,333 --> 00:02:46,466
+你的函数可以计算一些东西
+your function might calculate something
+
+66
+00:02:47,166 --> 00:02:49,166
+也可能是个调度器，它
+might dispatch other functions if it
+
+67
+00:02:49,533 --> 00:02:52,600
+解析用户、脚本或其他东西的输入，然后将数据传给其它函数
+parses input from a user or from a script or something
+
+68
+00:02:53,466 --> 00:02:55,400
+这通常
+and this typically
+
+69
+00:02:55,733 --> 00:02:56,933
+让他们
+makes them
+
+70
+00:02:57,133 --> 00:03:00,466
+很适合单独进行逆向
+well suited for being reversed engineered in isolation
+
+71
+00:03:00,800 --> 00:03:02,866
+通常你可以打开一个函数
+typically you can open up a function
+
+72
+00:03:03,000 --> 00:03:04,266
+理解它的作用
+understand what it does
+
+73
+00:03:04,733 --> 00:03:08,400
+其它逆向过的函数也会帮助理解
+and having reversed other functions will help
+
+74
+00:03:08,733 --> 00:03:11,133
+当然，但是你知道存在
+of course but there are you know
+
+75
+00:03:11,666 --> 00:03:13,300
+可以找到
+you will be able to find functions
+
+76
+00:03:13,566 --> 00:03:15,466
+不需借助其它函数来理解的函数
+that make sense on their own
+
+77
+00:03:15,466 --> 00:03:17,133
+当你逆向
+and as you reverse engineer
+
+78
+00:03:17,133 --> 00:03:18,666
+越来越多的独立函数
+more and more of these individual functions
+
+79
+00:03:18,666 --> 00:03:19,466
+你会开始
+you'll start to
+
+80
+00:03:19,566 --> 00:03:20,866
+更好地理解
+better understand
+
+81
+00:03:21,400 --> 00:03:22,533
+它们是如何组合在一起的
+how they fit together
+
+82
+00:03:22,533 --> 00:03:25,133
+这种理解会在你的脑海中浮现
+this understanding will emerge in your mind and
+
+83
+00:03:25,333 --> 00:03:27,300
+最终你会完全理解
+eventually you will understand
+
+84
+00:03:27,300 --> 00:03:29,500
+你正在逆向的软件
+the software that you're reverse engineering
+
+85
+00:03:30,500 --> 00:03:34,066
+函数是什么?函数是由图组成的
+what is a function a function is made up of a graph
+
+86
+00:03:34,166 --> 00:03:35,866
+当然实际上
+I mean of course you know that in
+
+87
+00:03:35,866 --> 00:03:38,100
+在elf文件中函数是由指令组成的
+an elf file function is made up of instructions
+
+88
+00:03:38,100 --> 00:03:39,533
+但是从概念上讲
+but conceptually speaking
+
+89
+00:03:39,533 --> 00:03:40,733
+总是一起执行的指令可以
+these instructions can be
+
+90
+00:03:40,733 --> 00:03:43,566
+组成块
+grouped into blocks that always execute together
+
+91
+00:03:44,066 --> 00:03:46,866
+并且连接这些块的边
+and edges that connect these blocks
+
+92
+00:03:46,866 --> 00:03:48,066
+基于条件判断
+based on conditional
+
+93
+00:03:48,066 --> 00:03:50,200
+控制着程序执行流程
+unconditional control flow transfers
+
+94
+00:03:52,000 --> 00:03:53,133
+所以
+and a
+
+95
+00:03:54,800 --> 00:03:57,200
+一个函数可以看作是一个图
+the resulting function can be viewed as a graph
+
+96
+00:03:57,200 --> 00:03:58,866
+每次执行这个函数
+every execution of this function
+
+97
+00:03:59,000 --> 00:04:02,100
+从概念上讲，就是穿过这个图的一条路径
+conceptually speaking is a path through this graph
+
+98
+00:04:02,200 --> 00:04:03,000
+对吧
+right
+
+99
+00:04:04,066 --> 00:04:05,533
+我们来看看
+so let's look at
+
+100
+00:04:06,133 --> 00:04:08,066
+幻灯片的右边
+the right side of these slides for
+
+101
+00:04:09,300 --> 00:04:10,100
+一个
+a
+
+102
+00:04:10,533 --> 00:04:12,933
+我实现了一个很简单的
+I I I implemented a very simple
+
+103
+00:04:13,366 --> 00:04:15,133
+cat
+version of cat
+
+104
+00:04:15,166 --> 00:04:19,800
+它所做的就是等待，接受输入
+right so all it does is it sits and takes input and
+
+105
+00:04:19,800 --> 00:04:21,933
+然后打印出来
+and and spits it back out at you
+
+106
+00:04:22,066 --> 00:04:23,100
+这很简单
+and it's very simple
+
+107
+00:04:23,100 --> 00:04:24,700
+实际上我是用汇编写的
+I wrote it in assembly actually
+
+108
+00:04:24,700 --> 00:04:26,666
+而且是写完编译直接能运行
+first shot it compiled and worked
+
+109
+00:04:26,666 --> 00:04:27,866
+我为自己感到非常自豪
+I was very proud of myself
+
+110
+00:04:29,666 --> 00:04:30,533
+它有
+and there's
+
+111
+00:04:30,866 --> 00:04:33,866
+2个函数，一个是elf可执行文件的入口点
+2 functions basic there's the entry point of the Elf
+
+112
+00:04:35,800 --> 00:04:36,666
+_start
+underscore start
+
+113
+00:04:36,666 --> 00:04:39,000
+它所做的就是调用main，然后
+and all it does is call main and then it
+
+114
+00:04:39,666 --> 00:04:40,700
+调用退出
+calls exit
+
+115
+00:04:41,000 --> 00:04:41,666
+好吧
+right
+
+116
+00:04:41,666 --> 00:04:43,300
+然后是main函数
+and then there's the main function
+
+117
+00:04:44,400 --> 00:04:46,766
+我们先暂时忽略开头
+and let's ignore the beginning
+
+118
+00:04:46,933 --> 00:04:49,166
+这里，开始的地方
+here where you know it starts
+
+119
+00:04:49,266 --> 00:04:51,900
+然后是这里，它退出的地方
+and then the end where it returns for now
+
+120
+00:04:52,533 --> 00:04:54,466
+我们待会会深入研究的
+we'll dig into that more
+
+121
+00:04:56,200 --> 00:04:58,866
+先看看这里的主体部分
+and just look at kind of the main body here
+
+122
+00:04:59,500 --> 00:05:01,800
+从箭头可以看出
+here we see just from the arrows
+
+123
+00:05:01,800 --> 00:05:03,400
+我们可以看到有一个循环
+we can see that there's a loop
+
+124
+00:05:03,700 --> 00:05:06,566
+函数有一个while或for循环
+that the function has a while or for loop
+
+125
+00:05:06,566 --> 00:05:08,400
+对，这说得通
+right and this makes sense
+
+126
+00:05:08,400 --> 00:05:11,933
+Cat一直在等待，只要有输入
+cat sits there and as long as there is input it
+
+127
+00:05:12,300 --> 00:05:13,666
+就产生输出
+still produces output
+
+128
+00:05:14,266 --> 00:05:16,000
+然后你可以看到
+and then you can see that
+
+129
+00:05:17,133 --> 00:05:18,733
+这条线是蓝色的
+this this line is blue
+
+130
+00:05:18,733 --> 00:05:20,866
+这通常意味着它是无条件跳转
+that typically means it's an unconditional jump
+
+131
+00:05:20,866 --> 00:05:22,366
+这个跳转总是会被执行
+that will always be taken
+
+132
+00:05:22,733 --> 00:05:24,000
+这条线是绿色的
+this line is green
+
+133
+00:05:24,000 --> 00:05:26,533
+这意味着只有在
+this means this jump will only be taken if the
+
+134
+00:05:27,266 --> 00:05:28,700
+条件转移（口误）
+conditional jump
+
+135
+00:05:29,066 --> 00:05:30,166
+与条件跳转相关的条件
+the condition
+
+136
+00:05:30,366 --> 00:05:32,400
+的值为true的时候会跳转
+associated with the conditional jump is true
+
+137
+00:05:32,800 --> 00:05:35,366
+这个跳转只会
+and this jump will only be taken
+
+138
+00:05:35,733 --> 00:05:37,133
+在条件为假时发生
+if the condition is false
+
+139
+00:05:37,133 --> 00:05:39,366
+所以你知道这个条件跳转不会被触发（因为触发了程序就退出了）
+and so you know the conditional jump doesn't trigger
+
+140
+00:05:39,366 --> 00:05:40,733
+然后继续执行
+and we just keep executing
+
+141
+00:05:43,266 --> 00:05:44,766
+我们来看看这是做什么的
+so let's take a look at what this does
+
+142
+00:05:44,766 --> 00:05:46,066
+在这里你可以看到
+right here you can see
+
+143
+00:05:47,466 --> 00:05:48,100
+如果你还记得
+if you remember
+
+144
+00:05:48,100 --> 00:05:50,333
+shellcoding教学模块和沙箱教学模块（以后翻译）
+from the shellcoding and sandboxing modules
+
+145
+00:05:50,366 --> 00:05:53,100
+非常熟悉的
+very familiar setup of
+
+146
+00:05:53,400 --> 00:05:55,400
+read系统调用，Rax为0
+the read system call Rax is 0
+
+147
+00:05:55,400 --> 00:05:57,566
+RDI为0，是从标准和输入读取
+RDI is 0 is reading from standard and input
+
+148
+00:05:58,133 --> 00:06:01,200
+RSI指向栈
+RSI is pointing at the stack
+
+149
+00:06:01,900 --> 00:06:05,300
+RDX设置为256
+and RDX is set to 256
+
+150
+00:06:06,200 --> 00:06:08,000
+读取256
+which reads 256
+
+151
+00:06:08,333 --> 00:06:09,733
+字节到栈
+bytes onto the stack
+
+152
+00:06:09,733 --> 00:06:12,766
+然后拿返回值rax和
+and then it checks it compares the return value R ax
+
+153
+00:06:13,000 --> 00:06:15,266
+和0比较，
+against 0 and if
+
+154
+00:06:15,800 --> 00:06:18,100
+如果结果小于或等于0
+the result is less than or equal to
+
+155
+00:06:18,300 --> 00:06:20,700
+如果你还记得汇编
+if you recall from the Assembly
+
+156
+00:06:21,166 --> 00:06:23,133
+基础课程的话
+Foundations lecture
+
+157
+00:06:23,733 --> 00:06:25,100
+这是一个条件跳转
+this is a conditional jump
+
+158
+00:06:25,700 --> 00:06:27,100
+它检查
+ that checks 
+
+159
+00:06:29,300 --> 00:06:31,333
+rax和和0之间的有符号比较
+the assigned comparison between r ax and and the 0
+
+160
+00:06:34,133 --> 00:06:35,700
+最后的比较结果（在这里指rax与0的比较）
+the last thing that was compared
+
+161
+00:06:35,800 --> 00:06:37,400
+如果是
+and then if that is
+
+162
+00:06:38,800 --> 00:06:41,100
+小于0或小于等于0
+less than zeros or less than equals 0
+
+163
+00:06:41,100 --> 00:06:44,266
+就是说如果read没有读到任何东西或者失败了
+so if read didn't read anything or just failed
+
+164
+00:06:44,366 --> 00:06:46,566
+函数就返回
+then the function returns
+
+165
+00:06:46,566 --> 00:06:49,266
+否则继续执行
+otherwise it can execution continues
+
+166
+00:06:49,266 --> 00:06:51,966
+这里我们看到它设置了写系统调用
+and here we see it sets up our write syscall
+
+167
+00:06:52,666 --> 00:06:55,266
+写出刚刚读到的内容到标准输出
+writes out what it just read to standard output
+
+168
+00:06:55,400 --> 00:06:57,066
+然后再跳回来
+and then jumps all the way back
+
+169
+00:06:57,300 --> 00:06:58,100
+所以你会发现
+so you can see
+
+170
+00:06:58,100 --> 00:06:59,666
+只要顺着这张图
+just by following this graph
+
+171
+00:06:59,666 --> 00:07:01,566
+理解这个图表的作用（口误）
+and understanding what this graph does
+
+172
+00:07:01,900 --> 00:07:03,200
+理解这幅图的代表了什么
+what this graph represents
+
+173
+00:07:03,200 --> 00:07:04,666
+我们刚刚逆向了
+we just reverse engineered
+
+174
+00:07:04,666 --> 00:07:06,366
+我写的一个非常简单的程序
+this very simple program that I wrote
+
+175
+00:07:07,000 --> 00:07:08,700
+当然在现实中
+of course in reality
+
+176
+00:07:08,700 --> 00:07:10,966
+逆向的程序将会
+the programs reverse engineer are going to be
+
+177
+00:07:10,966 --> 00:07:12,766
+明显增大
+significantly larger
+
+178
+00:07:15,333 --> 00:07:17,566
+我们跳过了开头部分
+so we skipped over the beginning in the end
+
+179
+00:07:19,266 --> 00:07:20,166
+函数
+functions
+
+180
+00:07:20,600 --> 00:07:24,100
+当然有开始有结束，他们的
+have a beginning an end of course and they have
+
+181
+00:07:24,600 --> 00:07:27,666
+开头叫序言，结尾叫尾声
+in the beginning a prologue and then an epilogue
+
+182
+00:07:30,133 --> 00:07:32,333
+序言初始化了
+the prologue sets up
+
+183
+00:07:32,700 --> 00:07:35,200
+函数的栈帧
+what is called the stack frame for the function
+
+184
+00:07:35,200 --> 00:07:37,066
+尾声则把它拆掉
+that epilogue tears it down
+
+185
+00:07:37,100 --> 00:07:39,533
+让我们先来探究一下这意味着什么
+let's dig into what this means first
+
+186
+00:07:39,600 --> 00:07:40,866
+什么是栈
+what is the stack
+
+187
+00:07:41,366 --> 00:07:43,800
+这是我们经常挂嘴边的
+this is something we've casually tossed around
+
+188
+00:07:43,800 --> 00:07:46,066
+当我们在讨论汇编时
+and we're talking about assembly
+
+189
+00:07:46,100 --> 00:07:49,166
+栈是一个内存区域，如果你还记得
+well the stack is a memory region right if you recall
+
+190
+00:07:49,500 --> 00:07:51,933
+基础模块：
+from the fundamentals Elf
+
+191
+00:07:53,766 --> 00:07:55,500
+什么是elf二进制文件
+binary of what is an Elf
+
+192
+00:07:55,933 --> 00:07:58,066
+二进制文件基础课程
+the Fundamentals Binary Files lecture
+
+193
+00:07:58,333 --> 00:08:03,066
+Elf有3个数据段，用于存储数据
+an Elf has 3 data sections where it can store data
+
+194
+00:08:03,166 --> 00:08:05,700
+.data 用于预初始化
+dot data is used for pre initialized
+
+195
+00:08:05,800 --> 00:08:07,666
+全局可写数据
+global writable data
+
+196
+00:08:07,766 --> 00:08:11,300
+.rodata用于全局只读数据
+dot rodata is used for global read only data
+
+197
+00:08:12,266 --> 00:08:15,333
+.BSS代表
+the dot BSS stands for
+
+198
+00:08:17,366 --> 00:08:21,733
+额，sorry用于未初始化的全局可写数据
+umm sorry is used for uninitialized global writable data
+
+199
+00:08:21,866 --> 00:08:23,066
+所以
+right so
+
+200
+00:08:23,733 --> 00:08:26,366
+有很多地方可以存储全局数据
+that's a lot of places to store global data
+
+201
+00:08:26,366 --> 00:08:29,566
+但是局部变量呢
+but what about local variables right
+
+202
+00:08:30,533 --> 00:08:32,366
+很高兴你这么问
+well I'm glad you asked
+
+203
+00:08:32,533 --> 00:08:33,733
+局部变量
+local variables
+
+204
+00:08:34,666 --> 00:08:35,666
+活在栈上
+live on the stack
+
+205
+00:08:35,666 --> 00:08:37,966
+栈用于存储局部变量
+and the stack is used to store the local variables
+
+206
+00:08:37,966 --> 00:08:40,200
+还有函数的执行上下文
+and also the execution context of the function
+
+207
+00:08:43,600 --> 00:08:46,500
+这个栈是由于历史上的一个奇怪现象
+the stack due to a historical oddity
+
+208
+00:08:46,733 --> 00:08:48,166
+栈顶小地址，栈底大地址
+grows backwards
+
+209
+00:08:48,166 --> 00:08:50,066
+出现这种情况是有原因的
+there are reasons why this is the case
+
+210
+00:08:50,066 --> 00:08:53,800
+因为古代计算机的内存布局，但是
+in terms of memory layouts on ancient computers but
+
+211
+00:08:55,333 --> 00:08:56,966
+我们留下了一个
+really sickly we are left with a
+
+212
+00:08:57,200 --> 00:09:00,300
+有趣又有点奇怪的情况
+interesting and kind of weird situation where
+
+213
+00:09:00,533 --> 00:09:02,966
+栈向后增长
+the stack grows backwards
+
+214
+00:09:02,966 --> 00:09:03,766
+你可以
+you can
+
+215
+00:09:04,900 --> 00:09:07,100
+垂直或水平绘制栈
+draw the stack either vertically or horizontally
+
+216
+00:09:07,100 --> 00:09:09,800
+我喜欢水平画，因为
+I like to draw it horizontally because it
+
+217
+00:09:10,133 --> 00:09:12,333
+这对我来说更容易理解
+makes a lot of sense to me
+
+218
+00:09:13,100 --> 00:09:15,733
+这一堆从左边开始，然后
+this stack starts on the left and then
+
+219
+00:09:16,000 --> 00:09:16,800
+或者更确切地说
+or rather
+
+220
+00:09:17,266 --> 00:09:19,100
+这很有趣，因为我已经搞砸了
+well this is funny because I already screwed up
+
+221
+00:09:19,800 --> 00:09:21,700
+当
+this the when
+
+222
+00:09:22,166 --> 00:09:24,900
+内存地址向右递增
+the order of increasing memories to the right
+
+223
+00:09:24,900 --> 00:09:27,133
+然而栈从右边开始
+and then the stack starts on the right
+
+224
+00:09:27,800 --> 00:09:30,800
+我在视频中是镜像的，然后向左移动
+I mirrored in the video and then goes to the left
+
+225
+00:09:35,166 --> 00:09:38,133
+原则是 当压栈时
+the bottom line is when you push onto the stack
+
+226
+00:09:38,133 --> 00:09:39,800
+RSP降低8
+RSP is decreased by 8
+
+227
+00:09:40,133 --> 00:09:43,166
+当出栈时RSP增加8
+when you pop from the stack RSP is increased by 8
+
+228
+00:09:45,333 --> 00:09:48,400
+所以如果你看看当你压0x41
+so if you look at what happens when you push OX41
+
+229
+00:09:48,466 --> 00:09:50,533
+然后压OX42，然后压OX43时会发生什么
+then push OX42 then push OX43
+
+230
+00:09:51,766 --> 00:09:53,066
+我在这里画了对应的栈
+I've drawn the stack here
+
+231
+00:09:53,066 --> 00:09:54,466
+水平和垂直的都画了
+both horizontally and vertically
+
+232
+00:09:54,466 --> 00:09:55,266
+你可以
+so you can get
+
+233
+00:09:55,266 --> 00:09:56,166
+理解它
+familiar with it
+
+234
+00:09:57,133 --> 00:09:59,600
+大多数情况下我都用水平表示
+I'll use the horizontal representation in most cases
+
+235
+00:10:00,000 --> 00:10:02,700
+因为
+ because it's
+
+236
+00:10:02,933 --> 00:10:05,066
+我们可以在一张幻灯片上放好几张
+we can fit multiples of it on a slide and
+
+237
+00:10:06,333 --> 00:10:08,500
+然后看看栈是如何变化的等等
+see how stacks change and so forth
+
+238
+00:10:08,500 --> 00:10:09,300
+好
+alright
+
+239
+00:10:09,666 --> 00:10:12,100
+这就是栈
+so that is um the stack
+
+240
+00:10:12,133 --> 00:10:14,133
+什么是栈的初始布局当
+what's the initial layout of the stack when this
+
+
+
+
+
+
+
+241
+00:10:14,133 --> 00:10:16,066
+当程序开始时，额
+when the program starts um
+
+242
+00:10:16,066 --> 00:10:16,733
+程序开始时
+the program starts
+
+243
+00:10:16,733 --> 00:10:20,099
+栈保存了所有初始输入
+the stack holds all of its kind of initial inputs
+
+244
+00:10:20,100 --> 00:10:24,066
+环境变量和参数
+the environment variables and the argument um
+
+245
+00:10:24,666 --> 00:10:28,966
+这些值都指向参数值和um
+both the the values pointers to the values and the um
+
+246
+00:10:30,100 --> 00:10:31,300
+参数数量
+number of arguments
+
+247
+00:10:31,300 --> 00:10:32,766
+如果你看
+so if you look at
+
+248
+00:10:32,900 --> 00:10:33,933
+这里的情况
+this situation here
+
+249
+00:10:33,933 --> 00:10:36,366
+如果我有一个程序运行时带有参数hello world
+if I have a program that I run with arguments hello world 
+
+250
+00:10:36,366 --> 00:10:38,499
+和3个
+and there are 3
+
+251
+00:10:39,700 --> 00:10:41,700
+环境变量， 那么在栈上
+environment variables then on the stack
+
+252
+00:10:41,700 --> 00:10:43,266
+还有一些其他的东西
+alongs with some other things that
+
+253
+00:10:43,266 --> 00:10:45,133
+我们现在不深入研究
+that we won't dig into right now
+
+254
+00:10:45,966 --> 00:10:46,933
+有
+there is
+
+255
+00:10:48,766 --> 00:10:50,366
+所有的字符串
+all of the strings
+
+256
+00:10:50,466 --> 00:10:52,999
+以null结尾的字符串
+null terminated strings one after the other
+
+257
+00:10:53,266 --> 00:10:55,399
+还有这些
+and then there are these
+
+258
+00:10:56,166 --> 00:10:58,966
+它们被称为字符串表
+string tables they're called 
+
+259
+00:10:59,733 --> 00:11:01,399
+基本上是以空字节结尾的一系列指针
+basically a series of pointers ending in a null byte
+
+260
+00:11:01,400 --> 00:11:08,166
+他们记录了环境变量和
+and say this it holds for the environment and for
+
+261
+00:11:08,766 --> 00:11:09,899
+参数值
+arguments argue V
+
+262
+00:11:09,966 --> 00:11:11,933
+你可以根据这些箭头看到它们的指向
+and you can see they where they point to based on these arrows
+
+263
+00:11:14,700 --> 00:11:18,200
+当说argv[0]时，是指解引用
+when you say argv[0] you are dereferencing
+
+264
+00:11:22,266 --> 00:11:26,299
+第一个参数，当你调用printf argv[0]时
+the the first argument right when you do printf argue 0
+
+265
+00:11:28,166 --> 00:11:28,966
+它
+it it
+
+266
+00:11:29,966 --> 00:11:30,766
+将
+will
+
+267
+00:11:31,166 --> 00:11:33,133
+获取这个指针并将其传递给printf
+take this pointer and pass it to a printf
+
+268
+00:11:33,133 --> 00:11:33,533
+这样就行了
+which will do
+
+269
+00:11:33,533 --> 00:11:35,599
+你引用它，然后打印出字符串
+you reference it and then print the string
+
+270
+00:11:36,133 --> 00:11:37,366
+当然还有argc
+and then argc of course
+
+271
+00:11:37,366 --> 00:11:40,166
+参数的数量在栈的顶部
+is the number of arguments at the top of the stack
+
+272
+00:11:40,500 --> 00:11:42,200
+好吧，接下来会发生什么
+alright then what happens
+
+273
+00:11:42,666 --> 00:11:46,333
+然后当我们调用一个函数
+then when we call a function
+
+274
+00:11:47,266 --> 00:11:51,266
+由于某些原因，这里有点问题，等一下让我来修正一下
+and for some reason this is wrong one SEC let me fix it
+
+275
+00:11:52,600 --> 00:11:52,966
+好了
+alright
+
+276
+00:11:52,966 --> 00:11:53,766
+我们回来了
+we're back
+
+277
+00:11:54,066 --> 00:11:56,966
+不好意思，上面的橙色方块上没画
+sorry this was missing on orange square on the top here
+
+278
+00:11:56,966 --> 00:11:59,599
+当我们调用main这样的函数时
+when we call a function such as main
+
+279
+00:12:00,200 --> 00:12:02,900
+下一条指令的地址
+the address of the next instruction
+
+280
+00:12:03,600 --> 00:12:06,200
+将压入栈
+after the call is pushed to the stack
+
+281
+00:12:06,200 --> 00:12:07,966
+这条指令
+so the instruction that
+
+282
+00:12:08,566 --> 00:12:11,799
+被调函数,main,返回时应该返回到这条指令
+the callee that main should return to
+
+283
+00:12:12,000 --> 00:12:13,200
+所以如果你看
+so if you look
+
+284
+00:12:13,566 --> 00:12:15,099
+call指令
+the instruction that
+
+285
+00:12:15,600 --> 00:12:18,766
+的地址是401050
+where call main is the address is 401050
+
+286
+00:12:18,766 --> 00:12:21,066
+下一条指令401055
+the next instruction 401055
+
+287
+00:12:21,366 --> 00:12:24,633
+这就是将被压入栈的东西
+and that is what will be pushed to the stack when
+
+288
+00:12:27,966 --> 00:12:28,933
+当我们调用Main时
+we call Main
+
+289
+00:12:29,366 --> 00:12:35,166
+当main返回时，它就从栈上弹出了
+okay and then when main returns it simply pops
+
+290
+00:12:37,266 --> 00:12:40,733
+从堆栈返回地址并跳转到那里
+the return address from the stack and jumps there
+
+291
+00:12:40,966 --> 00:12:43,499
+就这么简单，这就是return
+that's simple that is what a return is
+
+292
+00:12:47,733 --> 00:12:49,333
+你注意到
+you notice that there are no
+
+293
+00:12:49,333 --> 00:12:52,166
+这段代码中没有Push和pop rip指令
+push and pop rip instructions in this code
+
+294
+00:12:52,166 --> 00:12:54,099
+这些是隐式的压栈和弹栈
+these are implicit pushes and pops
+
+295
+00:12:54,100 --> 00:12:56,466
+这就是call和jmp的区别
+this is the difference between a call and a jump
+
+296
+00:12:56,466 --> 00:12:57,299
+call
+a call
+
+297
+00:12:58,166 --> 00:12:59,733
+隐式地压栈
+implicitly pushes something
+
+298
+00:12:59,933 --> 00:13:01,499
+return隐式地弹栈
+return and implicitly pops it
+
+299
+00:13:01,566 --> 00:13:03,866
+而跳转实际上只是
+whereas a jump actually just has a
+
+300
+00:13:04,333 --> 00:13:05,533
+跳到目标地址
+target where you jump to
+
+301
+00:13:05,933 --> 00:13:06,733
+好
+alright
+
+302
+00:13:07,666 --> 00:13:08,866
+我们继续
+let's roll on
+
+303
+00:13:10,266 --> 00:13:11,366
+还有
+there's also
+
+304
+00:13:11,366 --> 00:13:13,466
+栈上除了这些返回地址
+aside from these return addresses on the stack
+
+305
+00:13:13,466 --> 00:13:14,666
+还有局部变量
+there are local variables
+
+306
+00:13:14,666 --> 00:13:16,566
+这是函数存储局部变量的地方
+this is where the function stores as local variables
+
+307
+00:13:16,566 --> 00:13:17,799
+在函数的开始
+at the beginning of the function
+
+308
+00:13:17,933 --> 00:13:18,966
+它建立了
+it sets up
+
+309
+00:13:19,666 --> 00:13:23,333
+用于存储局部变量的栈帧
+a stack frame where it will store local variables
+
+310
+00:13:23,733 --> 00:13:24,533
+栈帧
+the frame
+
+311
+00:13:25,166 --> 00:13:27,933
+是用两个东西建立的，栈指针
+is built using 2 things the stack pointer
+
+312
+00:13:28,133 --> 00:13:30,933
+栈指针总是指向最左边(栈顶)
+the stack pointer always points to the left most side
+
+313
+00:13:32,000 --> 00:13:32,900
+这里镜像了
+I'm mirrored here
+
+314
+00:13:32,900 --> 00:13:35,000
+栈帧的最左边
+the left most side of the stack frame
+
+315
+00:13:35,100 --> 00:13:36,166
+还有基指针
+and the base pointer
+
+316
+00:13:36,166 --> 00:13:38,599
+总是指向最右边（栈底）
+which always points to the right most side
+
+317
+00:13:40,866 --> 00:13:42,566
+这样做是为了
+this is done so that
+
+318
+00:13:42,766 --> 00:13:44,966
+我们马上就会看到，清理时要容易得多
+clean up is much easier as we'll see in a SEC
+
+319
+00:13:44,966 --> 00:13:47,099
+前言是
+so the prologue is
+
+320
+00:13:48,200 --> 00:13:54,233
+我们将指向栈右边的旧帧指针压入栈
+we push the old frame pointer what pointed to the old right side of the stack
+
+321
+00:13:55,500 --> 00:13:57,800
+如果Main
+you know if Main
+
+322
+00:13:58,366 --> 00:13:59,166
+曾被
+had been called by
+
+323
+00:13:59,166 --> 00:14:01,399
+另一个有帧指针的函数调用
+another function that had a frame pointer
+
+324
+00:14:02,000 --> 00:14:04,400
+那样我们以后可以更容易地恢复它
+so that we could restore it easier later
+
+325
+00:14:05,500 --> 00:14:06,500
+我们
+and we
+
+326
+00:14:06,533 --> 00:14:07,333
+移动
+move
+
+327
+00:14:09,366 --> 00:14:12,566
+当前在最左边的栈指针（rsp）
+the current stack pointer the left most side
+
+328
+00:14:12,666 --> 00:14:13,499
+进入帧指针（rbp）//rsp赋值给rbp
+into the frame pointer
+
+329
+00:14:13,500 --> 00:14:16,200
+现在最右端和最左端
+so now the right most side and the left most side
+
+330
+00:14:16,200 --> 00:14:17,766
+指向相同的位置
+are pointing to the same location
+
+331
+00:14:17,766 --> 00:14:19,066
+这是栈的顶部
+this is the top of the stack
+
+332
+00:14:19,066 --> 00:14:21,299
+函数的开头
+the beginning of this functions
+
+333
+00:14:24,500 --> 00:14:25,366
+栈帧
+stack frame
+
+334
+00:14:25,366 --> 00:14:28,099
+返回地址就在栈帧的右边
+with the return address directly to the right of it
+
+335
+00:14:28,333 --> 00:14:31,599
+接着我们减去
+and then we subtract from
+
+336
+00:14:33,066 --> 00:14:37,533
+我们把rsp减去局部变量占用的大小（包含字节对齐等）
+let me for you we subtract from the stack pointer
+
+337
+00:14:39,166 --> 00:14:42,299
+来在栈上分配空间
+to create space on the stack now
+
+338
+00:14:43,000 --> 00:14:46,500
+我把讲的和幻灯片中的allocate加上了引号
+I have allocate and the slides in quotes
+
+339
+00:14:46,733 --> 00:14:48,933
+这是因为实际上没有空间被创造出来
+this is because no space actually created
+
+340
+00:14:48,933 --> 00:14:51,499
+里面的空间和数据一直都在
+the space and the data in it was always there
+
+341
+00:14:51,533 --> 00:14:54,099
+我们只是从概念上讲
+we just now kind of conceptually
+
+342
+00:14:55,733 --> 00:14:57,399
+做了个记号
+marked it as you know
+
+343
+00:14:57,566 --> 00:14:59,566
+在这个函数栈栈帧中
+within this functions stack frame
+
+344
+00:14:59,566 --> 00:15:00,166
+因为
+because
+
+345
+00:15:00,166 --> 00:15:02,266
+栈指针指向栈帧的左边
+the stack pointer is pointing to the left of it
+
+346
+00:15:02,266 --> 00:15:03,399
+还有帧指针（rbp）
+and the frame pointer
+
+347
+00:15:03,400 --> 00:15:05,366
+基指针（rbp）指向它的右边
+the base pointer is pointing to the right of it
+
+348
+00:15:06,066 --> 00:15:08,533
+好，然后执行函数体
+cool and then the function executes
+
+349
+00:15:08,533 --> 00:15:10,733
+它可以随心所欲地使用栈
+it uses its stack howver it wants
+
+350
+00:15:10,733 --> 00:15:13,333
+函数执行完后它把这个栈帧释放了
+and then it tears down this frame
+
+351
+00:15:13,333 --> 00:15:14,133
+这是
+and this is
+
+352
+00:15:14,400 --> 00:15:17,800
+也非常非常简单，因为有这些基指针（rbp）
+also very very simple because of these base pointers
+
+353
+00:15:18,000 --> 00:15:20,400
+好，我们释放
+right we deallocated
+
+354
+00:15:20,400 --> 00:15:22,566
+这里我也加了引号
+and here again I have quotes
+
+355
+00:15:22,600 --> 00:15:23,900
+因为数据并没有消失
+because the data is not gone
+
+356
+00:15:23,900 --> 00:15:26,533
+它非常快乐地呆在那里
+it stays around perfectly happily
+
+357
+00:15:26,533 --> 00:15:28,466
+我们只是将栈指针（rsp）移到数据的右侧（+）
+we just moved the stack pointer to the right of that data
+
+358
+00:15:29,666 --> 00:15:31,366
+所以这些数据并不
+so that data is not really
+
+359
+00:15:32,900 --> 00:15:35,066
+在栈中了（在内存的栈空间，但没有函数使用）
+kind of within the stack anymore
+
+360
+00:15:35,666 --> 00:15:37,299
+但它并没有被摧毁
+but it's not destroyed
+
+361
+00:15:37,300 --> 00:15:39,333
+这是非常重要的一点
+that's a very important thing
+
+362
+00:15:39,333 --> 00:15:41,599
+这实际上导致了很多漏洞
+that leads to a lot of vulnerabilities actually
+
+363
+00:15:41,600 --> 00:15:42,900
+那个，数据
+is that that data
+
+364
+00:15:43,966 --> 00:15:46,066
+还在那里，如果
+stays around so if
+
+365
+00:15:46,166 --> 00:15:48,266
+首先，当栈帧被拆除时，数据还在
+and first of all it stays around when the stack frame is torn down
+
+366
+00:15:51,366 --> 00:15:52,733
+而且当新栈帧建立时，它不会被任何东西覆盖
+and it's not overridden with anything when the stack frame is set up
+
+367
+00:15:54,566 --> 00:15:57,099
+所以可以导致这样的情况
+so you can lead to situations where
+
+368
+00:15:57,100 --> 00:16:01,500
+数据在不应该被重用时被重用，敏感数据可能被泄露
+data is reused when it shouldn't be reused and sensitive data can be leaked
+
+369
+00:16:02,366 --> 00:16:03,166
+不管怎样
+anyways
+
+370
+00:16:04,700 --> 00:16:08,533
+我们通过重置栈指针来释放栈
+we deallocate the stack by by resetting the stack pointer
+
+371
+00:16:10,866 --> 00:16:13,099
+不好意思，栈指针在栈最左边
+sorry the stack pointer which is on the left most side of the stack
+
+372
+00:16:14,800 --> 00:16:17,533
+把rbp赋值给rsp
+2 point to to be equal to the frame pointer
+
+373
+00:16:17,533 --> 00:16:20,299
+栈帧指针和基指针等价
+the base pointer that used interchangeably
+
+374
+00:16:20,733 --> 00:16:22,566
+这俩术语
+that those terms
+
+375
+00:16:23,066 --> 00:16:25,899
+rbp在栈帧的右边
+is on the right side of the stack frame
+
+376
+00:16:26,766 --> 00:16:30,599
+通过将RBP赋值给RSP
+and by just moving RBP into RSP
+
+377
+00:16:31,366 --> 00:16:33,366
+我们从栈弹出旧的base指针（rbp）
+we pop the old base pointer
+
+378
+00:16:33,666 --> 00:16:36,766
+这样我们就完全恢复了旧的栈帧
+so that we restore fully the old frame
+
+379
+00:16:37,100 --> 00:16:38,333
+函数调用者的栈帧
+of the function that called us
+
+380
+00:16:38,466 --> 00:16:40,166
+现在我们准备返回了
+and now we are ready to return
+
+381
+00:16:40,166 --> 00:16:41,999
+现在栈上的下一个东西是返回值
+now the next thing on the stack is the return value
+
+382
+00:16:42,000 --> 00:16:44,466
+所以当我们返回的时候（ret指令隐式的pop然后jmp）
+so that when we ret it
+
+383
+00:16:45,133 --> 00:16:47,566
+它会正常工作的
+it'll it'll work properly
+
+384
+00:16:49,600 --> 00:16:50,900
+最后一件事
+one final thing
+
+385
+00:16:51,800 --> 00:16:53,766
+是 现在有的
+is there are now
+
+386
+00:16:53,800 --> 00:16:57,533
+优化参数和现代编译器可以不使用
+optimizations and modern compilers that can not use
+
+387
+00:16:58,666 --> 00:16:59,566
+可以把 RBP 当作
+that can enable using RBP as
+
+388
+00:17:01,066 --> 00:17:01,199
+一个
+a
+
+389
+00:17:01,200 --> 00:17:03,566
+通用寄存器而不是帧指针来使用
+general purpose register instead of the frame pointer
+
+390
+00:17:04,100 --> 00:17:05,166
+所以不要惊慌
+so don't panic
+
+391
+00:17:05,266 --> 00:17:08,899
+如果你看到没有把RBP压栈
+if you see something that does not use RBP to set up the stack
+
+392
+00:17:09,766 --> 00:17:12,066
+就直接对RSP进行操作
+that does operation directly on RSP
+
+393
+00:17:12,500 --> 00:17:16,466
+不把rbp赋值给rsp，直接把RSP增加100（拆除栈帧）
+so instead of move RSP RBP it might add RSP 100
+
+394
+00:17:19,333 --> 00:17:22,199
+它可能仍会压高RBP，因为
+it will likely still push RBP because
+
+395
+00:17:23,466 --> 00:17:25,699
+这是调用约定（计划不是）的一部分
+that is part of the calling convention and in fact
+
+396
+00:17:25,800 --> 00:17:29,933
+你会经常看到有的序言会push其它寄存器
+the prologue you'll often see pushing other registers
+
+397
+00:17:29,933 --> 00:17:32,566
+我们在基础汇编课的调用约定部分讨论过
+which as we discussed in the calling convention part of the Fundamentals Assembly lecture
+
+398
+00:17:35,200 --> 00:17:39,000
+被调用者保存寄存器
+ are callee saved registers
+
+399
+00:17:39,000 --> 00:17:45,600
+在函数中覆盖它们而不恢复它们被认为是不礼貌和不恰当的
+and that it is considered impolite and improper to overwrite them without restoring them within a function
+
+400
+00:17:47,500 --> 00:17:55,300
+这就是函数，从代码和数据角度来看
+okay that is what a function is from both the code and the data perspective
+
+401
+00:17:56,266 --> 00:17:57,066
+而且
+and
+
+402
+00:17:58,733 --> 00:17:59,533
+它是如何
+how it
+
+403
+00:18:00,100 --> 00:18:03,600
+函数在执行过程的生命周期
+the life cycle of a function as it lives in executes
+
+404
+00:18:04,966 --> 00:18:06,733
+接下来我们将讨论
+and next we'll talk about
+
+405
+00:18:07,166 --> 00:18:10,733
+数据以及如何分辨不同种类数据的位置
+the data and how to tell where different data is
+
+406
+00:18:11,100 --> 00:18:12,200
+下节课见
+see you next video
+

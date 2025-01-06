@@ -1,0 +1,14 @@
+01 The Command Line
+    https://www.youtube.com/watch?v=w7nQFk6bi_k&t=1s
+
+02 Binary Files
+    https://www.youtube.com/watch?v=nKqFeYJ483U
+
+03 Linux Process Loading
+    https://www.youtube.com/watch?v=kUMCAzSOY-o
+
+04 Linux Process Execution
+    https://www.youtube.com/watch?v=Vtb5wIlthRg
+
+practice here
+    https://pwn.college/fundamentals/program-interaction/

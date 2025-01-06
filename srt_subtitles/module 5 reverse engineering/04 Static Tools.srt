@@ -1,0 +1,1334 @@
+1
+00:00:02,700 --> 00:00:03,900
+黑客你们好
+hello hackers
+
+2
+00:00:04,200 --> 00:00:06,100
+欢迎回到pwn college
+welcome back to pwn College
+
+3
+00:00:06,100 --> 00:00:08,466
+我们在这个视频中讨论的是
+we're talking in this video about
+
+4
+00:00:08,500 --> 00:00:10,366
+静态分析逆向工具
+static reverse engineering tools
+
+5
+00:00:10,466 --> 00:00:12,733
+作为逆向工程模块的一部分
+as part of our reverse engineering module
+
+6
+00:00:13,600 --> 00:00:15,500
+让我们开始吧
+ let's roll
+
+7
+00:00:16,300 --> 00:00:19,100
+什么是静态工具? 静态工具是
+what are static tools well static tools are
+
+8
+00:00:20,500 --> 00:00:21,400
+一个术语
+a term
+
+9
+00:00:21,866 --> 00:00:22,699
+意思是
+meaning
+
+10
+00:00:23,700 --> 00:00:28,100
+这种工具用来分析在磁盘上的程序文件
+the analysis tools were created for analyzing a program at rest
+
+11
+00:00:28,166 --> 00:00:30,933
+而不是内存中的程序进程
+not while it's running this is
+
+12
+00:00:32,400 --> 00:00:35,600
+这与我们之后会讲到的动态工具相反
+in opposition to dynamic tooling which we'll talk about later
+
+13
+00:00:35,866 --> 00:00:40,166
+静态工具只查看Elf文件中的内容
+static tools just look at what is in the Elf file
+
+14
+00:00:40,100 --> 00:00:47,800
+不需要查看程序跑起来后会做什么
+not necessarily what the file does when it's you know trying to get its work done
+
+15
+00:00:48,866 --> 00:00:52,466
+让我们从一些简单易学的工具开始
+let's start with some simple (to) learn type tools
+
+16
+00:00:52,566 --> 00:00:53,366
+首先
+first of all
+
+17
+00:00:53,500 --> 00:00:59,700
+我们已经在elf基础课上看过kaitai struct
+we've already looked at kaitai struct in the Elf Fundamentals lecture
+
+18
+00:00:59,800 --> 00:01:02,766
+如果你还不熟悉这个工具
+if you aren't familiar with this tool yet
+
+19
+00:01:03,000 --> 00:01:06,800
+回去看看，这是一个在浏览器中运行的很酷的工具
+go back and watch it it's a pretty cool tool runs in your browser
+
+20
+00:01:07,500 --> 00:01:12,100
+从这个链接，你可以上传ELF文件，zip文件
+from this link and you can upload ELF files but also zip files
+
+21
+00:01:12,600 --> 00:01:14,933
+各种不同格式的pdf文件
+all sorts of different formats Pdfs
+
+22
+00:01:14,900 --> 00:01:19,700
+它能让你探索文件的不同部分
+and it'll let you kind of explore the different pieces of it of the file
+
+23
+00:01:20,733 --> 00:01:21,866
+界面很酷
+with a cool interface
+
+24
+00:01:22,133 --> 00:01:24,499
+我们在之前的课程中见过nm
+we've seen previously in the course nm
+
+25
+00:01:24,500 --> 00:01:29,800
+它列出了ELF文件的导入和导出符号
+it lists out the symbols imported and exported by a file
+
+26
+00:01:30,166 --> 00:01:32,166
+如果你在程序中使用了printf
+so if you use printf you can use in your executable
+
+27
+00:01:32,900 --> 00:01:39,900
+你可以用nm看到printf就在那里
+ you can use nm to see you know that printf is there
+
+28
+00:01:41,333 --> 00:01:44,199
+这是这是一个快速的
+it's it's a a quick um
+
+29
+00:01:46,466 --> 00:01:48,699
+快速的方法来感受一下
+quick way to just kind of get a feel for what
+
+30
+00:01:48,766 --> 00:01:50,466
+程序可能会做什么
+the program might do
+
+31
+00:01:51,866 --> 00:01:54,666
+strings会打印
+strings dumps a bunch of ASCII strings
+
+32
+00:01:55,700 --> 00:01:59,100
+在文件中它能找到的任何ASCII字符串
+searches through the file for any ASCII strings it can find
+
+33
+00:01:59,866 --> 00:02:02,599
+以及其他格式字符串，如果你配置不同的参数
+and other formats if you configure it differently
+
+34
+00:02:03,100 --> 00:02:08,700
+这对理解从哪里开始逆向任务非常有用
+can be very useful actually in understanding where to start in your reversing quest
+
+35
+00:02:08,900 --> 00:02:12,066
+Objdump一个简单好用的反汇编程序
+objdump nice simpler a simple disassembler
+
+36
+00:02:12,000 --> 00:02:14,900
+你们在其他视频中见过我用过
+you've seen me use it in other videos
+
+37
+00:02:14,900 --> 00:02:18,800
+但是我们将在这个模块中使用更重量级的东西
+but we are going to use something more heavyweight in this module and
+
+38
+00:02:19,100 --> 00:02:22,500
+我会快速地展示一下checksec
+checksec I'm gonna show Checksec real quick
+
+39
+00:02:23,900 --> 00:02:28,200
+Checksec能分析可执行文件所使用的安全特性
+Checksec analyzes the security features that are used by an executable
+
+40
+00:02:28,400 --> 00:02:35,900
+最好在尝试利用它的漏洞之前用它分析一下
+this is very nice to do before trying to exploit it
+
+41
+00:02:35,900 --> 00:02:37,500
+在这个模块中，我们不会做漏洞利用
+we won't be exploiting anything in this module
+
+42
+00:02:37,500 --> 00:02:38,533
+但我会给你们展示一下这个工具
+but I'll show it to you
+
+43
+00:02:38,766 --> 00:02:41,366
+算是个预习吧
+kind of as a as a preview
+
+44
+00:02:42,566 --> 00:02:44,866
+在这里我编译了我的shellcode.elf
+here I compiled my shellcode.Elf
+
+45
+00:02:46,500 --> 00:02:51,800
+这是上个视频的例子
+this is the example from a last video that was
+
+46
+00:02:53,066 --> 00:02:55,066
+基本上是一个cat
+basically a cat program that was
+
+47
+00:02:57,966 --> 00:03:00,066
+我用汇编写的
+that I wrote in Assembly
+
+48
+00:03:00,400 --> 00:03:05,900
+我应该重命名这个shellcode.s 成cat.s
+I should actually rename this shellcode.s  to cat.s
+
+49
+00:03:07,766 --> 00:03:09,133
+这样就好了
+that would be good okay
+
+50
+00:03:12,733 --> 00:03:15,133
+这是我的cat.elf, 好
+okay here's my cat.elf  awesome
+
+51
+00:03:15,133 --> 00:03:16,533
+如果我checksec
+if I checksec
+
+52
+00:03:18,133 --> 00:03:18,933
+哦
+oops
+
+53
+00:03:24,700 --> 00:03:25,900
+如果我checksec
+if I checksec
+
+54
+00:03:26,666 --> 00:03:27,533
+cat.elf
+cat.elf
+
+55
+00:03:31,266 --> 00:03:32,066
+它
+it
+
+56
+00:03:38,100 --> 00:03:39,133
+我去
+oh my god
+
+57
+00:03:40,000 --> 00:03:41,400
+终于好了
+boom finally okay
+
+58
+00:03:41,600 --> 00:03:48,500
+它向我展示了这个文件的一系列不同的安全属性
+it shows me a bunch of different security properties of this file
+
+59
+00:03:50,166 --> 00:03:50,766
+在那里
+there
+
+60
+00:03:50,766 --> 00:03:54,666
+文件导入了12个符号，我可以使用nm
+the file has 12 symbols that it imports I can use nm
+
+61
+00:03:55,133 --> 00:03:57,066
+去弄清楚
+to uh figure that out
+
+62
+00:04:00,533 --> 00:04:02,899
+这只是部分
+that's just the sections
+
+63
+00:04:04,900 --> 00:04:05,700
+对不起
+sorry
+
+64
+00:04:07,266 --> 00:04:08,799
+nm -D
+nm dash d
+
+65
+00:04:12,066 --> 00:04:12,766
+嗯
+um
+
+66
+00:04:12,766 --> 00:04:14,133
+nm -a
+nm dash a
+
+67
+00:04:17,100 --> 00:04:20,600
+只有11个符号，我也不知道另一个去哪了
+11 symbols I don't know where the other one it went
+
+68
+00:04:21,933 --> 00:04:22,733
+好了
+there you go
+
+69
+00:04:25,666 --> 00:04:26,466
+不管怎样
+anyways
+
+70
+00:04:27,800 --> 00:04:33,400
+这些都是有用的简单工具，我们现在真正的目标是
+these are useful simple tools but really what we're here for is
+
+71
+00:04:35,333 --> 00:04:39,766
+重量级的——高级反汇编器，对吧
+the heavyweight stuff the advanced disassemblers right
+
+72
+00:04:40,100 --> 00:04:42,666
+逆向工程是一个很热门的话题
+so reverse engineering is quite a hot topic
+
+73
+00:04:43,000 --> 00:04:47,500
+市面上的反汇编器有这几种情况
+um and there are several state of our tools that have been developed
+
+74
+00:04:47,566 --> 00:04:50,366
+有些是贵得离谱的，有些是免费的
+some of them are insanely expensive others are free
+
+75
+00:04:50,600 --> 00:04:52,966
+这些工具基本上是
+um and these tools are basically
+
+76
+00:04:52,966 --> 00:04:54,566
+互动式的反汇编器
+interactive disassemblers
+
+77
+00:04:55,066 --> 00:04:58,933
+他们允许逆向工程师坐下来
+they allow a reverse engineer to sit down
+
+78
+00:04:59,066 --> 00:05:03,266
+然后深入研究一个程序来理解
+and really dig into a program to um understand
+
+79
+00:05:03,700 --> 00:05:06,300
+慢慢地了解它是如何工作的
+slowly build up understanding exactly how it works
+
+80
+00:05:07,066 --> 00:05:10,166
+不管是用来找bug还是
+and whether it's for finding bugs or
+
+81
+00:05:10,166 --> 00:05:12,199
+或者理解如何与程序交互
+or understanding how to interact with the program
+
+82
+00:05:12,200 --> 00:05:13,000
+或者其他
+or whatever
+
+83
+00:05:14,866 --> 00:05:17,066
+这些都是静态工具
+again these are static tools
+
+84
+00:05:17,133 --> 00:05:19,199
+其中一些支持一些动态特性
+some of them support some dynamic features
+
+85
+00:05:19,200 --> 00:05:21,533
+但我们这里讨论的是它们的静态特性
+but we're talking about their static features here
+
+86
+00:05:21,700 --> 00:05:26,900
+而且它们是在不运行程序的情况下
+and they are made to without running a program
+
+87
+00:05:28,400 --> 00:05:30,100
+恢复一些（口误）
+recovering some
+
+88
+00:05:30,100 --> 00:05:31,933
+了解程序是如何编写的
+understanding of how that program was written
+
+89
+00:05:31,933 --> 00:05:32,999
+程序的目的是什么
+why that program was written
+
+90
+00:05:33,000 --> 00:05:34,933
+程序逻辑是什么
+and what the program logic is
+
+91
+00:05:35,100 --> 00:05:35,900
+好吧
+all right
+
+92
+00:05:38,000 --> 00:05:38,900
+其中一些工具
+some of these tools
+
+93
+00:05:38,900 --> 00:05:40,300
+首先是经典的
+first the gold standard
+
+94
+00:05:40,300 --> 00:05:45,900
+在这些大型工具中最著名最古老的Ida Pro
+kind of the best known the oldest one of these mega tools is Ida Pro
+
+95
+00:05:46,133 --> 00:05:49,499
+Ida全称 交互式反汇编程序
+Ida stands for the Interact Interactive Disassembler
+
+96
+00:05:49,566 --> 00:05:52,099
+实际上是它创造了这个短语
+so it actually kind of coined this phrase
+
+97
+00:05:52,933 --> 00:05:55,599
+它贵得离谱
+it is absurdly expensive
+
+98
+00:05:57,200 --> 00:05:59,333
+除非你的生计依赖于它
+unless your livelihood depends on it
+
+99
+00:05:59,300 --> 00:06:04,000
+那么这是一项必要且值得的投资
+then you know it's a necessary and worthwhile investment
+
+100
+00:06:05,133 --> 00:06:07,466
+IDA的主要商业竞争对手是
+Ida's main commercial competitor is
+
+101
+00:06:07,966 --> 00:06:10,499
+Binary Ninja 相对较新的产品
+Binary Ninja relatively new product
+
+102
+00:06:10,966 --> 00:06:12,766
+起初叫 vector35
+from the startup called vector 35
+
+103
+00:06:13,333 --> 00:06:16,133
+ Binary Ninja 有个免费版本
+and Binary Ninja has a free version
+
+104
+00:06:16,166 --> 00:06:18,733
+Binary Ninja Cloud 运行在你的浏览器
+Binary Ninja Cloud that runs in your browser
+
+105
+00:06:18,700 --> 00:06:22,700
+这是我们在这门课上经常用到的
+that's what we'll mostly be using in this class
+
+106
+00:06:22,733 --> 00:06:24,666
+它没有安装成本
+it has no setup cost
+
+107
+00:06:25,000 --> 00:06:28,600
+你知道的，它非常好用
+and it's you know very nice and and easy to use
+
+108
+00:06:31,200 --> 00:06:33,333
+还有很多开源软件
+there are also a bunch of open source
+
+109
+00:06:34,300 --> 00:06:37,300
+反汇编和二进制分析框架
+disassembling and and binary analysis framework
+
+110
+00:06:37,533 --> 00:06:40,366
+一个是angr management
+one is angr management it's a
+
+111
+00:06:42,100 --> 00:06:45,066
+学术性的二进制分析框架，透露一下
+academic binary analysis framework full disclosure
+
+112
+00:06:45,333 --> 00:06:48,266
+我是angr项目的联合创始人之一
+uh I was one of the co founders of the Anger Project
+
+113
+00:06:48,266 --> 00:06:52,266
+直到今天，我还是这个项目的共同领导者之一
+um and uh one of the the co leaders of it to this day
+
+114
+00:06:52,566 --> 00:06:54,299
+我们正在创建一个
+uh so we are creating a
+
+115
+00:06:54,800 --> 00:07:00,100
+先进的有图形界面的二进制逆向工具
+advanced binary reverse engineering tool that includes a graphical user interface
+
+116
+00:07:00,100 --> 00:07:02,100
+你可以去下载
+that you can go download and
+
+117
+00:07:02,100 --> 00:07:05,066
+你知道的，帮助编写
+and uh you know help write
+
+118
+00:07:05,100 --> 00:07:06,600
+修改代码
+modified the code of of course
+
+119
+00:07:07,000 --> 00:07:07,966
+ghidra是一个
+ghidra is a
+
+120
+00:07:07,966 --> 00:07:10,766
+国家安全局发明的逆向工具
+reversing tool created by the National Security Agency
+
+121
+00:07:11,200 --> 00:07:13,700
+它最近已经开源了
+open source recently it has
+
+122
+00:07:15,100 --> 00:07:24,400
+在开源之前，它已经被使用了很长一段时间，所以它是相当成熟的
+been in use for for a very long time before it was open sourced and so it is quite mature
+
+123
+00:07:24,700 --> 00:07:25,866
+也非常强大
+also very powerful
+
+124
+00:07:25,966 --> 00:07:27,266
+cutter是
+and cutter is a
+
+125
+00:07:27,300 --> 00:07:31,300
+由开源Radar II项目创建的逆向工程工具
+reverse engineering tool created by the open source Radar II project
+
+126
+00:07:33,900 --> 00:07:37,400
+市面上不缺乏先进的逆向工程工具
+so there's no shortage of advanced reverse engineering tools
+
+127
+00:07:37,900 --> 00:07:41,800
+我们拿一个去看看
+let's grab one and check it out on the
+
+128
+00:07:42,366 --> 00:07:45,333
+我之前摆弄过的cat
+cat sample that I was messing around with earlier
+
+129
+00:07:45,533 --> 00:07:46,333
+好
+alright
+
+130
+00:07:46,933 --> 00:07:49,499
+这是Binary Ninja的（口误）
+this is Binary Ninjas
+
+131
+00:07:50,266 --> 00:07:53,299
+Binary Ninja cloud的web界面，我刚刚登录的
+binary Ninja clouds web interface I just logged in
+
+132
+00:07:53,300 --> 00:07:55,200
+如果你访问cloud.binary.ninja
+if you go to cloud.binary.ninja
+
+133
+00:07:55,200 --> 00:07:56,366
+您可以创建帐户
+you can create an account
+
+134
+00:07:56,366 --> 00:07:58,066
+看到一些非常相似的东西
+and see something very similar
+
+135
+00:07:58,700 --> 00:08:00,766
+可以选择新文件
+can choose a new file
+
+136
+00:08:01,466 --> 00:08:03,133
+上传我的cat.elf
+upload my cat.elf
+
+137
+00:08:04,100 --> 00:08:05,200
+继续
+it continue
+
+138
+00:08:06,466 --> 00:08:07,599
+然后它
+and it
+
+139
+00:08:09,733 --> 00:08:12,666
+会分析这个文件
+will analyze this file
+
+140
+00:08:12,733 --> 00:08:15,566
+让它分析完
+so let's let it finish analyzing
+
+141
+00:08:23,866 --> 00:08:24,799
+也许总是这样
+maybe that's always
+
+142
+00:08:25,333 --> 00:08:27,099
+应该快分析完了
+supposed to be there anyways
+
+143
+00:08:28,600 --> 00:08:30,700
+如果你还记得这个文件
+so the file if you remember
+
+144
+00:08:31,200 --> 00:08:32,500
+它很简单
+it's a very simple
+
+145
+00:08:34,200 --> 00:08:35,866
+等一下，猫的名字
+hold up betray
+
+146
+00:08:36,000 --> 00:08:37,600
+请不要破坏东西
+don't destroy things please
+
+147
+00:08:40,333 --> 00:08:41,133
+嗯
+um
+
+148
+00:08:42,166 --> 00:08:43,566
+这是一个非常简单的文件
+it's a very simple file
+
+149
+00:08:43,566 --> 00:08:47,666
+它有一个start函数会调用main然后
+it has a start function that calls into main and then
+
+150
+00:08:47,766 --> 00:08:49,166
+调用exit
+calls an exit call
+
+151
+00:08:49,366 --> 00:08:50,866
+然后如果你去看main函数
+and then if you go to main
+
+152
+00:08:52,100 --> 00:08:56,600
+它主要是一个循环
+it is a main function that basically just loops
+
+153
+00:08:57,766 --> 00:08:58,566
+直到
+until
+
+154
+00:08:59,866 --> 00:09:01,166
+循环直到
+that loops until
+
+155
+00:09:02,366 --> 00:09:05,266
+标准输入为空
+standard input has nothing left to
+
+156
+00:09:06,100 --> 00:09:08,066
+然后它退出
+give and then it exits
+
+157
+00:09:08,266 --> 00:09:09,699
+很简单
+all right very simple
+
+158
+00:09:10,333 --> 00:09:11,266
+我为什么要给你们看这个
+why am I showing you this
+
+159
+00:09:11,266 --> 00:09:14,266
+首先，看这些图表很有用
+well one it's very useful to look at these graphs
+
+160
+00:09:14,500 --> 00:09:15,466
+我强烈推荐
+I highly recommend
+
+161
+00:09:15,466 --> 00:09:17,799
+当你看这些图表的时候也可以
+as you're looking at these graphs also turn on
+
+162
+00:09:18,900 --> 00:09:20,866
+用这个按钮
+with this button here
+
+163
+00:09:20,866 --> 00:09:23,866
+打开地址显示，现在它展示了更多的信息
+addresses so now this is even more information
+
+164
+00:09:24,400 --> 00:09:27,800
+如果你真的想
+if you really want to be hip
+
+165
+00:09:27,800 --> 00:09:32,500
+您可以显示组成每条指令的字节码
+you can show the op code bytes that make up each instruction
+
+166
+00:09:32,600 --> 00:09:36,000
+这些信息现在用不到
+but this is just this is now too much information
+
+167
+00:09:36,266 --> 00:09:37,066
+好吧
+well
+
+168
+00:09:37,133 --> 00:09:38,366
+除非你需要
+unless you need that
+
+169
+00:09:42,300 --> 00:09:43,100
+好吧
+alright
+
+170
+00:09:43,533 --> 00:09:44,866
+然后我
+then I
+
+171
+00:09:46,366 --> 00:09:48,099
+我们该怎么用这个图呢，首先
+what do we do with this graph, one it's
+
+172
+00:09:48,100 --> 00:09:49,666
+图更容易理解
+it's easier to understand the graph
+
+173
+00:09:49,666 --> 00:09:50,533
+如果你不喜欢这个图
+if you don't like the graph
+
+174
+00:09:50,533 --> 00:09:52,299
+你想要更接近
+you want something closer to op （??）
+
+175
+00:09:52,366 --> 00:09:53,566
+你可以点击这个
+you can click this
+
+176
+00:09:53,966 --> 00:09:56,499
+这是线性反汇编视图
+this is the linear disassembly view
+
+177
+00:09:57,066 --> 00:09:58,966
+你也可以在这里显示地址
+you can also show addresses here
+
+178
+00:09:59,600 --> 00:10:01,200
+好的，非常酷
+okay very cool
+
+179
+00:10:03,066 --> 00:10:03,866
+否则
+otherwise
+
+180
+00:10:04,933 --> 00:10:07,999
+当然我们也讲过字符串
+also of course we talked about strings any
+
+181
+00:10:08,700 --> 00:10:11,400
+这个文件里没有字符串，但是你知道所有的
+well there are no strings in this file but you know all
+
+182
+00:10:11,400 --> 00:10:13,733
+大多数这些反汇编程序都有字符串视图
+most of these disassemblers also have a string view
+
+183
+00:10:14,300 --> 00:10:19,900
+有的视图可以看到程序使用了哪些变量类型等等
+excuse me have a view where you can see what types are being used in the in the program and so forth
+
+184
+00:10:20,066 --> 00:10:20,866
+好吧
+all right
+
+185
+00:10:24,133 --> 00:10:25,366
+通过这个程序图
+this program graph
+
+186
+00:10:25,866 --> 00:10:29,533
+我们可以开始逆向这个程序
+we can start reverse engineering this program
+
+187
+00:10:29,533 --> 00:10:32,366
+意味着可以提取信息
+what does that mean that means extracting knowledge
+
+188
+00:10:33,166 --> 00:10:34,733
+通过看
+by staring at
+
+189
+00:10:38,500 --> 00:10:44,900
+通过读这张图来理解它，但是
+extracting knowledge by staring at this graph and understanding it but
+
+190
+00:10:46,133 --> 00:10:48,733
+Binary Ninja给我们提供了一些额外的工具
+Binary Ninja gives us some additional tools
+
+191
+00:10:48,733 --> 00:10:49,566
+例如
+for example
+
+192
+00:10:49,900 --> 00:10:51,166
+哦，等一下
+oh hold on
+
+193
+00:10:52,666 --> 00:10:56,733
+例如，我们可以写注释
+for example we can make comments
+
+194
+00:10:56,733 --> 00:10:57,533
+如果你
+if you
+
+195
+00:10:58,200 --> 00:11:00,166
+右键点击这里，点击复制（口误，实际是注释）
+right click here you can hit copy
+
+196
+00:11:00,466 --> 00:11:02,199
+你可以写注释
+and you can write a comment
+
+197
+00:11:03,366 --> 00:11:06,333
+记下你当时在想什么
+to kind of note down what you're thinking at the time
+
+198
+00:11:06,300 --> 00:11:10,000
+这里我认为这是一个函数序言
+and here I'm thinking this is a function prologue
+
+199
+00:11:11,366 --> 00:11:12,999
+好吧，这很酷
+okay that's very cool
+
+200
+00:11:13,400 --> 00:11:15,600
+现在我知道这是函数的序言
+now I know this is a function prologue
+
+201
+00:11:15,733 --> 00:11:16,666
+我可以
+I can
+
+202
+00:11:17,733 --> 00:11:21,699
+接着逆向这个。哦，好的，这我认识，这是
+reverse engineer this I can see oh okay this is
+
+203
+00:11:24,766 --> 00:11:26,099
+个系统调用
+this this call
+
+204
+00:11:27,000 --> 00:11:31,700
+把读到的数据放到栈上
+calls read onto the stack
+
+205
+00:11:33,333 --> 00:11:36,733
+很好，这个系统调用我也认识
+okay cool I can see this is call
+
+206
+00:11:36,733 --> 00:11:37,799
+好的，我们来注释一下
+okay let's make a comment
+
+207
+00:11:37,800 --> 00:11:40,266
+我看了一下，它调用write
+I'd I'd look over it and it calls write
+
+208
+00:11:40,900 --> 00:11:44,766
+写出之前读取的数据
+calls write with the previously read data
+
+209
+00:11:45,333 --> 00:11:48,566
+好的，这里你可以看到
+alright and here you see that
+
+210
+00:11:49,200 --> 00:11:51,466
+Binary Ninja 识别了一些变量
+Binary Ninja identifies some variable
+
+211
+00:11:51,466 --> 00:11:54,533
+这个RSP叫var_108
+so it says okay this RSP is variable 108
+
+212
+00:11:54,566 --> 00:11:55,466
+为什么是108
+why is it 108
+
+213
+00:11:55,400 --> 00:11:59,100
+它是108，因为这是它相对于
+it's 108 because that is where it's located relative to the
+
+214
+00:11:59,133 --> 00:12:02,066
+函数开始时的位置
+stack position at the start of the function
+
+215
+00:12:02,200 --> 00:12:04,500
+因为我们把RBP入栈，占用了8个字节
+because we pushed RBP that took up 8 bytes
+
+216
+00:12:04,500 --> 00:12:08,700
+然后从RSP中减去0x100
+and then we subtracted 100 o x 100 from RSP
+
+217
+00:12:08,966 --> 00:12:13,099
+这里叫var 108只是因为
+and this is now var 108 just based on its location
+
+218
+00:12:13,300 --> 00:12:14,966
+RSP现在指向的位置
+where RSP is pointing to right now
+
+219
+00:12:14,900 --> 00:12:17,300
+相对于函数开始时它所指向的位置的差值
+relative to where it was pointing to at the beginning of the function
+
+220
+00:12:17,500 --> 00:12:18,933
+这就是它如何命名变量的
+that's how to identify variables
+
+221
+00:12:18,933 --> 00:12:21,266
+但我们也可以给它起个更好的名字
+but we can also give it a better name
+
+222
+00:12:21,266 --> 00:12:22,566
+你可以看到这里
+so you can see over here
+
+223
+00:12:22,566 --> 00:12:25,333
+Binary Ninja能够确定RSI
+binary Ninja was able to determine that RSI
+
+224
+00:12:25,333 --> 00:12:27,066
+read的缓冲区
+the buffer for read
+
+225
+00:12:27,366 --> 00:12:30,099
+和write的缓冲区是相同的变量
+is the same variable as the buffer for write
+
+226
+00:12:30,100 --> 00:12:31,866
+这已经很有用了
+so that's already quite useful
+
+227
+00:12:31,866 --> 00:12:32,566
+但是我们可以
+but we can
+
+228
+00:12:32,500 --> 00:12:37,000
+给它起个更有描述性的名字，比如我们的缓冲区
+name it something like a more descriptive like our buffer
+
+229
+00:12:37,700 --> 00:12:38,500
+或者
+or
+
+230
+00:12:39,133 --> 00:12:42,566
+输入缓冲区，现在你可以
+input buffer and now you can kind of see
+
+231
+00:12:42,566 --> 00:12:44,866
+一眼看出
+at a glance a little bit more that
+
+232
+00:12:44,800 --> 00:12:49,500
+这个程序读入一个输入缓冲区
+okay this program reads into an input buffer
+
+233
+00:12:49,566 --> 00:12:52,166
+然后把缓冲区中的内容写出来
+and then write out of that buffer
+
+234
+00:12:52,466 --> 00:12:54,933
+现在我要给你们看一些神奇的东西
+all right now I'm going to show you something magical
+
+235
+00:12:55,466 --> 00:12:56,766
+你可以点击这里
+you can click here
+
+236
+00:12:57,533 --> 00:13:00,366
+你可以切换到所谓的high level IL
+and you can switch to what is called high level IL
+
+237
+00:13:00,366 --> 00:13:02,966
+Binary Ninja会做一些分析
+and binary Ninja will do a bunch of analysis
+
+238
+00:13:03,733 --> 00:13:06,766
+尽可能恢复成C代码
+to try to recover something as close to C
+
+239
+00:13:06,766 --> 00:13:08,566
+这仍然是一个图形表示
+this is still a graph representation
+
+240
+00:13:08,566 --> 00:13:13,199
+如果您点击listing并选择high level IL
+if you click on the listing and select high level IL
+
+241
+00:13:14,300 --> 00:13:17,566
+然后几乎就有了源代码
+then here you have almost source code
+
+242
+00:13:17,700 --> 00:13:20,566
+这有助于理解程序逻辑
+this can be helpful in understanding program logic
+
+243
+00:13:20,566 --> 00:13:23,266
+它也可能存在些隐患
+it can also be a little dangerous
+
+244
+00:13:23,400 --> 00:13:26,200
+因为它抽象了一些可能很重要的细节
+because it abstracts some details that might be important
+
+245
+00:13:26,266 --> 00:13:27,299
+我建议
+I recommend
+
+246
+00:13:27,600 --> 00:13:32,100
+为了本模块的目的，坚持使用汇编视图
+for the purposes of this module sticking with the assembly view
+
+247
+00:13:32,566 --> 00:13:33,999
+理解汇编视图
+and understanding the assembly view
+
+248
+00:13:34,166 --> 00:13:34,966
+好吧
+alright
+
+249
+00:13:35,900 --> 00:13:37,066
+对于这个模块
+for this module
+
+250
+00:13:37,266 --> 00:13:39,733
+这应该是您需要的工具
+this should be the tools you need
+
+251
+00:13:40,366 --> 00:13:43,733
+用于静态分析的高级反汇编程序
+a advanced disassembler for static analysis
+
+252
+00:13:43,733 --> 00:13:45,866
+一个先进的反汇编程序
+an advanced disassembler with
+
+253
+00:13:46,066 --> 00:13:47,999
+内置了一些很棒的功能
+some awesome built in capabilities
+
+254
+00:13:49,966 --> 00:13:52,599
+binary Ninja 将所有这些自动保存在云端
+binary Ninja saves all of this automatically in the cloud
+
+255
+00:13:52,600 --> 00:13:55,566
+当然，您可以有多个会话
+you can of course have multiple sessions
+
+256
+00:13:55,600 --> 00:13:59,600
+你可以尝试其他功能
+you can play around with other crazy stuff
+
+257
+00:13:59,866 --> 00:14:04,333
+比如把图嵌入到图中
+like embedding the graph within a graph or whatever
+
+258
+00:14:04,333 --> 00:14:06,366
+不管怎样，这里有一些疯狂的功能
+anyways there's crazy features here
+
+259
+00:14:07,366 --> 00:14:09,566
+你可以随便玩，但是
+that you can play around with but
+
+260
+00:14:10,900 --> 00:14:14,666
+当然，最主要的优势
+the main advantage of this of course
+
+261
+00:14:14,666 --> 00:14:16,066
+它能在浏览器中运行
+is that it runs in your browser
+
+262
+00:14:16,066 --> 00:14:17,366
+没有什么需要你安装的
+there's nothing for you to install
+
+263
+00:14:17,366 --> 00:14:20,299
+你可以像这样开始逆向工程
+you can just start reverse engineering just like that
+
+264
+00:14:21,966 --> 00:14:24,299
+下集我们会讲到
+in the next video we'll go on to
+
+265
+00:14:24,966 --> 00:14:25,999
+学习如何
+learning how to
+
+266
+00:14:26,566 --> 00:14:29,899
+动态调试分析进程
+kind of poke up program as it as it's doing stuff
+
+267
+00:14:30,100 --> 00:14:31,166
+感谢收看
+thanks for watching

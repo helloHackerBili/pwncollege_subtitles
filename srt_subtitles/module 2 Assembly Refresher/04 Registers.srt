@@ -1,0 +1,1375 @@
+1
+00:00:00,900 --> 00:00:02,166
+你好黑客
+hello hackers 
+
+2
+00:00:02,300 --> 00:00:03,533
+欢迎来到PWN学院
+welcome to pwn college
+
+3
+00:00:03,633 --> 00:00:04,400
+我是Yan
+I'm Yan 
+
+4
+00:00:04,466 --> 00:00:06,366
+在今天的视频中
+and today in this video 
+
+5
+00:00:06,500 --> 00:00:08,066
+我们将要讨论
+we're going to be talking about 
+
+6
+00:00:09,833 --> 00:00:12,233
+汇编中的寄存器
+registers in assembly
+
+7
+00:00:13,000 --> 00:00:13,800
+好的
+all right
+
+8
+00:00:15,066 --> 00:00:17,133
+我们在之前的视频中讨论过数据
+we talked about data in the previous video
+
+9
+00:00:17,500 --> 00:00:19,200
+cpu喜欢数据
+and CPUs love data
+
+10
+00:00:19,200 --> 00:00:20,300
+他们处理数据
+they process data 
+
+11
+00:00:20,466 --> 00:00:21,233
+二进制数据
+binary data
+
+12
+00:00:21,866 --> 00:00:24,633
+CPU会用多种方式解析它，让我们理解
+that is interpreted in various ways that make sense to us
+
+13
+00:00:25,566 --> 00:00:30,400
+现在CPU需要一个地方来存储这些数据
+now a CPU needs somewhere to store that data
+
+14
+00:00:30,466 --> 00:00:31,266
+一个暂时的存储空间
+short term memory 
+
+15
+00:00:31,266 --> 00:00:34,300
+你可以把数据想象成钱
+if you will you imagine data as money
+
+16
+00:00:34,866 --> 00:00:36,833
+CPU手里有一堆钱
+and the CPU's handed a bunch of money
+
+17
+00:00:37,866 --> 00:00:39,500
+它可能会把钱放到收银机里
+it might put it in a cash register 
+
+18
+00:00:40,200 --> 00:00:48,133
+它在计算机世界里被称为寄存器堆
+and what is called in the computing world the register file
+
+19
+00:00:49,100 --> 00:00:54,100
+现在，寄存器堆位于CPU内部
+now the register file sits right inside of the CPU 
+
+20
+00:00:54,233 --> 00:00:56,600
+有一堆寄存器
+and holds a bunch of registers
+
+21
+00:00:57,166 --> 00:01:00,233
+基本上数据是从系统内存中流出
+and basically data flows from system memory 
+
+22
+00:01:00,633 --> 00:01:03,166
+进入各级缓存
+into some various caches
+
+23
+00:01:04,266 --> 00:01:06,466
+不幸的是英文名和收银机冲突了
+unfortunate name collision there with cash register
+
+24
+00:01:06,600 --> 00:01:08,333
+也许这不是一个很好的类比
+maybe it's not a great analogy
+
+25
+00:01:08,700 --> 00:01:11,233
+然后流进要用它的寄存器堆
+and then into the register file where it is used 
+
+26
+00:01:11,433 --> 00:01:14,833
+或者数据直接从指令流入到寄存器堆
+or it flows directly from the instructions into the register file
+
+27
+00:01:14,933 --> 00:01:17,500
+稍后会讲到，再流进寄存器
+as we will talk into registers 
+
+28
+00:01:18,733 --> 00:01:19,533
+什么是寄存器
+what are registers 
+
+29
+00:01:19,633 --> 00:01:24,000
+寄存器是快速存储数据的地方
+registers are fast places to store data 
+
+30
+00:01:25,833 --> 00:01:31,033
+它们用于
+they are meant for very
+
+31
+00:01:31,933 --> 00:01:35,233
+这是CPU唯一可以交互的地方
+it's the only place that the CPU can typically
+
+32
+00:01:35,900 --> 00:01:36,433
+这么说不对
+that's false 
+
+33
+00:01:36,666 --> 00:01:41,733
+通常，CPU在这个位置存储数据
+it is the typical place to store data for a CPU 
+
+34
+00:01:41,800 --> 00:01:44,166
+与这些数据交互
+to actually interact with that data 
+
+35
+00:01:44,266 --> 00:01:45,800
+对它进行操作
+to make to do operations on it
+
+36
+00:01:45,933 --> 00:01:48,566
+对它进行计算等等
+to do computation on it etc etc
+
+37
+00:01:48,933 --> 00:01:50,000
+它们的速度非常快
+they are extremely fast
+
+38
+00:01:50,066 --> 00:01:50,933
+它们就在CPU里
+they're right in the CPU
+
+39
+00:01:51,133 --> 00:01:53,266
+所以没有很大的空间给它们
+and so there's not a lot of space for them
+
+40
+00:01:53,266 --> 00:01:55,800
+它们制作起来非常昂贵
+they're very expensive to make and
+
+41
+00:01:56,700 --> 00:01:58,233
+所以它们的数量很少
+so there's very few of them
+
+42
+00:01:59,066 --> 00:02:00,200
+取决于体系结构
+depending on the architecture
+
+43
+00:02:00,200 --> 00:02:01,666
+如果你经历过很久之前
+if you were living way back 
+
+44
+00:02:01,766 --> 00:02:08,300
+英特尔推出8086或8085处理器时
+when Intel gave the world the 8086 or 8085 even 
+
+45
+00:02:08,400 --> 00:02:10,166
+只有8个寄存器
+via just 8 of them 
+
+46
+00:02:10,366 --> 00:02:11,766
+实际上只有7个
+in fact just 7 
+
+47
+00:02:12,600 --> 00:02:14,533
+现在我们的情况好多了
+nowadays we are much better off 
+
+48
+00:02:14,800 --> 00:02:19,300
+AMD扩充英特尔x86架构
+AMD when they expanded intel x86 architecture 
+
+49
+00:02:19,433 --> 00:02:22,800
+到64位x86架构时
+into the 64 bit x86 architecture
+
+50
+00:02:23,000 --> 00:02:24,666
+也称为AMD64
+also known as AMD64
+
+51
+00:02:25,500 --> 00:02:26,500
+以他们无限的智慧
+in their infinite wisdom
+
+52
+00:02:26,500 --> 00:02:30,166
+给我们提供了大量的寄存器
+they gave us an enormous amount of registers
+
+53
+00:02:31,800 --> 00:02:34,766
+以用于存储数据和计算
+which we can use to store data and do computation
+
+54
+00:02:34,866 --> 00:02:37,966
+还有很多特殊寄存器
+there are also a lot of special registers
+
+55
+00:02:38,466 --> 00:02:43,333
+例如，存储下一条指令地址的寄存器
+registers for example that store the address of the next instruction
+
+56
+00:02:43,466 --> 00:02:45,933
+我们将在以后的视频中讨论它
+we'll talk about that in a future lecture
+
+57
+00:02:46,633 --> 00:02:50,033
+还有其它用于多媒体计算的寄存器
+and then other very fancy stuff for multimedia computation 
+
+58
+00:02:50,200 --> 00:02:51,733
+我在上一讲中提到过
+that I mentioned in a previous lecture 
+
+59
+00:02:51,800 --> 00:02:54,166
+我们可能再也不会提起这件事了
+we probably never really talk about it again
+
+60
+00:02:54,400 --> 00:02:55,933
+好的
+okay so
+
+61
+00:02:57,133 --> 00:03:01,033
+寄存器驻留在CPU中
+registers live in your CPU
+
+62
+00:03:02,700 --> 00:03:07,533
+它们的大小通常就是架构的字长
+they are the size of the word width of the architecture typically
+
+63
+00:03:07,933 --> 00:03:10,133
+当然也有很多例外
+right again exceptions abound
+
+64
+00:03:10,266 --> 00:03:11,633
+但在64位架构上
+but on a 64 bit architecture
+
+65
+00:03:11,733 --> 00:03:14,133
+大多数寄存器都是64位的
+most of your registers are going to hold 64 bits
+
+66
+00:03:14,266 --> 00:03:17,000
+就是8个字节，每个字节8位
+that is 8 bytes of 8 bits each
+
+67
+00:03:18,133 --> 00:03:22,633
+您可以通过名称访问寄存器
+you can access registers by their name
+
+68
+00:03:24,066 --> 00:03:27,400
+或通过部分标识符访问其中的一部分
+or you can access parts of them by partial identifiers
+
+69
+00:03:27,533 --> 00:03:29,466
+这很酷
+and this is really cool
+
+70
+00:03:29,566 --> 00:03:36,333
+这反映了，至少是x86，架构的历史
+this reflects the history of the architecture of at least an x86
+
+71
+00:03:36,866 --> 00:03:42,300
+RAX是64位x86寄存器
+RAX is the 64 bit x86 register RAX
+
+72
+00:03:42,466 --> 00:03:45,100
+它代表，我记不清了，但好像是
+it stands for I don't remember but let's say
+
+73
+00:03:45,266 --> 00:03:48,800
+R表示很，x表示扩展
+Really extended extended A 
+
+74
+00:03:49,033 --> 00:03:49,700
+好吧
+all right
+
+75
+00:03:49,733 --> 00:03:53,100
+它是多次进化的最终结果
+now that's because it is the end result of a lot of evolution 
+
+76
+00:03:53,233 --> 00:03:56,466
+计算机架构的字长不断增长
+that keeps growing the word width of the architecture
+
+77
+00:03:56,866 --> 00:04:00,766
+在英特尔8085时代
+back in the old Intel 8085 days
+
+78
+00:04:02,666 --> 00:04:07,600
+8085是一个8位的架构，有一个寄存器a
+the 8085 was a 8 bit architecture that had a register A
+
+79
+00:04:08,866 --> 00:04:13,266
+英特尔把8085升级到8086时
+when the 8085 was evolved into the 8086 by Intel
+
+80
+00:04:14,366 --> 00:04:20,033
+它变成了一个16位寄存器，叫做A已扩展，AX
+it became a 16 bit register called A eXtended AX 
+
+81
+00:04:20,500 --> 00:04:23,700
+你能单独使用ax的一部分
+you could reference the individual parts of ax
+
+82
+00:04:24,166 --> 00:04:32,100
+即2字节16位寄存器的，各个字节
+the individual bytes of this 2 byte 16 bit register 
+
+83
+00:04:32,200 --> 00:04:35,500
+分别叫AH和AL
+with AH and AL
+
+84
+00:04:35,766 --> 00:04:38,133
+AL是原来的A
+right so AL was the old A
+
+85
+00:04:38,566 --> 00:04:41,533
+它接上了AH，做成了AX
+ah was tacked onto it to make ax
+
+86
+00:04:42,166 --> 00:04:47,000
+因特尔创建386，还是286
+when Intel created 386 or 286 I guess
+
+87
+00:04:47,000 --> 00:04:49,066
+也许是186，我不确定
+maybe even 186 I don't know that for sure
+
+88
+00:04:50,866 --> 00:04:54,766
+他们扩展了16位寄存器ax
+they extended the 16 bit register ax
+
+89
+00:04:55,533 --> 00:04:58,900
+到32位寄存器eax
+into the 32 bit register extended ax
+
+90
+00:05:00,266 --> 00:05:04,366
+你依旧可以用原来的小部件
+and you could still reference the old smaller parts of it
+
+91
+00:05:05,133 --> 00:05:11,933
+等AMD扩展了因特尔x86成amd64时
+and when AMD extended Intels x86 into AMD 64
+
+92
+00:05:12,066 --> 00:05:14,700
+现代64位x86架构
+the modern 64 bit x86 architecture
+
+93
+00:05:15,100 --> 00:05:20,733
+他们很用力的把eax拉伸成了64位的rax
+they really stretched eax into RAX 64 bit
+
+94
+00:05:22,600 --> 00:05:26,000
+x86上的寄存器都可以直接使用其部分
+every register on x86 can be partially referenced 
+
+95
+00:05:26,100 --> 00:05:28,133
+但只有这些老的寄存器
+but only these old historic ones
+
+96
+00:05:28,366 --> 00:05:34,100
+可以直接用右数第二字节
+can you get at that old second byte from the right
+
+97
+00:05:35,300 --> 00:05:37,933
+但都可以直接用右数第一字节
+but all of them you can get at the right most byte
+
+98
+00:05:38,333 --> 00:05:40,566
+最右边两个字节
+at the right most two bytes
+
+99
+00:05:40,866 --> 00:05:42,266
+最右边4个字节
+the right most 4 bytes
+
+100
+00:05:42,566 --> 00:05:46,300
+和完整的8字节64位寄存器
+and the full 8 byte 64 bit register
+
+101
+00:05:46,900 --> 00:05:47,800
+很酷
+pretty cool huh
+
+102
+00:05:48,200 --> 00:05:49,000
+好的
+alright
+
+103
+00:05:49,100 --> 00:05:50,600
+这就是寄存器
+so that's register
+
+104
+00:05:50,600 --> 00:05:51,366
+它们保存着数据
+they hold data 
+
+105
+00:05:51,366 --> 00:05:52,900
+但是我们怎么把数据放进去呢
+but how do we put data in them
+
+106
+00:05:52,900 --> 00:05:56,900
+我们可以用汇编指令mov
+well we do so with an assembly instruction mov
+
+107
+00:05:57,466 --> 00:05:58,366
+我们可以
+we just say hey
+
+108
+00:05:58,733 --> 00:06:03,900
+将数字0x539移动到RAX中
+move the number 0x539 into RAX
+
+109
+00:06:05,533 --> 00:06:06,800
+像这样
+and we write it like this 
+
+110
+00:06:06,900 --> 00:06:09,333
+mov rax, 539
+mov rax comma 539 
+
+111
+00:06:09,400 --> 00:06:15,500
+就像你在数学课上写x = 7一样
+the same way that you write x equals 7 or something in a math class
+
+112
+00:06:15,966 --> 00:06:17,866
+数据流向是
+the flow of data is
+
+113
+00:06:18,366 --> 00:06:20,800
+在你的屏幕上，是这个方向
+in your screen that way
+
+114
+00:06:21,500 --> 00:06:26,900
+从1337到RAX
+it goes from 1337 to RAX 
+
+115
+00:06:27,200 --> 00:06:28,800
+第二行就是到RBX
+or RBX in the second line
+
+116
+00:06:28,966 --> 00:06:30,633
+它俩都被设置为一个值了
+they both get set to the same value
+
+117
+00:06:30,800 --> 00:06:33,600
+一个是16进制表示
+one value is specified in hexadecimal
+
+118
+00:06:34,200 --> 00:06:36,866
+第二行是十进制表示
+the equivalent value on the next line is in decimal
+
+119
+00:06:37,866 --> 00:06:40,166
+在汇编指令中直接指定的数据
+data that's specified directly in an assembly instruction
+
+120
+00:06:40,300 --> 00:06:43,033
+我猜这是你们第一次看到完整的汇编指令
+so I guess this is the first assembly instruction you've fully seen
+
+121
+00:06:43,666 --> 00:06:44,766
+非常简单，对吧?
+super simple right 
+
+122
+00:06:44,900 --> 00:06:48,566
+它就是把数字1337放入RAX
+it just puts the number 1337 into RAX 
+
+123
+00:06:49,233 --> 00:06:51,166
+像这样指定的数据
+data that is specified like that
+
+124
+00:06:51,266 --> 00:06:53,533
+数字1337被称为立即数
+number 1337 is called an immediate value
+
+125
+00:06:53,733 --> 00:06:57,900
+它立即取一个1337，把它放到寄存器RAX中
+so it takes an immediate 1337 puts it in the register RAX
+
+126
+00:06:58,266 --> 00:06:59,700
+当然你也可以
+you can also of course
+
+127
+00:07:00,066 --> 00:07:01,966
+用我们讲的部分寄存器
+we talked about partial registers
+
+128
+00:07:01,966 --> 00:07:02,966
+你可以访问这些
+well you can access those 
+
+129
+00:07:03,066 --> 00:07:05,333
+你可以把5放到AH
+you can say hey move 5 into ah 
+
+130
+00:07:06,166 --> 00:07:08,966
+然后将0x39放到AL
+and then moves 0x39 into AL
+
+131
+00:07:09,533 --> 00:07:12,933
+这会在RAX中创建0x539
+which will create 0x539 in RAX
+
+132
+00:07:13,666 --> 00:07:15,300
+也就是1337
+which is 1337
+
+133
+00:07:16,066 --> 00:07:16,733
+太酷了
+super cool alright
+
+134
+00:07:16,833 --> 00:07:18,366
+要注意一件事
+be careful one thing
+
+135
+00:07:18,400 --> 00:07:19,800
+你可以访问AH
+you can access ah 
+
+136
+00:07:19,900 --> 00:07:20,900
+你可以访问AL
+you can access al
+
+137
+00:07:21,166 --> 00:07:22,766
+彼此互不干扰
+very independent of each other
+
+138
+00:07:23,166 --> 00:07:28,533
+它们只修改RAX的对应位
+and they'll all just go into the respective bits of RAX
+
+139
+00:07:29,100 --> 00:07:31,366
+如果你碰了EAX
+if you touch EAX
+
+140
+00:07:32,533 --> 00:07:36,633
+RAX的32位部分
+the 32 bit part of RAX 
+
+141
+00:07:36,966 --> 00:07:39,133
+最右边的32位
+the right most 32 bits
+
+142
+00:07:39,800 --> 00:07:42,166
+它会把寄存器里剩下的32位清零
+it's gonna zero out the rest of the register
+
+143
+00:07:42,733 --> 00:07:43,766
+信不信由你
+all right believe it or not
+
+144
+00:07:43,833 --> 00:07:45,133
+这是出于性能考虑
+this is done for performance reasons 
+
+145
+00:07:45,300 --> 00:07:46,500
+原因非常复杂
+that are very complicated
+
+146
+00:07:46,766 --> 00:07:48,800
+感兴趣的话，它应该和计算机架构有关
+should take computer architecture if you're interested
+
+147
+00:07:49,900 --> 00:07:52,600
+但这确实会发生，而且很搞人
+but it will happen and it'll screw you up
+
+148
+00:07:52,933 --> 00:07:55,066
+它实际上使
+and it actually makes
+
+149
+00:07:55,766 --> 00:08:01,166
+在64位环境中写32位代码有点棘手
+writing 32 bit code in 64 bit context a little tricky
+
+150
+00:08:01,466 --> 00:08:05,566
+因为如果你碰了一个地址
+because if you touch a address which tends to
+
+151
+00:08:06,166 --> 00:08:07,766
+我们有点超前了
+anyways we're getting ahead of ourselves
+
+152
+00:08:08,266 --> 00:08:09,566
+如果你改了EAX
+if you touch EAX
+
+153
+00:08:09,733 --> 00:08:10,866
+rax会被修改（包括高32位）
+rax will be clobbered
+
+154
+00:08:10,966 --> 00:08:12,066
+如果你改了EBX
+if you touch EBX 
+
+155
+00:08:12,566 --> 00:08:16,400
+那么RBX的前32位将被破坏
+then the top 32 bits of RBX will be clobbered 
+
+156
+00:08:16,533 --> 00:08:17,200
+以此类推
+and so on
+
+157
+00:08:17,600 --> 00:08:18,900
+好了现在
+alright now
+
+158
+00:08:19,966 --> 00:08:21,500
+如何转移数据
+how do you shunt data around 
+
+159
+00:08:21,600 --> 00:08:24,100
+如同从指令转移到寄存器
+while you move between instruction
+
+160
+00:08:24,266 --> 00:08:28,500
+那样把0x539放到rax中
+in the same way that you can move 0x539 into RAX
+
+161
+00:08:28,900 --> 00:08:31,466
+这行代码mov rbx, rax
+this line mov RBX comma RAX 
+
+162
+00:08:31,600 --> 00:08:35,133
+将数据从RAX移动到RBX
+moves the data from RAX into RBX
+
+163
+00:08:35,266 --> 00:08:37,033
+我说的移动是指复制
+now I say move I mean copy
+
+164
+00:08:37,233 --> 00:08:38,566
+旧数据不会被销毁
+the old data is not destroyed
+
+165
+00:08:39,966 --> 00:08:42,700
+这有点奇怪，就提一嘴
+so it's a weird little bit of a weird caveat
+
+166
+00:08:42,800 --> 00:08:46,633
+我觉得他们是考虑到了这条mov
+I think they really optimize for this mov
+
+167
+00:08:46,900 --> 00:08:49,800
+因为，销毁立即数没有意义
+because then  it doesn't make sense how do you copy an immediate value
+
+168
+00:08:50,200 --> 00:08:51,000
+你可以
+because you could 
+
+169
+00:08:51,066 --> 00:08:51,533
+不管怎样
+but anyways
+
+170
+00:08:53,166 --> 00:08:57,333
+mov不会破坏mov的数据源
+move does not destroy the source of the move
+
+171
+00:08:57,500 --> 00:08:59,966
+它只是将数据复制到目标地
+it just copies that data into the destination
+
+172
+00:09:00,033 --> 00:09:01,566
+目的地在左边
+the destination is on the left
+
+173
+00:09:01,966 --> 00:09:03,866
+数据源在右边
+the source is on the right
+
+174
+00:09:04,133 --> 00:09:08,400
+你也可以在部分寄存器之间mov
+and you can also move between the partial registers
+
+175
+00:09:09,000 --> 00:09:10,600
+只要尺寸一致就行
+as long as the sizes line up 
+
+176
+00:09:12,133 --> 00:09:13,500
+我们稍后会讲到
+we'll get to that later
+
+177
+00:09:15,200 --> 00:09:18,066
+你可以将数据mov到寄存器的部分
+you can move into the partial registers
+
+178
+00:09:18,466 --> 00:09:19,500
+用起来是一样的
+and it looks the same
+
+179
+00:09:19,500 --> 00:09:20,333
+但请记住
+just keep in mind 
+
+180
+00:09:20,600 --> 00:09:23,066
+修改EBX时
+any time you write to EBX
+
+181
+00:09:23,900 --> 00:09:25,566
+剩下的32位
+the remaining 32 bit 
+
+182
+00:09:25,633 --> 00:09:28,133
+或者说修改任意寄存器的低32位
+or any of the lower 32 bit of the registers 
+
+183
+00:09:28,300 --> 00:09:29,466
+剩下的32位
+the remaining 32 bit
+
+184
+00:09:30,333 --> 00:09:32,000
+寄存器的高32位
+the high 32 bits of that register 
+
+185
+00:09:32,000 --> 00:09:33,166
+会被清零
+will be zeroed out
+
+186
+00:09:33,900 --> 00:09:34,933
+别被这个搞了
+don't let it screw you up
+
+187
+00:09:36,200 --> 00:09:40,700
+现在假设你想扩展数据
+now let's say you wanted to actually extend
+
+188
+00:09:40,700 --> 00:09:42,933
+你把-1放到eax
+you wanted to move negative 1 to eax 
+
+189
+00:09:42,966 --> 00:09:44,466
+你想要的是
+which you wanted that to be like
+
+190
+00:09:44,766 --> 00:09:48,000
+它和64位寄存器中的-1一样
+you know actual negative 1 in 64 bit
+
+191
+00:09:48,100 --> 00:09:49,333
+默认情况下不是
+by default it's not 
+
+192
+00:09:49,433 --> 00:09:50,666
+默认情况下
+by default when you look at it
+
+193
+00:09:50,966 --> 00:09:54,533
+如果把- 1放到EAX，就是fffffffffff
+if you move negative 1 to EAX that's fffffffffff
+
+194
+00:09:55,200 --> 00:10:02,400
+这也许是正确的补码
+maybe that was the right number of it in 2's complement
+
+195
+00:10:02,533 --> 00:10:07,666
+它既是42.9亿，也是-1
+that's both this 4.29 billion and negative one
+
+196
+00:10:08,466 --> 00:10:09,433
+但在rax中
+but rax 
+
+197
+00:10:09,466 --> 00:10:12,266
+因为高32位会被清零
+since the top bits are all zeroed out
+
+198
+00:10:12,566 --> 00:10:15,100
+它就只是42.9亿
+it's only that high number 
+
+199
+00:10:15,166 --> 00:10:17,000
+不再是-1了
+it is not 0 1 anymore
+
+200
+00:10:17,166 --> 00:10:18,100
+这很遗憾
+that's a bummer
+
+201
+00:10:18,400 --> 00:10:19,233
+很不好
+not great 
+
+202
+00:10:19,433 --> 00:10:21,500
+如果我们在做数学运算
+if we are doing some math 
+
+203
+00:10:21,633 --> 00:10:24,333
+开始时用32位操作
+and then we'll be starting run the 32 bit stuff 
+
+204
+00:10:24,433 --> 00:10:27,200
+然后用64位寄存器操作这些值
+and then we need to access those same values on 64 bit
+
+205
+00:10:27,233 --> 00:10:28,666
+这真的会毁了我们的一天
+this could really ruin our day
+
+206
+00:10:28,933 --> 00:10:33,466
+如果你想把32位的-1扩展成64位的-1
+if you want to extend that negative 1 into 64 bit negative 1
+
+207
+00:10:33,466 --> 00:10:37,166
+有一个基于mov的指令movsx
+there's another instruction that's based as move and sign extend
+
+208
+00:10:37,333 --> 00:10:38,400
+它可以
+it'll move the thing 
+
+209
+00:10:38,500 --> 00:10:39,166
+它会检查
+and then it'll look
+
+210
+00:10:39,300 --> 00:10:39,966
+如果是负的
+if it's negative 
+
+211
+00:10:40,066 --> 00:10:43,766
+它会将剩下的这些0置1
+and it'll put ones everywhere to make the remaining number 0
+
+212
+00:10:44,100 --> 00:10:48,000
+使用movsx rax, eax
+with that with movsx rax EAX
+
+213
+00:10:48,333 --> 00:10:50,966
+你先将-1放到eax
+so you move negative 1 to EAX
+
+214
+00:10:51,366 --> 00:10:55,700
+rax的高32位被清零
+the left 32 bits of RAX are zeroed out
+
+215
+00:10:56,200 --> 00:11:00,300
+然后取EAX，将符号扩展到RAX
+then you take EAX and you move sign extended into RAX
+
+216
+00:11:00,466 --> 00:11:02,866
+这把寄存器的值放到它自己的位置
+that's taking the register and moving it into itself
+
+217
+00:11:02,933 --> 00:11:03,866
+是有效的
+totally valid
+
+218
+00:11:05,600 --> 00:11:06,966
+它会扩展符号
+it'll sign extend
+
+219
+00:11:07,100 --> 00:11:09,166
+保留补码
+preserve the 2's complement value
+
+220
+00:11:09,333 --> 00:11:11,933
+然后得到一个漂亮的64位的-1
+and give you a beautiful 64 bit negative 1
+
+221
+00:11:12,800 --> 00:11:13,533
+酷
+very cool
+
+222
+00:11:13,533 --> 00:11:16,533
+若你好奇，现在你知道了
+alright just now you know if you were ever curious
+
+223
+00:11:22,700 --> 00:11:25,000
+你能mov很多数据
+you can move a lot of data
+
+224
+00:11:25,400 --> 00:11:29,966
+你可以在寄存器中对数据做很多操作
+or you can do a lot of operations on data in registers
+
+225
+00:11:30,066 --> 00:11:33,466
+这里有一些你可以做的有趣的事
+here is just some of the many cool things you can do
+
+226
+00:11:33,600 --> 00:11:34,733
+你可以加
+you can add
+
+227
+00:11:34,900 --> 00:11:35,600
+减
+you can subtract 
+
+228
+00:11:35,733 --> 00:11:37,000
+自增、自减
+you can increment then decrement
+
+229
+00:11:37,100 --> 00:11:38,800
+就是加1、减1
+that's add 1 and subtract one
+
+230
+00:11:40,466 --> 00:11:42,100
+有很多类似这种的操作
+there's a lot of these sort of little like
+
+231
+00:11:42,266 --> 00:11:44,333
+不是必须的辅助指令
+helper instructions that aren't strictly necessary
+
+232
+00:11:44,433 --> 00:11:46,733
+显然你可以用add rax, 1
+obviously you could just add rax 1 
+
+233
+00:11:46,866 --> 00:11:47,800
+而不用inc rax
+instead of inc rax 
+
+234
+00:11:47,933 --> 00:11:49,766
+但现在就是有
+but here we are 
+
+235
+00:11:50,033 --> 00:11:53,500
+可以or、xor、左移、右移
+you can or xor shift left and right
+
+236
+00:11:53,733 --> 00:11:56,800
+往下还有很多
+and you can read more and more and more
+
+237
+00:11:57,533 --> 00:11:59,766
+有一个很酷的工具叫rappel
+actually there's a really cool tool called rappel
+
+238
+00:12:01,100 --> 00:12:03,133
+它预装在PWN学院的做题环境中
+it's preinstalled in the pwn college dojo
+
+239
+00:12:03,866 --> 00:12:06,333
+它能让你写汇编指令
+it just allows you to write assembly and it'll
+
+240
+00:12:07,666 --> 00:12:10,666
+它会运行指令，然后展示寄存器的变化
+just run that binary and show you how the registers changed
+
+241
+00:12:10,966 --> 00:12:12,266
+非常酷的东西
+very cool stuff alright
+
+242
+00:12:12,600 --> 00:12:13,800
+你可以做很多事情
+a lot of things you can do
+
+243
+00:12:13,900 --> 00:12:15,566
+有一条指令不在这里
+one instruction that's not on here
+
+244
+00:12:15,566 --> 00:12:17,000
+应该加在这里的
+that I realized should be on here
+
+245
+00:12:17,500 --> 00:12:22,200
+交换指令，xchg
+exchange xchg exchange
+
+246
+00:12:23,166 --> 00:12:24,200
+你给它两个寄存器
+you give it two registers 
+
+247
+00:12:24,266 --> 00:12:25,666
+它会交换它们的值
+and it swaps their values
+
+248
+00:12:26,166 --> 00:12:28,066
+酷
+very cool all right awesome
+
+249
+00:12:28,566 --> 00:12:32,566
+你可以在寄存器上做很多算术运算
+so a lot of things you can do arithmetically on registers
+
+250
+00:12:33,066 --> 00:12:36,900
+有些寄存器你不能或不应该操作
+some registers you can't or shouldn't do stuff to
+
+251
+00:12:37,100 --> 00:12:39,266
+比如rip
+for example rip
+
+252
+00:12:39,766 --> 00:12:43,800
+它保存着下一条指令的地址
+which is the address of the next instruction
+
+253
+00:12:43,933 --> 00:12:45,233
+我们会讲到
+we'll actually talk about 
+
+254
+00:12:45,400 --> 00:12:51,933
+如何得到这个值
+how to get that value 
+
+255
+00:12:52,033 --> 00:12:54,066
+以及如何改变它等等
+and how to change it and so forth
+
+256
+00:12:54,200 --> 00:12:55,366
+先别担心
+don't worry about it yet
+
+257
+00:12:55,933 --> 00:12:58,133
+另一个特殊寄存器RSP
+another special register RSP
+
+258
+00:12:58,500 --> 00:13:03,800
+它包含了内存中称为栈的特殊区域的地址
+it contains the address of a special region called the stack in memory
+
+259
+00:13:03,933 --> 00:13:04,966
+也先别担心它
+don't worry about that yet
+
+260
+00:13:04,966 --> 00:13:06,966
+我们下节课会讲
+we'll talk about that in the next lecture
+
+261
+00:13:07,100 --> 00:13:10,700
+还有一些其它的重要寄存器
+and there are other registers that are used about for important things
+
+262
+00:13:11,566 --> 00:13:13,766
+我们以后也会讲到
+that we'll also talk about it later
+
+263
+00:13:13,766 --> 00:13:15,800
+但是一般来说
+but you know generally speaking
+
+264
+00:13:16,166 --> 00:13:17,166
+寄存器很酷
+registers are cool
+
+265
+00:13:17,166 --> 00:13:19,100
+你可以用它们来计算
+you can use them to compute
+
+266
+00:13:19,233 --> 00:13:20,966
+还有很多其他疯狂的寄存器
+there are also a lot of other crazy registers
+
+267
+00:13:21,033 --> 00:13:22,700
+我想我已经提过好几次了
+I think I have mentioned this several times
+
+268
+00:13:23,166 --> 00:13:25,900
+用于处理大量数据计算的寄存器
+in terms of registers that are used for big data crunching 
+
+269
+00:13:25,900 --> 00:13:29,733
+还有操作系统自身使用的特殊寄存器
+there are also special registers that are used by the operating system itself
+
+270
+00:13:30,933 --> 00:13:33,866
+我们将在后面的模块中讨论这个
+we will talk about this in later modules
+
+271
+00:13:33,866 --> 00:13:35,666
+这将是令人震惊的
+it is going to be mind blowing 
+
+272
+00:13:35,666 --> 00:13:36,866
+很令人兴奋的东西
+super exciting stuff
+
+273
+00:13:38,000 --> 00:13:41,833
+因特尔带来的
+brought to you by I guess Intel 
+
+274
+00:13:42,033 --> 00:13:44,733
+寄存器和像你们这样的令人兴奋的观众
+registers and viewers like you
+
+275
+00:13:45,166 --> 00:13:46,000
+下次再见
+see you next time
+

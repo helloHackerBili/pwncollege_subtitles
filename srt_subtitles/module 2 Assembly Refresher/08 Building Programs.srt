@@ -1,0 +1,1245 @@
+1
+00:00:01,066 --> 00:00:02,799
+你好黑客
+hello hackers
+
+2
+00:00:02,866 --> 00:00:04,933
+欢迎来到Pwn学院
+welcome to Pwn College
+
+3
+00:00:05,066 --> 00:00:05,699
+我是Yan
+I'm Yan and 
+
+4
+00:00:05,800 --> 00:00:08,566
+我们快到了汇编课的尾声
+we are approaching the end of the assembly crash course
+
+5
+00:00:08,666 --> 00:00:09,533
+现在我们来谈谈
+now we're going to talk about 
+
+6
+00:00:09,533 --> 00:00:11,899
+如何编译我们的汇编器
+how to actually build our assembly programs 
+
+7
+00:00:12,033 --> 00:00:13,499
+以及实操
+and play around with them
+
+8
+00:00:13,900 --> 00:00:16,966
+汇编被称为汇编
+so recall assembly is called assembly 
+
+9
+00:00:17,300 --> 00:00:23,966
+因为它是由汇编器汇编成二进制代码的
+because it is assembled by an assembler into binary code
+
+10
+00:00:26,300 --> 00:00:27,500
+为了
+in order to
+
+11
+00:00:28,100 --> 00:00:31,533
+构建我们之前讨论过的程序
+build the program that we talked about previously
+
+12
+00:00:31,966 --> 00:00:32,666
+那个quit
+that quits 
+
+13
+00:00:32,866 --> 00:00:34,533
+这个程序就干这一件事（退出）
+that's all this program does
+
+14
+00:00:35,300 --> 00:00:37,266
+我们得把它写进文件里
+we have to write it into a file
+
+15
+00:00:37,900 --> 00:00:38,766
+汇编它
+assemble it 
+
+16
+00:00:39,000 --> 00:00:40,300
+然后我们就可以运行它
+and then we can run it 
+
+17
+00:00:40,966 --> 00:00:42,599
+写入文件时，需要做的一件事是
+one thing we need to do to write into a file 
+
+18
+00:00:42,666 --> 00:00:46,033
+告诉汇编器，我们使用的是什么语法
+is tell the assembler what syntax we're using 
+
+19
+00:00:46,133 --> 00:00:48,199
+我提到过AT&T
+I mentioned AT&T
+
+20
+00:00:48,933 --> 00:00:52,633
+它是一个不好的汇编语法
+broke everything by introducing a really bad assembly syntax
+
+21
+00:00:52,733 --> 00:00:55,899
+我们告诉汇编器，我们用英特尔语法
+we're telling the assembler hey we're using the Intel syntax
+
+22
+00:00:56,066 --> 00:00:57,133
+然后还有
+and then also
+
+23
+00:00:57,466 --> 00:00:59,599
+如果你想非常准确地区分
+if you want to be extremely explicit
+
+24
+00:00:59,733 --> 00:01:03,499
+什么是寄存器，什么是变量名
+with what is a register versus what is named variables
+
+25
+00:01:04,366 --> 00:01:08,099
+你可以在所有寄存器前加上百分号
+you can prefix all your registers with percents
+
+26
+00:01:08,533 --> 00:01:09,533
+这看起来很蠢
+that looks dumb
+
+27
+00:01:10,333 --> 00:01:11,333
+不蠢
+I'm sure it doesn't look dumb 
+
+28
+00:01:11,400 --> 00:01:13,666
+但出于我们的目的，有点傻
+but it's silly for our purposes
+
+29
+00:01:13,900 --> 00:01:15,133
+我们不加百分号前缀
+we just put no prefix here
+
+30
+00:01:15,200 --> 00:01:17,366
+现在我们可以编写程序了
+now we can write our program
+
+31
+00:01:17,566 --> 00:01:18,466
+非常好
+perfectly fine 
+
+32
+00:01:18,566 --> 00:01:22,099
+井号后的内容都是注释
+anything after a hash is a comment 
+
+33
+00:01:22,266 --> 00:01:23,533
+注释中你可以写任何东西
+you can write whatever there
+
+34
+00:01:24,500 --> 00:01:25,733
+现在好了
+all right now
+
+35
+00:01:26,333 --> 00:01:27,399
+我们用汇编器
+we grab our assembler
+
+36
+00:01:27,500 --> 00:01:30,100
+我们实际上使用整个编译套件
+what we're actually gonna grab is the full compiler suite
+
+37
+00:01:30,200 --> 00:01:31,500
+因为它知道该怎么做
+because it knows what to figure out
+
+38
+00:01:31,566 --> 00:01:32,933
+它会帮我们汇编
+it'll assemble things for us 
+
+39
+00:01:33,566 --> 00:01:34,899
+我们直接用gcc
+we just call GCC
+
+40
+00:01:35,533 --> 00:01:37,799
+传一个-nostdlib参数
+pass it -nostdlib
+
+41
+00:01:38,300 --> 00:01:39,533
+它表示
+what this says is hey
+
+42
+00:01:39,533 --> 00:01:41,999
+这不是一个使用C库的C程序
+this isn't a C program that uses C libraries
+
+43
+00:01:42,066 --> 00:01:43,633
+不要链接别的库
+don't put other libraries in here 
+
+44
+00:01:43,700 --> 00:01:44,733
+因为它们没用
+because they won't work
+
+45
+00:01:44,733 --> 00:01:48,533
+它们想要一个C程序，不是你要给的
+they expect different things from a C program than you're going to give them
+
+46
+00:01:49,766 --> 00:01:51,099
+就目前而言
+in this for now 
+
+47
+00:01:51,233 --> 00:01:52,733
+我的意思是，以后它们会派上用场
+I mean of course later on they can work
+
+48
+00:01:54,166 --> 00:01:57,599
+写入二进制的elf文件quitter
+write it to the binary the elf file quitter
+
+49
+00:01:57,900 --> 00:02:00,533
+这是我的源代码文件 quitter.s
+and then here is my source code quitter.s
+
+50
+00:02:01,100 --> 00:02:02,400
+它向告警
+it complains at you
+
+51
+00:02:02,466 --> 00:02:03,466
+它会告诉你
+it's going to tell you 
+
+52
+00:02:03,533 --> 00:02:04,699
+找不到某些符号
+I can't find some symbol 
+
+53
+00:02:04,766 --> 00:02:05,266
+但是没关系
+but it's fine
+
+54
+00:02:05,366 --> 00:02:05,799
+能用
+it still works
+
+55
+00:02:05,900 --> 00:02:09,000
+它会猜测程序的入口
+it guesses where the start of the program is
+
+56
+00:02:09,500 --> 00:02:11,400
+它猜就是第一行
+just it's going to guess it's the first line
+
+57
+00:02:11,533 --> 00:02:12,999
+这正合我意
+which is perfect for you
+
+58
+00:02:13,900 --> 00:02:17,333
+然后生成了一个你可以执行的二进制文件
+and then that produces a binary file that you can then execute 
+
+59
+00:02:18,200 --> 00:02:19,700
+如果你反感这个警告
+if this warning annoys you
+
+60
+00:02:20,000 --> 00:02:20,800
+你可以解决它
+you can get rid of it 
+
+61
+00:02:20,833 --> 00:02:24,399
+只需让代码稍微复杂一点
+by making your assembly file a little bit more complicated
+
+62
+00:02:24,500 --> 00:02:25,633
+把这个放在开头
+by putting this at the beginning
+
+63
+00:02:25,866 --> 00:02:26,633
+你说
+you say hey 
+
+64
+00:02:27,033 --> 00:02:30,799
+会有一个地方
+there's going to be a location 
+
+65
+00:02:30,933 --> 00:02:34,199
+它定义了从哪里开始执行
+there's going to be a location that defines where to start execution
+
+66
+00:02:34,300 --> 00:02:35,200
+然后，嘿，它在这里
+and hey here it is
+
+67
+00:02:35,300 --> 00:02:36,000
+这就是那个地方
+here's the location 
+
+68
+00:02:36,066 --> 00:02:38,099
+就像跳转标签一样
+just like any other jump label
+
+69
+00:02:40,466 --> 00:02:43,166
+你可以这样做，以避免警告
+you can do that to avoid that warning if it annoys you
+
+70
+00:02:45,600 --> 00:02:49,133
+这样，你就构建好了你的首个汇编程序
+just like that you've built your first assembly program
+
+71
+00:02:49,933 --> 00:02:52,133
+你已经汇编了第一个汇编程序
+you've assembled your first assembly program
+
+72
+00:02:52,900 --> 00:02:53,800
+怎么运行它
+how do you run it 
+
+73
+00:02:53,933 --> 00:02:54,933
+和其他程序一样
+like any other program 
+
+74
+00:02:55,033 --> 00:02:55,999
+./quitter
+./quitter 
+
+75
+00:02:56,100 --> 00:02:57,200
+它就会退出
+and it's just gonna quit
+
+76
+00:02:57,300 --> 00:02:58,766
+它会返回错误码
+it's gonna return error code
+
+77
+00:03:00,000 --> 00:03:02,000
+会返回42
+return code 42 out of the program
+
+78
+00:03:02,066 --> 00:03:04,266
+它就是给exit系统调用的参数
+that's the argument to the exit syscall
+
+79
+00:03:04,900 --> 00:03:08,200
+你可以用特殊变量——问号
+and you can use the special question Mark variable 
+
+80
+00:03:08,433 --> 00:03:11,399
+在bash中查看它
+to view it in bash 
+
+81
+00:03:11,766 --> 00:03:12,799
+它会成功的
+and it's gonna work
+
+82
+00:03:13,266 --> 00:03:13,733
+酷
+awesome 
+
+83
+00:03:15,000 --> 00:03:18,033
+你也可以反汇编
+you can also get the assembly back out 
+
+84
+00:03:18,100 --> 00:03:18,966
+以确保
+to make sure
+
+85
+00:03:20,166 --> 00:03:21,966
+汇编的正常
+I mean that it properly assembled 
+
+86
+00:03:22,100 --> 00:03:23,766
+但也有其他情况
+but there are other cases 
+
+87
+00:03:24,000 --> 00:03:27,200
+比如阅读你没有汇编的程序的汇编
+like reading the assembly of programs that you didn't assemble
+
+88
+00:03:27,300 --> 00:03:30,566
+你可以用objdump来反汇编程序
+you can disassemble a program using objdump 
+
+89
+00:03:30,700 --> 00:03:35,333
+你告诉objdump，我讨厌看AT&T语法
+so you tell objdump hey I hate reading AT&T syntax 
+
+90
+00:03:35,433 --> 00:03:39,399
+很不幸，AT&T是默认的
+that's the default unfortunately very unfortunately
+
+91
+00:03:39,966 --> 00:03:43,999
+让它用Intel语法显示quitter的反汇编结果
+say give me the Intel disassembly syntax of the quitter program
+
+92
+00:03:44,033 --> 00:03:44,833
+就是这个
+and here it is
+
+93
+00:03:44,966 --> 00:03:46,666
+这是quitter程序
+here is your quitter program
+
+94
+00:03:48,566 --> 00:03:53,266
+这是汇编指令
+this is the assembly instructions
+
+95
+00:03:53,533 --> 00:03:53,966
+这些是
+these are 
+
+96
+00:03:54,166 --> 00:03:55,166
+这是42的十六进制值
+this is 42 in Hex 
+
+97
+00:03:55,233 --> 00:03:56,366
+这是60的十六进制值
+this is 60 in Hex
+
+98
+00:03:56,866 --> 00:03:59,833
+这是exit的系统调用号
+this is the syscall number for exit
+
+99
+00:04:00,100 --> 00:04:01,866
+这是exit的第一个参数
+and this is the first argument to exit
+
+100
+00:04:02,133 --> 00:04:03,599
+然后是syscall
+and then syscall boom
+
+101
+00:04:03,866 --> 00:04:05,699
+就是这样，超级简单
+that's all it's super simple
+
+102
+00:04:05,866 --> 00:04:12,599
+这是这些指令的二进制表示
+this is the binary representation of these instructions
+
+103
+00:04:12,733 --> 00:04:13,699
+这太酷了
+how cool is that
+
+104
+00:04:13,900 --> 00:04:16,333
+这个2a，能在这里看见
+so this 2a is going to actually be visible right here
+
+105
+00:04:16,666 --> 00:04:19,299
+你把它赋值给rdi
+it's you're moving it into RDI
+
+106
+00:04:21,666 --> 00:04:27,399
+为什么它是32位的
+and why is it a 32 bit number
+
+107
+00:04:28,366 --> 00:04:34,533
+不管怎样，这个2a 00 00 00是一个32位的值
+anyways this 2a 00 00 00 is a 32 bit value
+
+108
+00:04:35,300 --> 00:04:36,300
+编码在
+encoded in
+
+109
+00:04:37,933 --> 00:04:38,966
+不，我还是没明白
+no I still didn't get it 
+
+110
+00:04:39,000 --> 00:04:42,000
+用小端序存储
+okay stored in little endian 
+
+111
+00:04:42,166 --> 00:04:44,799
+这是3c 00 00 00
+and here's your 3c 00 00 00
+
+112
+00:04:45,100 --> 00:04:45,566
+酷
+cool
+
+113
+00:04:45,666 --> 00:04:48,599
+这表示赋值给rax
+and this says move to rax 
+
+114
+00:04:48,700 --> 00:04:50,400
+这表示赋值给rdi
+this says move to rdi
+
+115
+00:04:51,366 --> 00:04:54,366
+这个0f 05是syscall指令
+and this 0f 05 is the syscall instruction
+
+116
+00:04:54,900 --> 00:04:56,333
+现在你有了一个程序
+and now you have a program alright
+
+117
+00:04:56,466 --> 00:04:56,999
+你也可以
+you can also 
+
+118
+00:04:57,166 --> 00:05:00,299
+这个新创建的ELF文件
+so this ELF file that was created 
+
+119
+00:05:00,333 --> 00:05:01,233
+这个quitter文件
+this quitter file
+
+120
+00:05:01,366 --> 00:05:06,833
+我相信你看了前面关于ELF文件的课程
+I'm sure you watch the lectures on ELF files in prior modules
+
+121
+00:05:07,333 --> 00:05:08,166
+这是一个大文件
+it's a big file
+
+122
+00:05:08,266 --> 00:05:10,833
+它包含了所有其他的元数据
+it's got like all of this other metadata
+
+123
+00:05:11,166 --> 00:05:12,566
+如果我们只想要这些字节呢
+what if we just want these bytes
+
+124
+00:05:12,600 --> 00:05:14,366
+例如，如果你只想要这些字节
+for example if you just want these bytes
+
+125
+00:05:14,433 --> 00:05:16,133
+这样你就可以把它们提交给
+so that you can submit them to the 
+
+126
+00:05:17,500 --> 00:05:24,133
+PWN学院汇编习题的评分脚本
+the kind of grading script of the assembly practice problems on pwn college
+
+127
+00:05:24,266 --> 00:05:28,033
+你可以用这个命令把它们弄出来
+well you can get them out using this weird command
+
+128
+00:05:28,100 --> 00:05:31,200
+objcopy能导出.text段
+objcopy say dump the section .text
+
+129
+00:05:31,333 --> 00:05:33,533
+.text是ELF的一个部分
+if you remember .text is a section of ELF 
+
+130
+00:05:33,633 --> 00:05:36,466
+里面是你的二进制代码
+where your binary code is
+
+131
+00:05:36,733 --> 00:05:39,533
+把它从这个elf文件，导入这个文件
+dump it into this file from this elf
+
+132
+00:05:39,733 --> 00:05:40,633
+你这样做
+and you just do it 
+
+133
+00:05:40,666 --> 00:05:41,933
+就能拿到这些字节
+so we have these bytes
+
+134
+00:05:42,200 --> 00:05:43,066
+我们导出它
+we dump it 
+
+135
+00:05:43,933 --> 00:05:45,866
+然后我们可以用hexdump查看这个文件
+and then we can hexdump that file
+
+136
+00:05:45,966 --> 00:05:47,299
+我们能看到只有这些字节
+we see it's just the bytes
+
+137
+00:05:47,700 --> 00:05:48,300
+很酷吧
+pretty cool huh
+
+138
+00:05:48,400 --> 00:05:53,333
+然后你可以把它交给评分脚本
+and then you can pass that to the grading script 
+
+139
+00:05:53,566 --> 00:05:55,399
+你就准备好了
+and you're good to go
+
+140
+00:05:55,500 --> 00:05:57,600
+对于二进制文件的习题，你已经准备好了
+to the challenge of binaries and you're good to go
+
+141
+00:06:00,733 --> 00:06:02,533
+当然，你肯定会写出bug
+of course you're going to introduce bugs
+
+142
+00:06:05,933 --> 00:06:09,366
+毫无疑问，你的代码将会有bug
+there's no doubt that your code is going to be buggy
+
+143
+00:06:09,466 --> 00:06:10,766
+Ada Lovelace
+Ada Lovelace 
+
+144
+00:06:11,166 --> 00:06:16,399
+1843年最早的计算机程序员之一
+one of the original computer programmers in 1843
+
+145
+00:06:17,300 --> 00:06:19,066
+谈论过软件
+talked about softwares
+
+146
+00:06:19,466 --> 00:06:24,099
+托马斯·爱迪生在1878年就提过bug（虫子）
+Thomas Edison in 1878 was already talking about bugs
+
+147
+00:06:24,600 --> 00:06:27,733
+用来指代错误
+right to mean a errors
+
+148
+00:06:27,866 --> 00:06:32,333
+当然还有在电脑里发现的著名飞蛾
+and of course there's the famous moth found in a computer
+
+149
+00:06:34,400 --> 00:06:35,200
+在
+in
+
+150
+00:06:38,600 --> 00:06:39,800
+我忘了具体日期
+well I forgot the date
+
+151
+00:06:40,066 --> 00:06:42,566
+我想说的是在1948年
+1948 I want to say
+
+152
+00:06:42,700 --> 00:06:43,500
+总之
+anyways
+
+153
+00:06:44,166 --> 00:06:46,933
+大致是一个真正的虫子引发了软件错误
+that's like an actual bug causing a software fault but
+
+154
+00:06:47,500 --> 00:06:48,766
+或者像这个例中，导致硬件故障
+or causing a hardware fault in this case 
+
+155
+00:06:48,933 --> 00:06:53,366
+bug这个词是相当古老的
+but the term bugs is quite old
+
+156
+00:06:53,566 --> 00:06:54,799
+你的程序中也会有bug
+and you will have bugs in your program
+
+157
+00:06:54,833 --> 00:06:57,033
+你需要调试它们
+and you will need to debug them 
+
+158
+00:06:58,066 --> 00:06:58,899
+如何调试它们
+how do you debug them
+
+159
+00:06:58,900 --> 00:07:00,933
+调试是用调试器完成的
+well debugging is done with debuggers
+
+160
+00:07:01,266 --> 00:07:03,466
+有专门的工具
+specific special tools for this
+
+161
+00:07:04,000 --> 00:07:05,500
+比如GDB
+such as GDB
+
+162
+00:07:09,333 --> 00:07:12,799
+GDB会添加一个断点
+GDB will add a break point
+
+163
+00:07:13,500 --> 00:07:15,500
+中断你的程序
+interrupt your program
+
+164
+00:07:15,933 --> 00:07:18,299
+方便你检查
+and let you look around
+
+165
+00:07:19,733 --> 00:07:20,533
+这是什么原理
+how does this work 
+
+166
+00:07:20,700 --> 00:07:23,733
+这很有趣
+well it's pretty interesting
+
+167
+00:07:25,400 --> 00:07:27,933
+在x86中有一个特殊的指令
+there's a special instruction in x86
+
+168
+00:07:28,166 --> 00:07:30,466
+它说：嘿，我是个断点
+that says hey I'm a break point
+
+169
+00:07:30,933 --> 00:07:31,799
+调试器
+debugger
+
+170
+00:07:32,300 --> 00:07:33,400
+我是一个断点
+I'm a break point
+
+171
+00:07:33,900 --> 00:07:35,766
+你可以把它插入你的代码中
+and you can just insert it into your code
+
+172
+00:07:35,866 --> 00:07:38,199
+只需要插入这个int 3指令
+you just insert this int 3 instruction
+
+173
+00:07:38,466 --> 00:07:39,766
+这是3号中断
+that's interrupt 3
+
+174
+00:07:39,900 --> 00:07:42,066
+这就是断点中断
+that's the break point interrupt
+
+175
+00:07:42,733 --> 00:07:43,133
+总之
+anyways 
+
+176
+00:07:43,266 --> 00:07:47,199
+你只需将它插入到代码中
+you just insert it into your code 
+
+177
+00:07:47,433 --> 00:07:49,166
+如果附加了调试器
+if you have debugger attached 
+
+178
+00:07:49,766 --> 00:07:56,466
+它能停止程序
+it will helpfully stop the program
+
+179
+00:07:57,066 --> 00:07:59,266
+并允许你检查程序状态
+and allow you to inspect its state
+
+180
+00:07:59,400 --> 00:08:00,733
+如果没有附加调试器
+now if no debuggers attached 
+
+181
+00:08:00,800 --> 00:08:01,900
+你的进程将终止
+your process is gonna die
+
+182
+00:08:02,000 --> 00:08:04,466
+因为这不应该发生
+because that shouldn't happen and
+
+183
+00:08:05,066 --> 00:08:06,866
+基本上操作系统会说：哇哦
+basically the operating system says whoa ho
+
+184
+00:08:06,866 --> 00:08:07,699
+出乎意料了
+this is not expected 
+
+185
+00:08:07,766 --> 00:08:10,099
+我们要结束这一切
+we're just gonna shut this whole situation
+
+186
+00:08:11,566 --> 00:08:12,699
+关闭进程
+shut the process down
+
+187
+00:08:15,266 --> 00:08:18,566
+调试器也可以设置断点
+so the debugger can also set break points 
+
+188
+00:08:18,700 --> 00:08:20,166
+可以用调试器设置断点
+you can set break points from a debugger 
+
+189
+00:08:20,166 --> 00:08:21,699
+如果你用过调试器，你就知道这一点
+if you ever use a debugger you know this
+
+190
+00:08:21,766 --> 00:08:23,333
+它的工作原理是这样的
+but this is how it works 
+
+191
+00:08:23,600 --> 00:08:24,200
+默认情况下
+by default 
+
+192
+00:08:24,433 --> 00:08:28,599
+它会查看你设置断点的地址
+it just looks at the address you're setting a debugger at
+
+193
+00:08:28,733 --> 00:08:31,533
+并用INT 3指令替换那里的指令
+and replaces the instruction there with an INT 3 instruction 
+
+194
+00:08:31,666 --> 00:08:33,166
+当要执行原来的指令时
+and when that instruction is actually hit
+
+195
+00:08:33,500 --> 00:08:34,433
+在后台
+then in the background 
+
+196
+00:08:34,533 --> 00:08:35,799
+调试器会说：好吧
+the debugger just says okay
+
+197
+00:08:35,866 --> 00:08:38,799
+我们把原来的指令放回去
+well let's put the old instruction back
+
+198
+00:08:38,866 --> 00:08:40,499
+然后执行这条指令
+and execute just that instruction
+
+199
+00:08:40,500 --> 00:08:45,266
+再把它换回int 3
+and then swap it back with the int 3 
+
+200
+00:08:45,500 --> 00:08:48,366
+这就是调试器的工作原理
+so this is actually how the debugger works
+
+201
+00:08:48,533 --> 00:08:53,599
+在pwn学院的汇编习题环境中
+now specifically in the Assembly Crash Course challenges in pwn College
+
+202
+00:08:54,300 --> 00:08:56,833
+我们提供了一个自动化的调试器
+we provide an automated debugger for you
+
+203
+00:08:56,933 --> 00:09:01,799
+只要你的代码在题中调用int 3
+anytime your code calls int 3 in the challenge 
+
+204
+00:09:01,800 --> 00:09:07,633
+就会输出一些有用的程序状态
+we're going to give you a helpful printing of the program state 
+
+205
+00:09:07,766 --> 00:09:09,233
+然后暂停，直到你按回车键
+and pause until you hit enter
+
+206
+00:09:09,866 --> 00:09:12,266
+希望这能让调试更简单
+that hopefully will make it easier
+
+207
+00:09:12,500 --> 00:09:15,733
+暂时不用学像GDB这样的调试器了
+you don't have to learn how to use a debugger like GDB yet
+
+208
+00:09:15,866 --> 00:09:17,266
+暂时帮一下你
+will hold your hand for now
+
+209
+00:09:18,333 --> 00:09:20,133
+但还是要学gdb
+but you will need to learn gdb 
+
+210
+00:09:20,200 --> 00:09:22,233
+你还需要使用strace
+you also need to use strace
+
+211
+00:09:22,533 --> 00:09:24,366
+一个非常有用的调试工具
+very helpful debugging tool
+
+212
+00:09:24,733 --> 00:09:29,399
+strace会运行你的程序
+strace will actually run your program
+
+213
+00:09:30,400 --> 00:09:31,166
+当然
+of course
+
+214
+00:09:31,166 --> 00:09:32,499
+要知道如何使用Strace
+to know how to use Strace 
+
+215
+00:09:32,500 --> 00:09:33,366
+可以查看man手册
+look at the man page
+
+216
+00:09:33,566 --> 00:09:35,166
+strace会运行你的程序
+Strace will run your program 
+
+217
+00:09:36,100 --> 00:09:41,066
+并打印出它调用的每个系统调用
+and will just print out every system call that it makes
+
+218
+00:09:41,166 --> 00:09:42,199
+用了哪些参数
+what the arguments of it were 
+
+219
+00:09:42,300 --> 00:09:43,366
+返回值是多少
+and what the result was
+
+220
+00:09:43,900 --> 00:09:46,200
+对调试非常有用
+super useful for debugging
+
+221
+00:09:46,500 --> 00:09:48,233
+应该是首选
+should be your first attempt 
+
+222
+00:09:48,233 --> 00:09:49,333
+甚至在GDB之前
+maybe even before GDB
+
+223
+00:09:49,500 --> 00:09:50,066
+先用strace
+strace first 
+
+224
+00:09:50,133 --> 00:09:51,299
+如果用它搞不定
+if you can't figure out from there 
+
+225
+00:09:51,566 --> 00:09:51,899
+再GDB
+GDB it
+
+226
+00:09:54,733 --> 00:09:55,666
+其他有用的工具
+other useful tools
+
+227
+00:09:56,266 --> 00:09:58,066
+rappel，我之前提过它
+rappel I mentioned it before
+
+228
+00:09:58,133 --> 00:10:00,733
+它能让你探索有效的指令
+it allows you to explore effective instructions
+
+229
+00:10:01,000 --> 00:10:01,566
+去看看它
+check it out 
+
+230
+00:10:01,700 --> 00:10:02,900
+它已经装在dojo里了
+it's in the dojo already 
+
+231
+00:10:03,000 --> 00:10:03,900
+直接执行rappel
+just run rappel
+
+232
+00:10:04,966 --> 00:10:07,999
+x86有广泛的文档记录
+and x86 is widely documented 
+
+233
+00:10:08,033 --> 00:10:09,333
+如果你想知道什么
+if you want to know anything
+
+234
+00:10:09,800 --> 00:10:11,333
+这是最后的选择
+this is the nuclear option
+
+235
+00:10:11,600 --> 00:10:14,666
+由英特尔创建的架构手册
+the Architecture Manual created by Intel 
+
+236
+00:10:14,766 --> 00:10:16,799
+这能有几千页
+this is like thousands of pages long
+
+237
+00:10:18,300 --> 00:10:23,666
+这个felixcloutier维护着一个指令清单
+this felixcloutier maintains an instruction listing 
+
+238
+00:10:23,866 --> 00:10:25,999
+很好，能点击查看
+very nice clickable
+
+239
+00:10:26,166 --> 00:10:29,833
+这里有每条x86指令的参考文档
+and then here is a reference of every x86 instruction 
+
+240
+00:10:30,000 --> 00:10:32,233
+包含它的字节码等等
+and its byte encodings and so forth
+
+241
+00:10:32,700 --> 00:10:34,600
+对以后的模块非常有用
+very useful for later modules
+
+242
+00:10:36,900 --> 00:10:40,466
+感谢你们跟随我踏上这个汇编之旅
+thank you for following me on this Assembly journey
+
+243
+00:10:40,566 --> 00:10:43,599
+希望你学到了很多东西
+I hope that you have Learned an enormous amount
+
+244
+00:10:43,700 --> 00:10:45,233
+我对汇编感到超级兴奋
+and i am super excited about Assembly
+
+245
+00:10:45,300 --> 00:10:49,200
+记住，它是最正统的编程语言
+remember it's the truest programming language
+
+246
+00:10:49,333 --> 00:10:51,066
+最简单的编程语言
+the simplest programming language
+
+247
+00:10:52,566 --> 00:10:55,333
+甚至可能是最有趣的编程语言
+and maybe even the funniest programming language
+
+248
+00:10:55,333 --> 00:10:57,266
+现在去dojo（道场）
+now go to the dojo
+
+249
+00:10:57,500 --> 00:11:00,266
+做题吧，祝你好运
+tackle those challenges and good luck
+

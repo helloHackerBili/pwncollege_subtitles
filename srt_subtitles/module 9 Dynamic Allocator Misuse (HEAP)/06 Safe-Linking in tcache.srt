@@ -1,0 +1,2235 @@
+1
+00:00:00,600 --> 00:00:04,300
+本模块之前的视频是几年前录制的
+so the prior videos in this module were recorded several years ago
+
+2
+00:00:04,366 --> 00:00:06,066
+正如Yan提到的
+and as Yan mentioned
+
+3
+00:00:06,133 --> 00:00:07,299
+堆会经历
+the heap kind of goes through
+
+4
+00:00:07,300 --> 00:00:11,000
+安全与效率的循环
+cycles of emphasizing efficiency versus security versus efficiency
+
+5
+00:00:11,100 --> 00:00:13,333
+并不是说哪一个更重要
+and it's not that one's more important than the other
+
+6
+00:00:13,400 --> 00:00:14,933
+而是有个权衡在里面
+there's always a trade off
+
+7
+00:00:15,133 --> 00:00:16,666
+一方面追求高效率
+going for something that's more efficient
+
+8
+00:00:16,666 --> 00:00:18,466
+另一方面则是安全性
+versus going for something that's more secure
+
+9
+00:00:18,466 --> 00:00:22,333
+当添加一种安全机制
+anytime that you add a mitigation technique
+
+10
+00:00:22,700 --> 00:00:25,400
+它让系统更安全
+something to try and make a system more secure
+
+11
+00:00:25,400 --> 00:00:26,933
+但这是有代价的
+there's always some kind of cost to it 
+
+12
+00:00:27,100 --> 00:00:31,900
+无论是真实存在的资源消耗，亦或是人力消耗
+whether it's a resource cost a real cost or a human cost
+
+13
+00:00:32,133 --> 00:00:34,566
+取舍一直都在
+and so there's always trade offs there
+
+14
+00:00:35,400 --> 00:00:37,466
+至于更注重哪个
+and as far as what the focus is
+
+15
+00:00:37,466 --> 00:00:38,999
+这要看哪个更流行了
+that kind of depends on the flavor of the month
+
+16
+00:00:39,000 --> 00:00:41,066
+这取决于开发者的想法
+it depends on what's on developer's minds
+
+17
+00:00:41,066 --> 00:00:42,966
+有哪些安全新闻
+it depends on what's in the news right
+
+18
+00:00:42,900 --> 00:00:44,566
+就是看趋势
+just kind of what's trend 
+
+19
+00:00:44,566 --> 00:00:48,099
+最近，安全一直是一个热门话题
+as of late security has been kind of a hot topic
+
+20
+00:00:48,133 --> 00:00:49,933
+所以当我们讨论堆的时候
+and so when we talk about the heap
+
+21
+00:00:49,933 --> 00:00:52,766
+肯定有一些保护机制
+there's definitely some mitigation techniques
+
+22
+00:00:52,766 --> 00:00:56,699
+在堆里的单链表中被实现
+that are implemented in singly linked list heap implementations
+
+23
+00:00:57,066 --> 00:00:59,266
+比如tcache或Fastbin
+ like tcache or Fastbin
+
+24
+00:00:59,733 --> 00:01:00,866
+是值得讨论的
+that are worth talking about
+
+25
+00:01:00,866 --> 00:01:02,199
+所以在这个视频中
+and so in this video
+
+26
+00:01:02,200 --> 00:01:08,000
+我们将讨论一个已经出现的漏洞保护机制
+we're going to talk about one of the kind of exploit prevention techniques that exists
+
+27
+00:01:08,066 --> 00:01:09,533
+这就是所谓的安全链接
+and it's called safe linking
+
+28
+00:01:09,900 --> 00:01:13,200
+先来看安全链接要阻止什么
+and so we're going to take a look at what safe linking attempts to prevent
+
+29
+00:01:13,900 --> 00:01:18,000
+然后看看保护机制是如何实现的
+we're then going to look at how those prevention mechanisms are implemented
+
+30
+00:01:18,300 --> 00:01:22,300
+之后讨论它的有效性
+and then we're going to discuss how effective these prevention mechanisms are
+
+31
+00:01:22,400 --> 00:01:27,400
+最后说说攻击者如何绕过它
+and how a committed attacker can get around them
+
+32
+00:01:29,000 --> 00:01:32,400
+我们将从攻击者的角度分析它
+so we're going to approach this from the attacker's viewpoint
+
+33
+00:01:32,800 --> 00:01:35,966
+对于攻击者来说，如果你在做堆漏洞利用
+and for an attacker if you're doing a heap exploit
+
+34
+00:01:36,300 --> 00:01:38,600
+通常想要的
+a very common thing that you'll want to try and do
+
+35
+00:01:38,600 --> 00:01:44,000
+或者说一个好目标，是堆上的指针
+or Juicy Target is going to be a pointer on the heap
+
+36
+00:01:44,066 --> 00:01:46,899
+对于tcache来说，就是next
+right like the for tcache it would be the next pointer
+
+37
+00:01:47,100 --> 00:01:51,800
+攻击者对next指针感兴趣有几个原因
+and there's a couple of reasons that the next pointer is interesting to an attacker
+
+38
+00:01:52,100 --> 00:01:53,866
+首先，如果我能读取它
+the first is if I can read it
+
+39
+00:01:54,533 --> 00:01:56,066
+如果我能读取这个值
+if I can read that value
+
+40
+00:01:56,066 --> 00:01:57,933
+我可以消除一些随机性
+I can eliminate some randomness
+
+41
+00:01:57,933 --> 00:01:59,533
+至少是堆基址的随机性
+as far as ASLR on the heap
+
+42
+00:01:59,533 --> 00:02:02,899
+可以弄清随机的基址
+I've eliminated the random bytes that exist in that space
+
+43
+00:02:03,300 --> 00:02:05,266
+如果我能读取next指针
+if I can read that next pointer
+
+44
+00:02:05,266 --> 00:02:09,399
+我还获得了一些关于堆上内存布局的信息
+I also gain some information about the layout of memory on the heap
+
+45
+00:02:10,000 --> 00:02:14,000
+我知道了另一个chunk的位置
+so I now have some idea of where another chunk is located
+
+46
+00:02:14,066 --> 00:02:16,699
+对于高级的堆利用
+and for an advanced heap exploit 
+
+47
+00:02:16,700 --> 00:02:21,100
+它可能是成功利用的关键信息
+that may be very critical information for me to pull off the exploit
+
+48
+00:02:22,933 --> 00:02:23,733
+现在
+now
+
+49
+00:02:24,466 --> 00:02:25,599
+另外
+alternatively
+
+50
+00:02:26,300 --> 00:02:29,166
+我可以试着覆盖next指针
+I could try overwrite this next pointer
+
+51
+00:02:29,400 --> 00:02:32,200
+为什么我要覆盖next指针
+and the reason I'd be interested in overwriting the next pointer
+
+52
+00:02:32,500 --> 00:02:36,500
+是因为当chunk被释放时
+is because when the chunk is freed
+
+53
+00:02:37,000 --> 00:02:39,866
+不好意思，不是释放，是当被malloc后
+I'm sorry not freed when the chunk is malloced
+
+54
+00:02:41,200 --> 00:02:44,066
+next指向的chunk将成为链表的新头节点
+the next pointer becomes the next chunk
+
+55
+00:02:44,066 --> 00:02:45,766
+节点的编号都提前了一号（第2变第1，第3变第2）
+everything moves up the list
+
+56
+00:02:46,000 --> 00:02:49,333
+如果设置正确的话
+and so if set up correctly
+
+57
+00:02:51,000 --> 00:02:53,666
+调用几次malloc后
+malloc is called a number of times
+
+58
+00:02:54,166 --> 00:02:57,566
+篡改的next值将被malloc返回
+that next value can get returned by malloc
+
+59
+00:02:57,800 --> 00:02:59,466
+而且是被当作合法指针
+as a valid pointer
+
+60
+00:03:00,700 --> 00:03:03,566
+这样后果很严重
+and that's an extremely powerful thing to have
+
+61
+00:03:03,766 --> 00:03:05,933
+因为如果malloc被调用了
+because if malloc is being called
+
+62
+00:03:06,166 --> 00:03:09,199
+调用malloc的程序
+then the program that is calling malloc
+
+63
+00:03:09,400 --> 00:03:12,166
+一般会在这个地址上读或写
+likely performs reads or writes on that pointer
+
+64
+00:03:12,900 --> 00:03:17,000
+毕竟不会无缘无故调用malloc
+there's a reason that the program called malloc in the first place
+
+65
+00:03:17,300 --> 00:03:20,300
+所以覆盖next指针
+and so by overwriting this next pointer
+
+66
+00:03:20,300 --> 00:03:25,100
+是实现任意读写的常见方法
+it's a very common pathway to get an arbitrary read or an arbitrary write
+
+67
+00:03:25,166 --> 00:03:27,099
+如果我能控制next指针
+if I can control this next pointer 
+
+68
+00:03:27,100 --> 00:03:28,466
+然后让malloc返回它
+and get malloc to return it
+
+69
+00:03:28,500 --> 00:03:35,800
+很大可能可以读写我想要的任意地址
+there's a very high chance that I can read or write anywhere that I choose to in memory
+
+70
+00:03:37,466 --> 00:03:38,266
+现在
+now
+
+71
+00:03:38,733 --> 00:03:40,699
+安全链接试图阻止它
+safelinking attempts to prevent this
+
+72
+00:03:40,700 --> 00:03:47,000
+它通过加密空闲chunk中的next指针实现
+and it does so by mangling and messing up that next pointer value in the free chunk
+
+73
+00:03:47,300 --> 00:03:51,800
+每个空闲chunk的next指针都会被异或
+and so inside every free chunk that next pointer gets xord
+
+74
+00:03:51,800 --> 00:03:53,933
+它会和一个随机数异或
+it gets xord with some random bytes
+
+75
+00:03:53,933 --> 00:03:57,799
+这样，攻击者在（读写）两个方面都陷入了困境
+and so this kind of messes up the attacker on both fronts
+
+76
+00:03:58,100 --> 00:03:59,100
+如果我是攻击者
+if I'm the attacker
+
+77
+00:03:59,100 --> 00:04:01,700
+我读取这个加密后的next值
+and I'm reading this mangled next value
+
+78
+00:04:01,933 --> 00:04:02,733
+好吧
+well
+
+79
+00:04:04,066 --> 00:04:06,533
+它被异或了，被打乱了
+the value has been xord it's been messed up
+
+80
+00:04:06,566 --> 00:04:13,399
+我无法获取随机基址
+so I don't learn anything about the ASLR bytes right
+
+81
+00:04:13,766 --> 00:04:15,899
+因为它已经被异或了
+because those of those have been xord
+
+82
+00:04:15,900 --> 00:04:20,800
+堆内存空间也不明显了
+and so it's not immediately obvious what does the memory space look like
+
+83
+00:04:21,100 --> 00:04:24,400
+因为它是一个被加密的指针
+and because it's a mangled pointer that's been xord
+
+84
+00:04:24,400 --> 00:04:28,400
+无法通过它找到下一chunk在哪里
+I also can't look at it and have any idea where the next chunk is located
+
+85
+00:04:28,500 --> 00:04:35,700
+没有得到任何关于堆布局的有用信息
+I don't gain any information about the layout of heap memory that I could possibly manipulate
+
+86
+00:04:36,300 --> 00:04:39,500
+所以无法通过读取这个值获得任何信息
+so I don't gain any information by viewing this value
+
+87
+00:04:40,666 --> 00:04:42,533
+如果我要覆盖它
+now if I'm going to try and overwrite it
+
+88
+00:04:43,200 --> 00:04:46,933
+我是可以用我想要的值覆盖它
+I could overwrite it and put my own value there
+
+89
+00:04:47,466 --> 00:04:49,533
+但我们会在后面几张幻灯片中看到
+but as we'll see in a couple slides
+
+90
+00:04:50,000 --> 00:04:55,900
+因为加解密，它也不会生效
+that will also not be very effective because of this mangling and demangling
+
+91
+00:04:57,133 --> 00:04:57,766
+所以
+so
+
+92
+00:04:57,766 --> 00:05:01,733
+安全链接可以归结为两点
+safe linking comes down to just two simple rules
+
+93
+00:05:02,100 --> 00:05:08,900
+第一个是会加密 tcache中空闲chunk的 next 
+the first we just saw which is the tcache next pointers must be mangled for free chunks
+
+94
+00:05:09,300 --> 00:05:12,000
+他会和一个随机数异或
+so it's xord with some random bytes
+
+95
+00:05:12,000 --> 00:05:15,500
+这使得攻击者很难读取并获取信息
+and that makes it difficult for the attacker to read and gain information
+
+96
+00:05:15,500 --> 00:05:18,100
+它也使攻击者覆盖它后
+and it makes it difficult for the attacker to overwrite that
+
+97
+00:05:18,133 --> 00:05:19,966
+很难有一个成功的结果
+and have a successful outcome
+
+98
+00:05:20,900 --> 00:05:23,700
+第二点是解密
+the second rule is demangled pointers
+
+99
+00:05:23,866 --> 00:05:27,566
+加密后的值被存储在这里
+so they're stored here in a mangled state
+
+100
+00:05:27,666 --> 00:05:29,266
+在特定的时候
+but at some point
+
+101
+00:05:29,500 --> 00:05:32,800
+它需要解密回一个合法指针
+that next value needs to get converted back to a valid pointer
+
+102
+00:05:32,866 --> 00:05:35,266
+这样malloc才能返回一个有效的指针
+ so that malloc can return a valid pointer
+
+103
+00:05:35,866 --> 00:05:39,366
+经过解密后
+and after the demangling procedure
+
+104
+00:05:39,966 --> 00:05:43,066
+重点来了，指针的最低有效半字节必须是0
+the rule is the pointer's least significant nibble must be 0
+
+105
+00:05:43,066 --> 00:05:46,699
+乍一看第二点的要求好像不严格
+now this second rule doesn't seem like much
+
+106
+00:05:46,700 --> 00:05:49,200
+但它却对攻击者有很大影响
+but it does have an impact to an attacker
+
+107
+00:05:49,900 --> 00:05:55,200
+首先，如果我用自己加密后的值覆盖它
+the first is if I try and just write my own mangled messed up value
+
+108
+00:05:56,200 --> 00:05:57,933
+我走了大运才能成功
+I have to get lucky
+
+109
+00:05:58,500 --> 00:06:00,800
+因为最低有效半字节
+because the least significant nibble
+
+110
+00:06:00,800 --> 00:06:03,300
+必须和一个随机数异或
+must xor with the random bytes
+
+111
+00:06:03,400 --> 00:06:06,666
+解密结果得是0
+such that the least significant nibble is zero
+
+112
+00:06:06,700 --> 00:06:12,300
+这样自然大概率直接失败
+and so that automatically makes it more likely that I'm going to just fail
+
+113
+00:06:12,966 --> 00:06:14,933
+因为失败几率更大
+because the fail state is greater
+
+114
+00:06:17,166 --> 00:06:18,066
+另外
+additionally
+
+115
+00:06:18,700 --> 00:06:22,400
+因为解密后指针（最低有位半字节）必须是0
+because the demangled pointer must be 0
+
+116
+00:06:22,600 --> 00:06:24,200
+这就意味着
+that means there are
+
+117
+00:06:24,600 --> 00:06:26,300
+大量的
+a large number of
+
+118
+00:06:26,300 --> 00:06:27,766
+有效的内存地址
+valid memory addresses 
+
+119
+00:06:27,766 --> 00:06:31,533
+malloc都无法返回
+that simply cannot be returned by malloc
+
+120
+00:06:31,900 --> 00:06:34,200
+比如一个完全有效的内存地址
+like a totally valid memory address
+
+121
+00:06:34,200 --> 00:06:37,900
+在64位系统中，对齐的地址末尾是8
+as far as like offset aligned on a 64 bit system is just something that ends in 8
+
+122
+00:06:37,900 --> 00:06:42,733
+使用的大多数合法地址都是8字节对齐的
+most valid memory addresses that you're working with are 8 byte aligned
+
+123
+00:06:42,966 --> 00:06:45,133
+末尾不是0就8
+so it's it's 0 or 8
+
+124
+00:06:46,266 --> 00:06:47,066
+好吧
+well
+
+125
+00:06:47,900 --> 00:06:52,000
+如果你想从堆中获取一个指针
+it turns out if you're going to get a pointer from the heap
+
+126
+00:06:52,000 --> 00:06:53,666
+末尾是8不行了
+8 is no longer an option
+
+127
+00:06:53,866 --> 00:06:56,266
+对于攻击者来说，这意味着
+and so for an attacker this means that
+
+128
+00:06:56,266 --> 00:07:00,299
+我可能对以8结尾的内存地址感兴趣
+I may be interested in a memory location that ends in 8
+
+129
+00:07:00,300 --> 00:07:05,500
+但是我无法让堆返回我想要的指针
+but I can't get the heap to return a pointer that is exactly what I want
+
+130
+00:07:05,866 --> 00:07:07,999
+这就增加了复杂性
+and so this causes additional complexity
+
+131
+00:07:08,000 --> 00:07:10,400
+对于攻击者来说，这是一种额外的头痛
+ and kind of additional headache for an attacker
+
+132
+00:07:10,933 --> 00:07:12,366
+我们会发现
+and so we'll see
+
+133
+00:07:12,766 --> 00:07:14,499
+这两个简单的规则
+that these two simple rules
+
+134
+00:07:14,500 --> 00:07:18,266
+阻止了大量经典堆攻击
+prevent a large number of just like classical heap attacks
+
+135
+00:07:18,566 --> 00:07:19,866
+并不能阻止所有
+ doesn't prevent all of them
+
+136
+00:07:20,300 --> 00:07:23,333
+堆攻击仍然可能发生
+and the heap attacks that still can occur
+
+137
+00:07:23,900 --> 00:07:24,700
+它们还能用
+they still work
+
+138
+00:07:24,700 --> 00:07:27,700
+但他们需要付出更多的努力才能实现
+but they're going to require a bit more effort to pull off
+
+139
+00:07:27,700 --> 00:07:31,000
+因为我们必须考虑到这两条规则
+because we have to account for these two rules
+
+140
+00:07:31,466 --> 00:07:34,399
+让我们回到攻击者的角度来思考
+so let's go back to thinking like an attacker
+
+141
+00:07:34,400 --> 00:07:36,800
+我们来试一下利用
+and we're going to try and pull off an exploit
+
+142
+00:07:37,000 --> 00:07:39,300
+我们会试着覆盖next指针
+and so we're going to try and overwrite this next pointer
+
+143
+00:07:39,500 --> 00:07:42,066
+从之前Yan的视频可知
+and from Yan's earlier videos we saw
+
+144
+00:07:43,200 --> 00:07:48,700
+最近释放的chunk位于列表的头部
+that the most recently freed chunk is at the head of the list
+
+145
+00:07:49,700 --> 00:07:55,300
+头指针存储在tcache_per_thread结构体中
+and the head pointer is stored in the tcache_per_thread struct
+
+146
+00:07:55,700 --> 00:07:59,000
+它有一个数组，每个元素有一个计数器和指针
+and it has a list of counts and then a pointer
+
+147
+00:07:59,200 --> 00:08:02,666
+这个指针指向头节点或者说是对应bin的entry
+to the head or to the first entry for that bin
+
+148
+00:08:03,600 --> 00:08:04,700
+作为攻击者
+and so as an attacker
+
+149
+00:08:04,700 --> 00:08:07,300
+假设我得到了
+we'll assume somehow I've obtained
+
+150
+00:08:07,800 --> 00:08:10,700
+指向这个空闲chunk的指针
+a pointer to this freed chunk
+
+151
+00:08:10,700 --> 00:08:14,300
+我的策略是尝试覆盖next指针
+and so my strategy is I'm going to try and overwrite this next pointer
+
+152
+00:08:14,400 --> 00:08:15,900
+因为我要控制它
+because I want to control that
+
+153
+00:08:15,900 --> 00:08:18,900
+看看能否让malloc返回一个我需要的值
+and see if I can get malloc to return a value I'm interested in
+
+154
+00:08:19,900 --> 00:08:23,133
+现在它的目标chunk是这里的chunk2
+now the intended chunk is going to be chunk 2 over here
+
+155
+00:08:24,500 --> 00:08:28,700
+chunk2也有一个next指针
+and chunk 2 has a next pointer as well right
+
+156
+00:08:28,900 --> 00:08:30,133
+但它不重要
+but that doesn't matter
+
+157
+00:08:30,333 --> 00:08:32,599
+因为现在我们关注的是chunk1
+because right now we're focused on chunk1
+
+158
+00:08:32,700 --> 00:08:37,600
+作为攻击者，我要覆盖这个next指针
+and so as an attacker I'm going to overwrite this next pointer
+
+159
+00:08:37,733 --> 00:08:38,999
+完成后
+and when I do that
+
+160
+00:08:39,733 --> 00:08:41,966
+这里是一个新的值
+we now have a new next value there
+
+161
+00:08:42,666 --> 00:08:44,133
+现在什么都没发生
+now nothing has really occurred right
+
+162
+00:08:44,133 --> 00:08:45,499
+我们只是把它覆盖了
+we've just overwritten this
+
+163
+00:08:46,000 --> 00:08:51,000
+如果你做过这个模块的题目
+now if you've done some of the problems in the module here
+
+164
+00:08:51,766 --> 00:08:54,366
+你肯定知道，在这种状态下
+you've seen that in this type of a state
+
+165
+00:08:54,566 --> 00:08:55,899
+你可以调用malloc
+you can call malloc
+
+166
+00:08:56,366 --> 00:08:57,699
+调用后
+and when you do that
+
+167
+00:08:57,900 --> 00:09:02,000
+chunk1将被malloc返回
+chunk 1 will get returned by malloc
+
+168
+00:09:02,533 --> 00:09:05,333
+然后修改后的next将被解引用
+and then new next would get dereferenced
+
+169
+00:09:05,333 --> 00:09:08,266
+所以这个bin的head
+and so the head of that bin
+
+170
+00:09:08,433 --> 00:09:12,099
+即下次malloc的返回值
+the next entry to be returned by malloc
+
+171
+00:09:12,200 --> 00:09:14,533
+变成了新的next
+becomes whatever was in new next
+
+172
+00:09:14,700 --> 00:09:16,800
+在本例中是Not_a_Chunk2
+in this case it's Not_a_Chunk2
+
+173
+00:09:16,800 --> 00:09:19,133
+攻击者很可能不会
+it's more than likely an attacker isn't going
+
+174
+00:09:19,166 --> 00:09:21,966
+用有效chunk覆盖next指针
+to overwrite the next pointer with a valid chunk
+
+175
+00:09:21,966 --> 00:09:23,333
+他们会用一些
+they're going to overwrite it with some
+
+176
+00:09:23,700 --> 00:09:26,100
+他们感兴趣的某个内存地址
+it's just some address in memory that they're interested in
+
+177
+00:09:26,300 --> 00:09:30,733
+只要不崩溃
+as long as the heap doesn't explode doesn't crash
+
+178
+00:09:31,866 --> 00:09:33,399
+攻击者不在乎
+the attacker doesn't really care
+
+179
+00:09:33,766 --> 00:09:38,199
+只要在达成目标前程序不崩溃就行
+it only needs to not break for long enough to accomplish what you need
+
+180
+00:09:40,066 --> 00:09:43,866
+这就是没有安全链接的情况
+now this is what happens without safe linking
+
+181
+00:09:44,900 --> 00:09:45,700
+好的
+right
+
+182
+00:09:45,900 --> 00:09:52,300
+新的next值被传递到tcache_per_thread结构体中
+that new next value gets passed up into the tcache_per_thread struct
+
+183
+00:09:52,466 --> 00:09:54,133
+不管攻击者指定了什么
+and whatever the attacker defined
+
+184
+00:09:54,133 --> 00:09:56,299
+下次malloc都会返回它
+will be the next thing that's returned by malloc
+
+185
+00:09:56,966 --> 00:09:59,499
+但是有了安全链接后
+however with safe linking
+
+186
+00:09:59,766 --> 00:10:03,266
+我们可以看到
+what we see is that new next value
+
+187
+00:10:03,500 --> 00:10:06,600
+新next值加载到tcache_per_thread结构体之前
+before it gets loaded up into the tcache_per_thread struct
+
+188
+00:10:06,666 --> 00:10:09,166
+它要经历一个解密的过程
+it goes through a demangling phase right
+
+189
+00:10:09,166 --> 00:10:12,033
+因为我们必须通过XOR来解密
+because we have to unxor it via XOR
+
+190
+00:10:12,266 --> 00:10:16,099
+它一个可逆的过程
+ because it's you know a reversible operation there
+
+191
+00:10:16,700 --> 00:10:21,600
+但这个过程仍会改变新的next
+but still the demangling procedure is going to change the value of new next
+
+192
+00:10:21,666 --> 00:10:23,899
+结果不再是这样
+so instead of looking at something like this
+
+193
+00:10:24,700 --> 00:10:27,200
+而是这样
+the attacker ends up with something like this
+
+194
+00:10:27,900 --> 00:10:34,000
+bin的头将指向一个加密后的地址
+and so the head entry of the bin will point to some mangled address
+
+195
+00:10:34,100 --> 00:10:37,266
+它很可能是一个无效的内存地址
+more than likely it will be an invalid memory address
+
+196
+00:10:37,400 --> 00:10:41,200
+这甚至是不可解引用的
+that isn't even dereferenceable
+
+197
+00:10:42,533 --> 00:10:45,066
+另外，因为我们有这个规则
+additionally because we have that rule
+
+198
+00:10:45,166 --> 00:10:48,166
+最低有效半字节必须是0
+that the least significant nibble must be zero
+
+199
+00:10:48,166 --> 00:10:49,733
+很可能
+there is a very good chance
+
+200
+00:10:49,766 --> 00:10:52,566
+这个地址都没对齐（末尾不是0）
+that this address will not even be properly aligned
+
+201
+00:10:52,800 --> 00:10:54,866
+这意味着它会导致
+which means that it can result in 
+
+202
+00:10:54,900 --> 00:10:59,566
+堆因为对齐问题终止程序
+the heap causing the whole program to just stop because of an alignment issue
+
+203
+00:11:00,500 --> 00:11:02,700
+这对攻击者来说是个问题
+and so this is a problem for the attacker
+
+204
+00:11:04,900 --> 00:11:08,600
+虽然这让攻击者很头疼
+now despite being quite the headache for the attacker
+
+205
+00:11:08,700 --> 00:11:12,900
+但安全链接的实现出奇地简单
+the implementation of safe linking is surprisingly simple
+
+206
+00:11:13,866 --> 00:11:18,433
+其实就是这三行C宏
+it is really just these three lines which are just C macros
+
+207
+00:11:18,566 --> 00:11:20,933
+我们来看一下
+so let's take a look at them here
+
+208
+00:11:21,200 --> 00:11:26,100
+有一个PROTECT_PTR，它接受一个pos和一个ptr
+we have PROTECT_PTR which takes a position and a pointer
+
+209
+00:11:26,933 --> 00:11:30,599
+pos被 >> 12位
+the position value is bit shifted to the right by 12
+
+210
+00:11:30,666 --> 00:11:35,399
+那么这12位的意义是什么呢
+bits so what's the significance of this 12 bits
+
+211
+00:11:35,966 --> 00:11:38,933
+如果你回忆一下内存模块
+well if you recall from the memory module
+
+212
+00:11:38,933 --> 00:11:40,599
+我们学了ASLR
+we encountered something called ASLR
+
+213
+00:11:40,600 --> 00:11:45,600
+它在课程和业界都存在一段时间了
+it's been around now for a while in the modules and out in the world
+
+214
+00:11:47,100 --> 00:11:54,100
+内存地址的前3个半字节用作内存页中的偏移
+but the first three nibbles of a memory address are offsets into a page we said
+
+215
+00:11:55,266 --> 00:11:58,533
+这3个半字节是固定的
+and so those tend to be pretty consistent
+
+216
+00:12:00,133 --> 00:12:03,466
+剩下的是随机基址
+after that are random byte values
+
+217
+00:12:04,100 --> 00:12:08,033
+每次程序运行时生成的都是不同的
+that are generated that are different every time the program runs
+
+218
+00:12:08,266 --> 00:12:11,499
+由于地址空间布局随机化
+ due to address Space Layout Randomization ASLR
+
+219
+00:12:12,333 --> 00:12:14,699
+所以当我们位移了12位
+and so when we bit shift by 12 bits 
+
+220
+00:12:14,800 --> 00:12:16,466
+我们做的是
+what we're doing is 
+
+221
+00:12:16,533 --> 00:12:21,533
+只保留ASLR产生的随机基址
+we are moving those random bits or those random bytes from ASLR
+
+222
+00:12:21,800 --> 00:12:24,500
+存储在pos中（去掉了地址中的固定偏移量）
+up to the front of this position value
+
+223
+00:12:24,600 --> 00:12:30,400
+我们要用这个随机数和ptr异或
+because we want these random bytes to be xord into the pointer
+
+224
+00:12:30,966 --> 00:12:32,166
+这是这行代码的意思
+and that's what we see here
+
+225
+00:12:32,166 --> 00:12:34,799
+只在pos中保留随机基址
+so we move the randomness to the front of position
+
+226
+00:12:35,200 --> 00:12:37,766
+然后用ptr与他异或
+we then xor with the pointer
+
+227
+00:12:38,133 --> 00:12:40,866
+这就得到了一个加密值
+and that gives us a mangle value
+
+228
+00:12:41,700 --> 00:12:44,366
+现在我们来看一下REVEAL_PTR的实现
+now if we look at the implementation of REVEAL_PTR
+
+229
+00:12:44,366 --> 00:12:47,799
+REVEAL_PTR是用PROTECT_PTR实现的
+REVEAL_PTR is defined as PROTECT_PTR
+
+230
+00:12:47,900 --> 00:12:53,600
+它是PROTECT_PTR，参数是ptr地址以及ptr
+it's PROTECT_PTR with the address of a pointer with the pointer's value
+
+231
+00:12:54,200 --> 00:12:58,500
+这两个宏都只是可逆的异或操作
+and so in both cases it's just a reversible xor
+
+232
+00:12:59,300 --> 00:13:00,100
+所以
+so
+
+233
+00:13:00,866 --> 00:13:04,466
+让我们从攻击者的角度来考虑这个问题
+let's think about this from the attacker standpoint
+
+234
+00:13:06,466 --> 00:13:09,133
+哪里使用了这两个函数
+well where are these functions used
+
+235
+00:13:09,133 --> 00:13:10,866
+又是在哪里实现的
+where are these macros implemented
+
+236
+00:13:10,966 --> 00:13:12,466
+如果我们看一下这里
+well if we take a look here
+
+237
+00:13:13,400 --> 00:13:15,800
+REVEAL_PTR在malloc中
+REVEAL_PTR is inside malloc
+
+238
+00:13:15,800 --> 00:13:18,300
+具体来说，它在tcache_get中
+specifically it's inside tcache_get
+
+239
+00:13:18,533 --> 00:13:20,966
+因为malloc要返回指针
+because malloc returns pointers
+
+240
+00:13:21,300 --> 00:13:23,533
+它需要从tcache中获取chunk
+so that is getting something from the tcache
+
+241
+00:13:23,633 --> 00:13:25,866
+把它返回给malloc调用者
+and returning it to whoever called malloc
+
+242
+00:13:26,400 --> 00:13:31,000
+如果我们看一下这段代码
+and if we look at this snippet here or this block of code
+
+243
+00:13:31,933 --> 00:13:33,899
+我们首先看到的是
+the first thing we see is
+
+244
+00:13:34,400 --> 00:13:39,100
+从bin的头节点获取了 tcache_entry e
+the tcache entry e is pulled from the head of the bin
+
+245
+00:13:39,366 --> 00:13:41,799
+tcache->entries[tc_idx]
+so tcache Entries index
+
+246
+00:13:41,800 --> 00:13:50,800
+从tcache_per_thread结构体中获取对应bin的头节点
+that is grabbing the head entry for the correct bin from the tcache_per_thread struct
+
+247
+00:13:51,500 --> 00:13:53,566
+拿到了bin中的第一个节点
+so it's getting the first entry
+
+248
+00:13:54,566 --> 00:13:57,733
+然后检查地址是否对齐
+it then checks that entry to see if it's aligned
+
+249
+00:13:58,100 --> 00:14:04,100
+就在这里检查了最低有效半字节是否为0
+this right here is where that does the least significant nibble equal 0 check as occurring
+
+250
+00:14:04,600 --> 00:14:08,500
+即，地址是否对齐
+we're saying is is this entry aligned
+
+251
+00:14:08,966 --> 00:14:12,266
+如果没有对齐，我们看到malloc打印错误
+if it's not aligned we see malloc print err
+
+252
+00:14:12,400 --> 00:14:14,400
+检测到未对齐的tcache chunk
+unaligned tcache chunk detected
+
+253
+00:14:14,500 --> 00:14:15,766
+然后完了
+and then the heap is done
+
+254
+00:14:16,166 --> 00:14:17,366
+程序将退出
+the program will exit
+
+255
+00:14:21,400 --> 00:14:23,166
+接下来我们看这儿
+next we see here
+
+256
+00:14:23,900 --> 00:14:27,900
+我们最初关注的REVEAL_PTR
+this REVEAL_PTR which is what we initially were kind of focused on
+
+257
+00:14:28,966 --> 00:14:33,799
+现在调用了REVEAL_PTR(e->next)
+now REVEAL_PTR is being called on e->next
+
+258
+00:14:33,800 --> 00:14:39,800
+就是首个chunk的next
+so that's going to be the head's next pointer
+
+259
+00:14:40,133 --> 00:14:42,499
+它被解密。然后
+and that's going to get demangled and 
+
+260
+00:14:42,633 --> 00:14:46,866
+存储在tcache_per_thread结构体的head
+stored in the head entry of the tcache_per_thread struct
+
+261
+00:14:46,900 --> 00:14:51,400
+因此，在tcache_per_thread结构体中是被解密的指针
+so inside the tcache_per_thread struct are demangled pointers
+
+262
+00:14:51,533 --> 00:14:54,866
+但是tcache_per_thread结构体之外的
+but everything outside of the tcache_per_thread struct
+
+263
+00:14:54,900 --> 00:14:56,500
+都被加密了
+is a mangled pointer
+
+264
+00:14:57,166 --> 00:14:58,599
+然后减少计数
+we then decrement the count
+
+265
+00:14:58,600 --> 00:15:01,866
+因为空闲的chunk被从bin中选中用于重利用
+because remallocing and returning from the bins
+
+266
+00:15:02,000 --> 00:15:05,600
+然后返回一个正常对齐的地址
+and we return the entry that we know is properly aligned
+
+267
+00:15:06,766 --> 00:15:08,333
+那么释放时发生了什么
+now what happens inside a free
+
+268
+00:15:08,333 --> 00:15:09,699
+非常相似
+well very similar
+
+269
+00:15:09,700 --> 00:15:12,700
+只不过这里变成了PROTECT_PTR
+except this is where the PROTECT_PTR operation occurs
+
+270
+00:15:12,733 --> 00:15:15,766
+就在这里加密
+so this is where we are going to mangle something
+
+271
+00:15:15,800 --> 00:15:20,500
+然后把它放到tcache缓存列表中
+and then push it onto the tcache list
+
+272
+00:15:22,166 --> 00:15:23,799
+这里是tcache_put
+and so here we have tcache_put
+
+273
+00:15:23,800 --> 00:15:27,166
+因为我们又在列表中添加了一个entry
+because again we are putting an entry onto the list
+
+274
+00:15:27,366 --> 00:15:30,599
+所以我们要把一个chunk转换成一个entry
+and so we're going to convert a chunk to an entry
+
+275
+00:15:30,966 --> 00:15:32,999
+我们要设置key
+we're going to set the key value which
+
+276
+00:15:33,300 --> 00:15:36,366
+Yan在之前讲了key是什么
+Yan described what the key is in earlier modules
+
+277
+00:15:36,400 --> 00:15:39,800
+是一个指向tcache_per_thread结构体的指针
+should just be a pointer to the tcache_per_thread struct
+
+278
+00:15:41,400 --> 00:15:44,266
+然后我们看到PROTECT_PTR被调用
+we then see PROTECT_PTR is called
+
+279
+00:15:44,500 --> 00:15:49,900
+参数是next的地址
+and PROTECT_PTR is called on the address of next
+
+280
+00:15:51,600 --> 00:15:57,500
+还有tcache中的head
+with the tcache head entry
+
+281
+00:15:58,700 --> 00:16:01,666
+它的返回值放到e->next中
+and that is what gets stored in e->next
+
+282
+00:16:02,400 --> 00:16:05,300
+然后用e->next的地址
+so we're going to take the address of e->next 
+
+283
+00:16:05,300 --> 00:16:07,866
+和head
+with the thing that was at the head
+
+284
+00:16:09,066 --> 00:16:10,199
+异或
+xor them together
+
+285
+00:16:10,200 --> 00:16:15,500
+加密结果存储在e->next中
+and that is the mangled value that will get stored in e->next 
+
+286
+00:16:15,566 --> 00:16:18,733
+作为加密后的next指针
+as the mangled next pointer
+
+287
+00:16:20,700 --> 00:16:24,000
+这就是安全链接的原理
+and so that is how safe linking works
+
+288
+00:16:24,866 --> 00:16:26,299
+还有几处调用
+there are other calls
+
+289
+00:16:26,300 --> 00:16:28,266
+如果查看源代码
+if you want to see the source code
+
+290
+00:16:28,300 --> 00:16:29,566
+在堆中还有其他地方
+there are other places 
+
+291
+00:16:29,566 --> 00:16:36,733
+使用了PROTECT_PTR和REVEAL_PTR
+where PROTECT_PTR and REVEAL_PTR are used in the heap in general
+
+292
+00:16:36,733 --> 00:16:38,499
+但就tcache而言
+but as far as tcache goes 
+
+293
+00:16:38,566 --> 00:16:42,499
+这是你应该关注的两个关键领域
+these are the two key areas that you should focus on
+
+294
+00:16:44,400 --> 00:16:48,300
+我们已经看到了这些宏在哪里被使用
+so we've seen where these macros are used
+
+295
+00:16:49,800 --> 00:16:53,100
+但是该如何理解它呢
+but what do we know about the actual implementation here
+
+296
+00:16:53,166 --> 00:16:54,533
+我们说这很简单
+we said it's really simple
+
+297
+00:16:54,533 --> 00:16:56,699
+好像我们作为攻击者总能做点什么
+like there's got to be something we can do as an attacker
+
+298
+00:16:56,766 --> 00:16:58,233
+所以让我们仔细看看
+so let's take a closer look 
+
+299
+00:16:58,233 --> 00:17:02,299
+这里的宏或者函数
+at the actual macros or the actual functions that are occurring here
+
+300
+00:17:03,300 --> 00:17:06,300
+我们知道异或是可逆的
+so we know XOR is reversible
+
+301
+00:17:06,500 --> 00:17:09,400
+我们来看看这个PROTECT_PTR
+so let's look at this PROTECT_PTR
+
+302
+00:17:10,000 --> 00:17:17,300
+它是用pos和ptr异或
+well we said that it's xoring this position value with the pointer
+
+303
+00:17:17,366 --> 00:17:20,733
+我不知道pos的值
+but I don't necessarily know the position value
+
+304
+00:17:20,900 --> 00:17:23,800
+所以这里需要两个不同的值
+so I need two different values here
+
+305
+00:17:23,866 --> 00:17:25,266
+要知道这个pos
+I need to have this position
+
+306
+00:17:25,266 --> 00:17:26,733
+还要知道这个ptr
+and I need to have the pointer
+
+307
+00:17:27,266 --> 00:17:29,066
+PROTECT_PTR
+and so PROTECT_PTR
+
+308
+00:17:29,066 --> 00:17:31,266
+至少从这里看是这样的
+at least by looking at it here initially
+
+309
+00:17:31,700 --> 00:17:34,566
+如果没有这两个值就无法解密
+it cannot be reversed without two values
+
+310
+00:17:34,566 --> 00:17:36,699
+所以我需要这两个值
+so I need to have both of these things
+
+311
+00:17:36,800 --> 00:17:40,300
+来用xor解密
+in order to try and reason about how I'm going to xor
+
+312
+00:17:41,866 --> 00:17:43,599
+那REVEAL_PTR是如何实现的呢？
+what about REVEAL_PTR
+
+313
+00:17:43,866 --> 00:17:44,999
+至于REVEAL_PTR
+well REVEAL_PTR
+
+314
+00:17:45,000 --> 00:17:47,866
+如果您还记得的话，它是由PROTECT_PTR定义的
+if you'll recall is defined by PROTECT_PTR
+
+315
+00:17:48,300 --> 00:17:52,700
+所以我们可以将这里的参数
+and so we can substitute in the arguments here
+
+316
+00:17:53,333 --> 00:17:54,766
+就是ptr的地址
+which is the address of pointer
+
+317
+00:17:54,766 --> 00:17:56,366
+和ptr的值
+with the value of pointer
+
+318
+00:17:57,333 --> 00:17:58,966
+代入到PROTECT_PTR
+into PROTECT_PTR
+
+319
+00:17:58,966 --> 00:18:00,399
+我们最后得到了什么呢
+and so what do we end up with
+
+320
+00:18:00,400 --> 00:18:02,066
+我们得到的结果是这样的
+we end up with something that looks like this
+
+321
+00:18:02,400 --> 00:18:05,766
+REVEAL_PTR将
+so REVEAL_PTR is going to 
+
+322
+00:18:06,600 --> 00:18:13,500
+ptr的值和ptr地址的基址异或
+xor the pointer value with the address of the pointer bit shifted by 12 bits
+
+323
+00:18:14,866 --> 00:18:15,666
+那么
+now
+
+324
+00:18:16,100 --> 00:18:19,600
+如果这里使用的ptr
+if the pointers that were used here
+
+325
+00:18:20,500 --> 00:18:23,300
+是随机分布在内存里的
+were randomly located in memory
+
+326
+00:18:24,066 --> 00:18:26,066
+这将是一个难题
+this would be a difficult problem
+
+327
+00:18:26,566 --> 00:18:27,366
+但
+but
+
+328
+00:18:27,466 --> 00:18:29,533
+所有这些都发生在堆中
+all of this is occurring in the heap
+
+329
+00:18:31,100 --> 00:18:33,166
+也就是说
+which means that
+
+330
+00:18:35,200 --> 00:18:39,900
+我们把这12位页内偏移去除掉后
+and we're bit shifting away the offset into the page these 12 bits
+
+331
+00:18:40,866 --> 00:18:45,066
+ptr地址去除12位偏移量后
+so the more than likely the address of pointer bitshifted 12
+
+332
+00:18:45,666 --> 00:18:49,699
+会等于
+ is going to be equivalent to
+
+333
+00:18:50,366 --> 00:18:51,999
+ptr的值（去除12位偏移量）
+the pointer itself
+
+334
+00:18:52,000 --> 00:18:54,533
+前提是ptr指向堆地址
+assuming that the pointer points to the heap
+
+335
+00:18:56,533 --> 00:18:58,199
+所以
+it's going to be
+
+336
+00:18:58,300 --> 00:18:59,866
+ptr的值右移12位
+the pointer bit shifted 12 
+
+337
+00:18:59,933 --> 00:19:02,666
+基本等同于
+is going to be roughly equivalent like most of the time
+
+338
+00:19:02,866 --> 00:19:05,366
+ptr的地址右移12位
+to the address of the pointer bit shifted by 12
+
+339
+00:19:05,800 --> 00:19:09,166
+这点是
+and this knowledge is key
+
+340
+00:19:09,200 --> 00:19:12,733
+理解REVEAL_PTR函数
+to realizing that this REVEAL_PTR function
+
+341
+00:19:12,800 --> 00:19:17,900
+能仅凭密文逆推明文的关键
+is fully reversible from the mangled value alone
+
+342
+00:19:18,766 --> 00:19:20,933
+我就不教你怎么做了
+now I'm not going to show you how to do it
+
+343
+00:19:21,133 --> 00:19:22,799
+我相信你能查找到
+I'm sure you can look it up
+
+344
+00:19:23,300 --> 00:19:29,200
+但是如果你使用ipython尝试一下
+but if you play around with just ipython like in a terminal here
+
+345
+00:19:29,466 --> 00:19:32,133
+研究研究
+and look at this and think about it
+
+346
+00:19:32,166 --> 00:19:35,166
+你能想清楚这个的
+you'll figure out how you can reverse this
+
+347
+00:19:35,800 --> 00:19:39,600
+所以你可以取一个加密后的值
+so you can take one value that mangled value
+
+348
+00:19:39,800 --> 00:19:43,200
+然后返回一个合法的堆地址
+and get back a valid heap pointer
+
+349
+00:19:44,133 --> 00:19:46,133
+这有一些含义
+now this has some implications
+
+350
+00:19:46,800 --> 00:19:49,533
+如果我们能破解REVEAL_PTR
+so if we can reverse this REVEAL_PTR function
+
+351
+00:19:50,900 --> 00:19:54,700
+之前说，如果没有那两个值，就无法破解PROTECT_PTR
+well we said PROTECT_PTR cannot be reversed without two values
+
+352
+00:19:54,700 --> 00:19:58,100
+其中一个是pos值
+but one of those values that we needed was this position value
+
+353
+00:19:58,566 --> 00:20:01,799
+而这个pos值就是一个有效的堆指针
+and this position value is a valid heap pointer
+
+354
+00:20:02,800 --> 00:20:07,600
+所以如果能破解REVEAL_PTR来获得一个有效的堆地址
+so if I can reverse REVEAL_PTR to get a valid heap pointer
+
+355
+00:20:07,700 --> 00:20:11,700
+就可以在PROTECT_PTR中使用这个堆地址
+then I can use that valid heap pointer in PROTECT_PTR
+
+356
+00:20:12,933 --> 00:20:15,466
+然后破解PROTECT_PTR
+to then reverse the value of PROTECT_PTR
+
+357
+00:20:15,700 --> 00:20:17,966
+所以你可以
+and so you can
+
+358
+00:20:18,733 --> 00:20:22,499
+当你得到一个加密后的指针
+once you get a mangled pointer value
+
+359
+00:20:22,700 --> 00:20:26,500
+可以将它恢复成正常堆地址
+turn that into a valid pointer value or heap pointer value
+
+360
+00:20:26,533 --> 00:20:29,266
+然后使用那个有效的堆地址
+and then use that valid heap pointer value
+
+361
+00:20:30,200 --> 00:20:44,700
+然后在将它写入空闲chunk的next指针前重新加密
+to then remangle things before you write them into freed chunk's next pointers
+
+362
+00:20:45,300 --> 00:20:50,000
+只要收集足够的信息，就可以自己加密
+so you can do the mangle in yourself once you collect enough information here
+
+363
+00:20:51,200 --> 00:20:54,133
+这样你不再写入明文值
+so that you don't write a clear text value
+
+364
+00:20:54,166 --> 00:20:57,066
+自己加密，然后写入密文
+you mangle it yourself and write a mangle value
+
+365
+00:20:57,066 --> 00:21:02,099
+因为你知道堆是如何处理它的
+because you understand and know how the heap is going to demangle it
+
+366
+00:21:03,466 --> 00:21:06,399
+这一切都需要一个泄露漏洞
+and all this requires is one leak
+
+367
+00:21:07,333 --> 00:21:10,299
+比以前多需要了一个泄露漏洞
+it's still one more leak than you used to have to have
+
+368
+00:21:10,700 --> 00:21:13,300
+因为你以前根本不需要泄露信息
+because you used to not have to have the leak at all
+
+369
+00:21:14,333 --> 00:21:17,133
+所以必须找到一个堆泄露
+and so you do have to get a heap leak
+
+370
+00:21:17,200 --> 00:21:21,200
+在开始自己加解密前
+before you can begin this kind of mangling and demangling yourself
+
+371
+00:21:21,800 --> 00:21:25,366
+之后才能进行更复杂的堆利用
+and when you start doing more complicated heap exploits
+
+372
+00:21:26,600 --> 00:21:30,100
+堆利用可能涉及多个分配
+where there may be multiple allocations 
+
+373
+00:21:30,166 --> 00:21:32,533
+涉及到许多指针，这些指针可能在堆上，也可能不在堆上
+involved in many pointers that may or may not be on the heap
+
+374
+00:21:33,400 --> 00:21:35,533
+它变得更加复杂
+it becomes a lot more complicated
+
+375
+00:21:36,100 --> 00:21:40,200
+只是为了写入东西到next中
+just to get something that is passable into the next pointer
+
+376
+00:21:41,400 --> 00:21:45,400
+当有堆泄露时，这实际上并不难
+it's actually not that hard once you have an initial heap leak
+
+377
+00:21:47,600 --> 00:21:52,300
+所以关于安全链接的要点是
+so the takeaways here in thinking about safe linking right
+
+378
+00:21:52,400 --> 00:21:55,900
+它确实为大多数堆利用增加了额外的要求
+it does add additional requirements to most heap exploits
+
+379
+00:21:55,900 --> 00:22:04,000
+大多数时候，您都试图与空闲chunk中的元数据进行交互
+most of the time you're trying to interact with the metadata that is in free chunks
+
+380
+00:22:04,000 --> 00:22:09,500
+next指针是主要目标，原因有很多
+and the next pointer is a prime target for a lot of reasons
+
+381
+00:22:10,000 --> 00:22:11,566
+这个对齐检查
+these alignment checks
+
+382
+00:22:11,566 --> 00:22:15,566
+确保了最低有效半字节是0
+making sure that the least significant nibble is zero
+
+383
+00:22:15,700 --> 00:22:17,133
+直接防止
+directly prevents each 
+
+384
+00:22:17,200 --> 00:22:20,500
+即使你能自行加解密
+even when you can do this demangling and mangling
+
+385
+00:22:20,566 --> 00:22:23,733
+能自己加解密也没用
+it doesn't matter if I can do the mangling and demangling
+
+386
+00:22:23,800 --> 00:22:29,500
+仍然有一些地址你无法让堆返回
+there are still addresses that you cannot get the heap to return to you
+
+387
+00:22:29,666 --> 00:22:32,533
+作为攻击者，你要做的就是
+and so as an attacker what you'll try and do is 
+
+388
+00:22:32,533 --> 00:22:35,899
+返回在它之前，或者之后的地址
+return something that is just preceding it or just after it
+
+389
+00:22:35,900 --> 00:22:37,566
+这取决于上下文
+depending upon the context
+
+390
+00:22:37,600 --> 00:22:41,200
+也许我可以返回一个在目标地址之前的地址
+maybe I can return a pointer that comes before what I'm interested in
+
+391
+00:22:41,300 --> 00:22:43,800
+然后我要做一些填充
+and then I have to do some padding 
+
+392
+00:22:43,833 --> 00:22:46,166
+来将要写入的东西打印出来
+to get something to print out I have to write
+
+393
+00:22:46,200 --> 00:22:51,500
+我可能拿到目标地址前8字节的地址
+I can get something that's 8 bytes before the thing I'm interested in that I want to read
+
+394
+00:22:52,166 --> 00:22:54,466
+所以我要先填冲上8个a
+so then I have to pad 8 as 
+
+395
+00:22:54,499 --> 00:22:56,666
+然后调用put 输出字符串 
+and then call like put string right
+
+396
+00:22:57,800 --> 00:23:02,100
+所以你需要在
+and so you have to get a bit more creative in how you're going to try and 
+
+397
+00:23:02,533 --> 00:23:06,466
+利用malloc返回指针这方面，更有创造力
+utilize the pointers that are returned by malloc
+
+398
+00:23:07,300 --> 00:23:11,400
+这就导致了额外的麻烦和复杂性
+and so that this leads to additional like keep ups and complications
+
+399
+00:23:11,466 --> 00:23:13,299
+在你写漏洞利用的时候
+when you're trying to write your exploits
+
+400
+00:23:14,766 --> 00:23:16,199
+正如我提到的
+as I mentioned
+
+401
+00:23:16,300 --> 00:23:18,466
+因为这个加解密流程
+because of this mangling and demangling
+
+402
+00:23:18,466 --> 00:23:20,899
+尽管这是可逆的
+even though it is reversible
+
+403
+00:23:20,933 --> 00:23:23,899
+要破解它，你必须
+to be able to reverse it you have to have
+
+404
+00:23:24,766 --> 00:23:26,099
+有一个堆指针泄漏漏洞
+a heap pointer leak
+
+405
+00:23:26,500 --> 00:23:29,266
+可以是一个加密后的堆指针
+it can be a mangled heap pointer to be clear
+
+406
+00:23:29,600 --> 00:23:35,100
+但最终因为你能将密文解密成合法指针
+but ultimately because you can turn a mangled heap pointer into a valid heap pointer
+
+407
+00:23:35,900 --> 00:23:41,500
+只需要利用密文指针中的信息
+just with the information contained in the mangled pointer
+
+408
+00:23:42,100 --> 00:23:45,900
+在这种情况下，密文指针是完全有效的
+so a mangled pointer is totally valid in this case
+
+409
+00:23:45,900 --> 00:23:47,600
+我只是想确认一下我讲清楚了
+I just want to make sure I'm clear about that
+
+410
+00:23:48,333 --> 00:23:50,266
+当得到一个密文的堆指针
+so getting a mangled heap pointer
+
+411
+00:23:50,266 --> 00:23:52,399
+您可以将其转换为有效的堆指针
+you can turn that into a valid heap pointer
+
+412
+00:23:52,400 --> 00:23:54,200
+而一旦你知道了堆指针
+and once you have that heap pointer leak
+
+413
+00:23:54,200 --> 00:23:56,533
+你可以自己加密堆指针
+you can begin to mangle things yourself
+
+414
+00:23:56,500 --> 00:24:00,000
+但是，在获得有效的堆指针之前，您无法自行加密
+you can't mangle things until you get a valid heap pointer though
+
+415
+00:24:01,500 --> 00:24:04,700
+所有这些我提到的
+and all of this as I mentioned
+
+416
+00:24:05,500 --> 00:24:12,500
+增加了复杂堆利用的复杂性
+leads to a lot more complications trying to do complex heap exploits
+
+417
+00:24:12,733 --> 00:24:13,966
+比如堆按摩
+like massaging the heap
+
+418
+00:24:13,966 --> 00:24:16,199
+创建重叠的分配
+you're creating overlapping allocations or
+
+419
+00:24:18,266 --> 00:24:20,933
+得到重叠的分配，这样你就可以
+getting overlapping allocations so that you can then
+
+420
+00:24:20,933 --> 00:24:24,199
+覆盖指针，然后任意读
+overwrite a pointer to then get a read
+
+421
+00:24:24,200 --> 00:24:27,300
+或者将栈地址放到堆中
+or you're trying to for instance put a stack value somewhere in the heap
+
+422
+00:24:27,300 --> 00:24:30,300
+或者将libc地址放到堆中
+ or a Lib C value somewhere in the heap
+
+423
+00:24:30,400 --> 00:24:31,566
+突然之间
+well all of a sudden
+
+424
+00:24:31,566 --> 00:24:34,899
+之前的一些假设
+some of these assumptions that existed
+
+425
+00:24:35,966 --> 00:24:37,299
+比如这个
+like this one here
+
+426
+00:24:37,400 --> 00:24:39,233
+它完全可逆的
+about this being fully reversible 
+
+427
+00:24:39,433 --> 00:24:45,599
+因为ptr地址和ptr值在同一个内存区域
+because the address of the pointer should be in the same memory region as the pointer itself
+
+428
+00:24:45,966 --> 00:24:47,899
+不一定是对的了
+is not necessarily true
+
+429
+00:24:49,000 --> 00:24:53,000
+因为突然之间，你能输入不同内存区域的地址
+because all of a sudden you're putting values from different memory regions
+
+430
+00:24:53,100 --> 00:24:54,700
+让他们异或
+together in xoring them
+
+431
+00:24:54,900 --> 00:24:58,533
+这肯定会引起一些问题
+and that can definitely cause some issues
+
+432
+00:24:58,900 --> 00:25:02,466
+对于尝试做更复杂利用的攻击者来说
+for an attacker trying to do a more complicated exploit
+
+433
+00:25:02,500 --> 00:25:04,566
+因为你必须非常清楚
+because you have to be very aware
+
+434
+00:25:04,600 --> 00:25:10,300
+什么值在与什么值异或，才能正确的加密
+of what value is getting xord with the other value to mangle it correctly
+
+435
+00:25:10,700 --> 00:25:14,200
+不让安全链接报错
+such that safe linking doesn't break
+
+436
+00:25:15,066 --> 00:25:18,533
+所以这是一种有效的威慑
+and so it is an effective deterrent
+
+437
+00:25:18,933 --> 00:25:21,533
+这是一种很好的保护机制
+it is a good mitigation technique
+
+438
+00:25:22,100 --> 00:25:24,766
+对，这会增加攻击者的工作量
+right it causes more work for the attacker
+
+439
+00:25:25,066 --> 00:25:27,266
+但它肯定不是万灵药
+but it certainly isn't a cure-all
+
+440
+00:25:27,700 --> 00:25:33,100
+对于了解这种机制如何工作的攻击者来说
+and for an attacker that is knowledgeable about how this mechanism works
+
+441
+00:25:33,200 --> 00:25:36,700
+他们花时间去获取需要的信息
+and they put in the time to obtain the correct information
+
+442
+00:25:36,700 --> 00:25:38,400
+比如堆指针泄漏
+like getting a heap pointer leak
+
+443
+00:25:38,700 --> 00:25:44,500
+它当然可以被一个有决心的攻击者所克服
+it certainly can be overcome by a determined attacker
+
+444
+00:25:46,000 --> 00:25:48,900
+这些就是我要说的安全链接
+so that's what I have to say about safe linking
+
+445
+00:25:49,300 --> 00:25:53,700
+这里有一些新的挑战被添加到dojo中
+there are some new challenges that are being added to the dojo here
+
+446
+00:25:54,466 --> 00:25:56,666
+要用到安全链接
+that will be using safe linking
+
+447
+00:25:57,100 --> 00:26:04,300
+你将看到安全链接如何改变和影响堆利用
+so you'll get to see how safe linking changes and impacts how heap exploitation works
+

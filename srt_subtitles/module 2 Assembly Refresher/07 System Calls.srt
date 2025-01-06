@@ -1,0 +1,940 @@
+1
+00:00:01,200 --> 00:00:03,133
+你好黑客
+hello hackers
+
+2
+00:00:03,266 --> 00:00:04,499
+欢迎来到PWN学院
+welcome to pwn college
+
+3
+00:00:04,666 --> 00:00:07,399
+我是Yan，在今天的视频中
+I am Yan and today in this video 
+
+4
+00:00:07,533 --> 00:00:11,666
+我们将讨论汇编中的环境交互
+we're going to be talking about environment interaction in assembly
+
+5
+00:00:11,733 --> 00:00:14,566
+上节课我们以这个问题收尾
+so in the last lecture we end up with this question
+
+6
+00:00:14,666 --> 00:00:16,299
+程序如何退出
+how the hell do we quit
+
+7
+00:00:16,400 --> 00:00:19,800
+退出是与操作系统的一个交互
+well quitting your program is a interaction with your operating system
+
+8
+00:00:19,833 --> 00:00:22,733
+我这里说的与操作系统交互实际是指
+and then really this what I mean operating system interactions here
+
+9
+00:00:22,933 --> 00:00:25,199
+通过操作系统与环境进行交互
+you interact with the environment through an operating system
+
+10
+00:00:25,333 --> 00:00:27,533
+那么我们怎么退出呢
+so how do we exit
+
+11
+00:00:28,133 --> 00:00:31,166
+你可以用系统调用
+well you use something called a system call
+
+12
+00:00:31,266 --> 00:00:32,566
+不光是退出程序
+you use it not just to exit
+
+13
+00:00:32,633 --> 00:00:36,666
+你可以用它来做任何不是原始计算的事情
+you use it to do anything that is not raw computation
+
+14
+00:00:38,133 --> 00:00:41,333
+系统调用类似call指令
+a system call is just like a call instruction
+
+15
+00:00:41,700 --> 00:00:43,166
+除了
+except for instead of
+
+16
+00:00:43,933 --> 00:00:45,033
+这么说有问题
+well I mean that's very false 
+
+17
+00:00:45,033 --> 00:00:45,999
+但概念上
+but conceptually
+
+18
+00:00:46,200 --> 00:00:48,366
+它不是跳转到你程序内的某处
+instead of jumping elsewhere in your program
+
+19
+00:00:48,766 --> 00:00:50,566
+而是跳转到操作系统
+it jumps to the operating system
+
+20
+00:00:50,666 --> 00:00:53,099
+操作系统会处理它
+and the operating system handles it
+
+21
+00:00:53,300 --> 00:00:58,400
+操作系统会协调程序与环境其余部分的交互
+the operating system mediates your program's interaction with the rest of the environment
+
+22
+00:00:58,500 --> 00:01:04,966
+以后的模块中，我们会深入研究操作系统
+and we're going to get really really deep into this operating system crap in the future module 
+
+23
+00:01:05,133 --> 00:01:05,866
+但是现在
+but for now
+
+24
+00:01:06,300 --> 00:01:08,200
+我们要知道的是
+what we want to understand is that
+
+25
+00:01:08,200 --> 00:01:14,500
+你能通过系统调用和操作系统交互
+you interact with that operating system using a system call
+
+26
+00:01:14,666 --> 00:01:16,733
+你已经了解到了一些系统调用
+and you've learned about system calls
+
+27
+00:01:16,733 --> 00:01:18,833
+你已经执行过一些系统调用
+you've performed some system calls 
+
+28
+00:01:18,966 --> 00:01:20,899
+像read、write，耳熟吧
+read write sounds familiar
+
+29
+00:01:21,166 --> 00:01:22,599
+在之前的模块中用过
+from previous modules
+
+30
+00:01:23,100 --> 00:01:25,100
+现在我们要用在汇编中使用它们
+well now we're going to do them in assembly
+
+31
+00:01:25,100 --> 00:01:26,366
+它非常简单
+and it's super simple
+
+32
+00:01:26,666 --> 00:01:28,633
+你只需要调用syscall指令
+you just call the syscall instruction
+
+33
+00:01:28,800 --> 00:01:31,300
+在此之前，将rax设置为一个值
+and you set RAX to a magic value
+
+34
+00:01:31,766 --> 00:01:34,833
+即选择要执行的系统调用
+that is select the syscall you want to perform
+
+35
+00:01:34,933 --> 00:01:36,099
+然后设置参数
+then you set the arguments 
+
+36
+00:01:36,333 --> 00:01:39,599
+设置RDI，第一个参数
+set the arguments in RDI first argument 
+
+37
+00:01:39,600 --> 00:01:40,800
+RSI，第二参数
+RSI second argument
+
+38
+00:01:40,800 --> 00:01:42,966
+RDX，第三个参数，目前很熟悉
+RDX third argument sound familiar so far
+
+39
+00:01:42,966 --> 00:01:44,799
+这和调用函数一样
+this is the same as calling functions
+
+40
+00:01:44,933 --> 00:01:48,033
+但接下来的三个是不同的，或者其中的一些
+but the next 3 are different or some of them
+
+41
+00:01:48,166 --> 00:01:49,366
+所以请记住
+so just keep in mind 
+
+42
+00:01:49,533 --> 00:01:50,699
+第四个参数是r10
+fourth arguments are r10
+
+43
+00:01:52,966 --> 00:01:54,733
+你需要系统调用号
+you need the syscall number
+
+44
+00:01:54,800 --> 00:01:56,766
+read的系统调用号是0
+the syscall number for read is 0
+
+45
+00:01:57,166 --> 00:01:58,566
+write的系统调用号是2
+syscall number for write is 2 
+
+46
+00:01:58,733 --> 00:02:00,133
+在调用syscall之前
+right before calling syscall 
+
+47
+00:02:00,333 --> 00:02:02,233
+要把rax设为这个值
+just set rax to that value 
+
+48
+00:02:02,300 --> 00:02:04,000
+抱歉，1代表write
+sorry 0 and 1 for write
+
+49
+00:02:07,100 --> 00:02:08,500
+如果你感兴趣的话
+if you are interested 
+
+50
+00:02:08,633 --> 00:02:09,966
+你会需要这个的
+well you will need this
+
+51
+00:02:10,166 --> 00:02:16,366
+Ryan A Chapman维护了一个64位x86的Linux系统调用表
+Ryan A Chapman maintains a Linux system call table for a 64 bit x86 
+
+52
+00:02:16,566 --> 00:02:20,433
+不管我搜的是什么，答案总碰巧在这里
+happens to be the top result for whatever search I usually do 
+
+53
+00:02:20,600 --> 00:02:24,400
+现在我都直接在它里面搜索了
+and it has gone to the point where my search is now Ryan A Chapman 
+
+54
+00:02:26,066 --> 00:02:28,166
+网上还有其他系统调用表
+there are other syscall tables on the internet 
+
+55
+00:02:28,266 --> 00:02:30,899
+dojo中该模块的介绍里也有
+and in the module details on the dojo
+
+56
+00:02:31,300 --> 00:02:32,100
+但
+but
+
+57
+00:02:32,533 --> 00:02:33,333
+在这里
+here
+
+58
+00:02:34,400 --> 00:02:38,066
+我将在这节课中举3个系统调用做为例子
+I'm going to give an example of in this lecture 3 system calls 
+
+59
+00:02:38,466 --> 00:02:39,133
+第一个
+first
+
+60
+00:02:39,400 --> 00:02:40,466
+甚至更多
+maybe even more 
+
+61
+00:02:40,466 --> 00:02:42,666
+第一个就是read
+the first one will be read 
+
+62
+00:02:42,733 --> 00:02:44,666
+所以我们要调用
+so we're going to call 
+
+63
+00:02:44,700 --> 00:02:47,133
+我应该把这个放在这里
+and I should actually probably have this here 
+
+64
+00:02:47,166 --> 00:02:48,266
+我们会调用
+but we're gonna call
+
+65
+00:02:48,800 --> 00:02:50,366
+为什么现在不放呢
+actually why don't I put this on here 
+
+66
+00:02:50,433 --> 00:02:52,266
+等一下
+wait one second
+
+67
+00:02:57,100 --> 00:02:57,900
+好多了
+better slide 
+
+68
+00:02:58,133 --> 00:03:02,166
+我们从标准输入读入100字节到栈
+so we're gonna read 100 bytes from standard input to the stack
+
+69
+00:03:02,333 --> 00:03:05,933
+你可能已经在程序交互模块中做过了
+now you have done this in program interaction probably
+
+70
+00:03:06,200 --> 00:03:08,966
+你可能这样调用的，read
+you've probably called read
+
+71
+00:03:09,533 --> 00:03:11,533
+0表示标准输入
+0 for standard input 
+
+72
+00:03:11,700 --> 00:03:16,300
+buff是你在局部变量中定义的缓冲区
+buff some buffer you defined live in local variable 
+
+73
+00:03:16,400 --> 00:03:18,466
+它在栈上
+guess what that lives on the stack
+
+74
+00:03:18,733 --> 00:03:19,699
+然后100
+100 
+
+75
+00:03:19,833 --> 00:03:21,233
+你用它来读入flag
+to read in your flag 
+
+76
+00:03:21,366 --> 00:03:24,766
+或者从标准输入中读取
+or well to read an input from the standard input whatever
+
+77
+00:03:25,100 --> 00:03:28,800
+然后把结果放进一个叫n的变量里
+and you put the result in a variable called n
+
+78
+00:03:28,866 --> 00:03:30,366
+汇编大致是这样的
+this looks roughly like this
+
+79
+00:03:30,866 --> 00:03:32,666
+先mov rdi, 0
+you move rdi 0 
+
+80
+00:03:32,733 --> 00:03:34,233
+这是系统调用的第一个参数
+that's the first argument to the syscall
+
+81
+00:03:34,533 --> 00:03:36,199
+RSI是第二个参数
+RSI is the second argument
+
+82
+00:03:36,333 --> 00:03:38,799
+你把它设为rsp
+you set it to the stack pointer
+
+83
+00:03:39,166 --> 00:03:42,699
+RDX是100，表示你要读入多少
+RDX is 100 how much you're going to read
+
+84
+00:03:43,100 --> 00:03:45,266
+RAX为0，表示read的系统调用号
+RAX is 0 the syscall number of read 
+
+85
+00:03:45,333 --> 00:03:46,066
+执行syscall
+syscall
+
+86
+00:03:46,400 --> 00:03:47,733
+就read了
+boom you've read 
+
+87
+00:03:47,766 --> 00:03:49,633
+系统调用返回值放到RAX
+syscall returns into RAX
+
+88
+00:03:49,966 --> 00:03:51,366
+rax中是实际读取的字节数
+the number of bytes read
+
+89
+00:03:51,500 --> 00:03:55,700
+然后调用write把读到的写到标准输出
+and then you call write to write that into standard out
+
+90
+00:03:56,600 --> 00:03:58,666
+将RDI设置为标准输出
+again set RDI to standard out 
+
+91
+00:03:58,733 --> 00:03:59,899
+RSI设为rsp
+RSI to the stack
+
+92
+00:04:00,200 --> 00:04:01,533
+这步你不需要重做
+and you don't have to redo this
+
+93
+00:04:01,700 --> 00:04:03,100
+RSI没被修改
+RSI isn't clobber
+
+94
+00:04:03,700 --> 00:04:09,100
+但，其它情况可能会被改
+but it you know could be potentially in other exotic cases
+
+95
+00:04:09,700 --> 00:04:12,633
+把rax赋值给RDX
+you move rax into RDX 
+
+96
+00:04:12,733 --> 00:04:15,533
+rax中装的read的返回值
+rax there again the return value of read 
+
+97
+00:04:15,566 --> 00:04:17,699
+即实际读取的字节数
+how many bytes were actually read
+
+98
+00:04:18,000 --> 00:04:21,233
+然后将系统调用号设为write对应的
+and then you set the syscall number to write and
+
+99
+00:04:21,366 --> 00:04:22,733
+触发系统调用
+trigger a system call
+
+100
+00:04:22,933 --> 00:04:25,233
+read，write，2个系统调用了
+boom read write two system calls
+
+101
+00:04:26,400 --> 00:04:27,833
+有很多系统调用
+there's a lot of system calls 
+
+102
+00:04:28,300 --> 00:04:33,600
+有超过300个系统调用
+there is just an absolutely enormous over 300 syscalls
+
+103
+00:04:33,766 --> 00:04:35,466
+他们能做很多不同的事情
+they do a lot of different stuff
+
+104
+00:04:36,466 --> 00:04:40,566
+我相信这些你都用过了
+I'm sure you've used by now all of these
+
+105
+00:04:43,733 --> 00:04:45,233
+在程序交互模块中
+in program interaction 
+
+106
+00:04:45,366 --> 00:04:46,799
+至少大部分都用过了
+or at least most of them
+
+107
+00:04:46,800 --> 00:04:49,533
+他们可能看起来非常熟悉
+they probably look horrifyingly familiar
+
+108
+00:04:51,133 --> 00:04:51,999
+现在
+now
+
+109
+00:04:52,900 --> 00:04:54,000
+看一下这个open
+look at this open guy 
+
+110
+00:04:54,033 --> 00:04:55,366
+调用它需要一个字符串
+call it takes a string
+
+111
+00:04:55,433 --> 00:04:57,833
+它需要一个实际的路径
+calls like it takes an actual path 
+
+112
+00:04:57,966 --> 00:05:00,866
+比如/flag之类的
+like /flag for example or something
+
+113
+00:05:02,666 --> 00:05:03,466
+现在
+now
+
+114
+00:05:04,266 --> 00:05:09,166
+字符串，如路径，占用一段连续的内存
+a string like a path is a continuous set of bytes in memory
+
+115
+00:05:09,400 --> 00:05:12,666
+对于字符串，是ASCII字节码，ASCII编码
+for strings its ASCII bytes encoded in ASCII
+
+116
+00:05:13,733 --> 00:05:14,999
+末尾是一个0字节
+followed by a 0 byte 
+
+117
+00:05:15,166 --> 00:05:16,566
+它表示结束
+that says hey we're done 
+
+118
+00:05:16,766 --> 00:05:18,466
+大概几个模块以后
+now later on a couple modules around
+
+119
+00:05:18,566 --> 00:05:20,733
+你会看到这是一个坏主意
+you'll see all the various ways this is a bad idea
+
+120
+00:05:20,766 --> 00:05:22,166
+事实上，你知道吗
+in fact you know what
+
+121
+00:05:22,166 --> 00:05:23,699
+所有的计算都是一个坏主意
+all of computing is a bad idea 
+
+122
+00:05:23,766 --> 00:05:24,733
+因为计算机
+because of computing
+
+123
+00:05:26,800 --> 00:05:33,100
+这鬼东西发明出来的几十年后
+decades after this awesome whatever inventions of cool stuff
+
+124
+00:05:34,133 --> 00:05:37,566
+大半夜的，我还在给大家录视频
+recording videos for everybody in the middle of the night
+
+125
+00:05:37,766 --> 00:05:39,499
+不然我可能在睡觉
+I could be sleeping
+
+126
+00:05:40,133 --> 00:05:40,933
+但没关系
+but it's okay
+
+127
+00:05:42,100 --> 00:05:46,033
+我喜欢制作教育材料，希望这对你们有用
+I love bringing educational material and hopefully this is useful
+
+128
+00:05:49,566 --> 00:05:54,966
+我们来讨论一下如何在栈上构建这个字符串
+let's talk about building this string on the stack 
+
+129
+00:05:55,033 --> 00:05:57,333
+然后调用open打开一个文件
+and then calling open to open a file
+
+130
+00:05:57,733 --> 00:06:00,733
+你可以一个字节一个字节得往栈上放
+you can build a string on the stack by moving a bunch of single bytes 
+
+131
+00:06:00,800 --> 00:06:02,200
+但还有更好的方法
+and there are better ways to do it
+
+132
+00:06:02,700 --> 00:06:06,300
+我们会在其他模块中讨论它们
+later on we talk about them in another modules for example
+
+133
+00:06:06,500 --> 00:06:08,366
+你会发现更好的方法
+and you'll discover better ways to do it
+
+134
+00:06:08,500 --> 00:06:11,833
+但现在你可以简单得这样做
+but you can just do it as simple as this 
+
+135
+00:06:11,966 --> 00:06:14,733
+你往rsp+1放一字节数据
+you move into RSP+1
+
+136
+00:06:15,133 --> 00:06:15,933
+哦
+oops
+
+137
+00:06:16,133 --> 00:06:17,466
+应该是RSP
+that should be RSP
+
+138
+00:06:17,866 --> 00:06:18,766
+我马上就回来
+I'll be right back
+
+139
+00:06:24,566 --> 00:06:25,299
+回来了
+we're back 
+
+140
+00:06:25,366 --> 00:06:28,599
+放一字节到RSP指向的内存
+so you move into RSP
+
+141
+00:06:29,000 --> 00:06:33,133
+放到rsp指向的栈内存
+into the memory pointed by RSP and onto the stack
+
+142
+00:06:37,300 --> 00:06:38,933
+这会被解析
+and this gets interpreted
+
+143
+00:06:39,133 --> 00:06:41,499
+我的意思是这些会当作ASCII码解析
+I mean these gets interpreted as ASCII 
+
+144
+00:06:41,633 --> 00:06:42,933
+会填入正确的ASCII码
+the correct values are added
+
+145
+00:06:43,066 --> 00:06:45,699
+这就是汇编中的单引号的作用
+because that's what the single quote does in assembly
+
+146
+00:06:46,066 --> 00:06:54,566
+你的栈中有2f 66 6c 61 67 00
+and you got 2f 66 6c 61 67 00 in your stack
+
+147
+00:06:55,066 --> 00:06:59,333
+你可以用它来打开/flag
+okay then you can just use that to open /flag 
+
+148
+00:06:59,500 --> 00:07:00,266
+你
+you move
+
+149
+00:07:01,400 --> 00:07:06,633
+正如这儿看到的，open需要一个路径和一个标志参数
+open takes a as we saw here a path and a flags
+
+150
+00:07:07,066 --> 00:07:08,499
+所以我们要把标志设置为0
+so we're going to set the flags to 0
+
+151
+00:07:08,600 --> 00:07:10,666
+接下来我会告诉你怎么做
+and I'll tell you how to get that next
+
+152
+00:07:11,066 --> 00:07:15,333
+我们要把第一个参数设为内存中的/flag字符串
+but we're going to set the first argument to this string in memory that says /flag
+
+153
+00:07:15,600 --> 00:07:16,700
+第二个参数设为0
+second argument 0
+
+154
+00:07:16,900 --> 00:07:18,866
+open的系统调用号是2
+the syscall number of open is 2
+
+155
+00:07:19,333 --> 00:07:20,566
+然后我们触发系统调用
+and we hit syscall
+
+156
+00:07:21,400 --> 00:07:23,033
+打开文件
+and we open our file
+
+157
+00:07:23,266 --> 00:07:25,733
+然后将文件描述符放到rax
+and get the file descriptor number in RAX
+
+158
+00:07:25,966 --> 00:07:27,166
+酷
+super cool okay
+
+159
+00:07:27,766 --> 00:07:30,633
+我们怎么得到这些常量
+how do we get these constants these numbers 
+
+160
+00:07:30,900 --> 00:07:33,266
+这真让人头疼
+now this is a pain in the butt
+
+161
+00:07:34,066 --> 00:07:35,666
+有些系统调用
+some system calls just have 
+
+162
+00:07:35,766 --> 00:07:40,766
+需要知道一些，比如
+like archaic sort of things you gotta know like
+
+163
+00:07:40,866 --> 00:07:43,766
+0 表示以只读模式打开
+0 is how you open something in read only mode 
+
+164
+00:07:43,933 --> 00:07:46,366
+只写，好像是1
+and write only maybe is one 
+
+165
+00:07:46,433 --> 00:07:46,799
+我不清楚
+I don't know 
+
+166
+00:07:46,900 --> 00:07:47,700
+你得查一下
+you'll have to look it up
+
+167
+00:07:47,933 --> 00:07:50,599
+你可以写一个C程序来查
+you can write a C program to do it
+
+168
+00:07:51,500 --> 00:07:53,300
+这是一个C程序，包含
+so this is a C program that includes the
+
+169
+00:07:53,400 --> 00:07:56,300
+这些是man手册中关于这些标志的介绍
+this is from the manpage that there're these flags
+
+170
+00:07:56,900 --> 00:07:58,100
+man手册中open的介绍
+the manpage of open
+
+171
+00:07:58,566 --> 00:08:00,733
+你可以包含对应的头文件
+you can include the right things
+
+172
+00:08:01,900 --> 00:08:04,333
+然后写一个程序把它打印出来
+and then just write a program that printfs it
+
+173
+00:08:04,700 --> 00:08:05,600
+然后运行它
+and run it 
+
+174
+00:08:05,600 --> 00:08:08,500
+它说，O_RDONLY是0，祝你好运
+and it says oh O_RDONLY is 0 good luck
+
+175
+00:08:08,600 --> 00:08:09,800
+好了
+there you go
+
+176
+00:08:11,466 --> 00:08:12,866
+现在终于
+now finally
+
+177
+00:08:13,566 --> 00:08:15,399
+我们可以退出了
+we can quit and rest
+
+178
+00:08:15,666 --> 00:08:17,866
+这个，把42放入rdi
+this moves 42 into RDI
+
+179
+00:08:17,933 --> 00:08:20,199
+这将是程序的返回码
+that's going to be the return code of the program
+
+180
+00:08:20,300 --> 00:08:23,466
+会给到调用它的bash
+for your bash scripts that call it
+
+181
+00:08:23,733 --> 00:08:26,933
+我们将rax置为60
+we're going to move 60 to rax 
+
+182
+00:08:27,033 --> 00:08:28,599
+这是exit的系统调用号
+that's the syscall number of exit
+
+183
+00:08:28,766 --> 00:08:30,166
+我们调用syscall
+and we call syscall
+
+184
+00:08:30,733 --> 00:08:33,166
+然后程序就没了
+and the program goes away
+
+185
+00:08:33,366 --> 00:08:34,299
+它退出了
+it quits
+
+186
+00:08:37,566 --> 00:08:41,399
+这就是与操作系统交互的方式
+so the way to interact with the operating system
+
+187
+00:08:41,500 --> 00:08:44,200
+一会我们谈谈如何编译
+now let's talk about actually building this stuff
+
+188
+00:08:44,500 --> 00:08:46,700
+以及调试
+debugging it and so on next
+

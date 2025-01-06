@@ -1,0 +1,1499 @@
+1
+00:00:01,066 --> 00:00:03,266
+你好黑客，我的名字是Yan
+hello hackers my name is Yan
+
+2
+00:00:03,266 --> 00:00:05,099
+您正在收看PWN大学
+you're watching pwn college
+
+3
+00:00:05,100 --> 00:00:07,300
+今天我们要讲的是
+and today we're talking about
+
+4
+00:00:08,266 --> 00:00:09,699
+内存信息泄露
+memory disclosures
+
+5
+00:00:09,700 --> 00:00:12,766
+一类特殊的内存错误
+a special class of memory errors which
+
+6
+00:00:13,100 --> 00:00:17,500
+我们会结合本模块讨论过的保护机制来讲解
+we'll talk about in the context of all of the defenses that we just discussed
+
+7
+00:00:17,533 --> 00:00:19,699
+我们讨论了栈金丝雀
+we just discussed stack canaries
+
+8
+00:00:19,700 --> 00:00:22,400
+我们讨论了地址空间布局随机化
+we just discussed Address Space Layout Randomization
+
+9
+00:00:22,533 --> 00:00:26,533
+它们的核心都是秘密
+and the core of all of these things is secrets
+
+10
+00:00:26,900 --> 00:00:34,000
+栈金丝雀是一个秘密值，在函数运行之前写入栈
+a stack canary is a secret value that is written to the stack before a function runs
+
+11
+00:00:34,400 --> 00:00:36,666
+并在函数运行完后进行检查
+and is checked after the function runs
+
+12
+00:00:36,766 --> 00:00:38,866
+它是一个秘密值
+and the idea is that it's a secret value
+
+13
+00:00:39,366 --> 00:00:40,466
+那么攻击者
+so the attacker
+
+14
+00:00:40,666 --> 00:00:42,799
+如果他们可以覆盖栈
+if they can overwrite the stack
+
+15
+00:00:42,800 --> 00:00:45,000
+他们不知道这个秘密值
+don't know this secret value
+
+16
+00:00:45,400 --> 00:00:47,766
+当他们覆盖栈时
+and when they overwrite the stack 
+
+17
+00:00:47,766 --> 00:00:49,166
+它会被覆盖成别的东西
+they will overwrite it with something else
+
+18
+00:00:49,400 --> 00:00:53,000
+同样，地址空间布局随机化是一个或一组秘密值
+likewise Address Space Layout Randomization is a secret value or a set of secret values 
+
+19
+00:00:53,000 --> 00:01:02,800
+它们是代码和数据这类程序资产在内存中的位置
+ at which program assets like code and data are laid out in memory
+
+20
+00:01:03,500 --> 00:01:08,000
+ASLR的安全性建立在攻击者不知道这些偏移
+the security of ASLR depends on the attacker not knowing those offsets
+
+21
+00:01:08,066 --> 00:01:09,866
+所以如果有办法得到这些偏移
+so there's a way to get these offsets
+
+22
+00:01:10,400 --> 00:01:13,800
+这将是一个大问题
+ then this is a big problem
+
+23
+00:01:13,900 --> 00:01:20,300
+我们今天要讲的是导致这些信息泄露的内存错误
+so we're going to talk about memory errors today that lead to these disclosures
+
+24
+00:01:20,500 --> 00:01:21,733
+好了，我们开始吧
+alright let's roll
+
+25
+00:01:21,733 --> 00:01:23,299
+第一个超级简单
+the 1st one is super easy
+
+26
+00:01:23,966 --> 00:01:26,333
+缓冲区越界读
+buffer overread  
+
+27
+00:01:26,900 --> 00:01:28,900
+从概念上讲，它是缓冲区溢出的读版本
+conceptually it's the read version of a buffer overflow
+
+28
+00:01:28,900 --> 00:01:31,900
+有大量的读取，而不是大量的写入
+instead of a large write we have a large read
+
+29
+00:01:31,966 --> 00:01:33,199
+当然，也可能
+of course this can also occur
+
+30
+00:01:33,200 --> 00:01:38,400
+将数据拷贝到一个攻击者可以输出的地方等等
+we have a large copy somewhere else that the attacker can then have printed out to them etc
+
+31
+00:01:38,800 --> 00:01:41,533
+这是最小的例子
+this is the very smallest example
+
+32
+00:01:41,566 --> 00:01:43,899
+我们有一个小的缓冲区然后我们把这个缓冲区写出来
+where we have a small buffer and then we write out that buffer
+
+33
+00:01:44,200 --> 00:01:48,500
+好了，让我们看看它是怎么工作的
+ all right let's take a look at how it works in what is written
+
+34
+00:01:48,866 --> 00:01:52,099
+我创建了这个buffer_overread.c
+so yeah I created this buffer_overread.c
+
+35
+00:01:52,600 --> 00:01:54,866
+就是我们在这里看到的
+and it's exactly what we saw there
+
+36
+00:01:56,133 --> 00:01:57,566
+编译一下
+let's compile it
+
+37
+00:02:01,300 --> 00:02:03,100
+好的，我们运行它
+okay we run it
+
+38
+00:02:05,100 --> 00:02:08,500
+它会像预期的那样打印出一堆垃圾
+and it prints out a bunch of garbage as expected right
+
+39
+00:02:12,100 --> 00:02:14,166
+让我们看看打印出来的是什么
+let's take a look at what is printed out
+
+40
+00:02:16,533 --> 00:02:19,066
+首先，你可以马上看到
+1st of all immediately you can see the
+
+41
+00:02:19,066 --> 00:02:20,899
+这个16字节的小缓冲区
+the 16 bytes of this small buffer
+
+42
+00:02:20,933 --> 00:02:22,133
+里面已经有一半数据了
+already half stuff in it
+
+43
+00:02:22,133 --> 00:02:24,266
+这个有点超前了
+this is actually looking ahead
+
+44
+00:02:24,600 --> 00:02:25,733
+哇，不是这个
+whoa not that
+
+45
+00:02:26,133 --> 00:02:28,166
+这也超前了
+looking ahead that's also looking ahead
+
+46
+00:02:29,133 --> 00:02:30,866
+buffer_overread.c
+buffer_overread.c
+
+47
+00:02:30,800 --> 00:02:35,500
+我们把它初始化为空字节
+let's initialize it properly to null bytes
+
+48
+00:02:36,800 --> 00:02:39,533
+好吧，我们来看看泄露了什么
+all right let's let's take a look at what leaked
+
+49
+00:02:39,700 --> 00:02:44,200
+这是我们16字节的缓冲区，然后
+okay so here's our 16 bytes of of buffer and then
+
+50
+00:02:44,800 --> 00:02:50,300
+还有112个字节的垃圾被打印出来
+there's another 112 bytes of garbage that's printed
+
+51
+00:02:50,366 --> 00:02:53,266
+但这些垃圾不是无用的
+but this garbage is far from useless
+
+52
+00:02:53,500 --> 00:02:54,800
+这里有个地址
+there's an address here
+
+53
+00:02:54,866 --> 00:02:56,866
+所以我们刚刚绕过了ASLR
+so we have just broken ASLR
+
+54
+00:02:58,000 --> 00:03:00,500
+这看起来像一个栈金丝雀值
+there this looks like a stack canary
+
+55
+00:03:01,200 --> 00:03:03,933
+一个空字节开始，然后是一堆其他的东西
+starts with a null byte and then a bunch of other stuff
+
+56
+00:03:04,366 --> 00:03:08,266
+如果我再运行一次，每次都能看到随机结果
+that if I run again we can see randomizes every time
+
+57
+00:03:09,066 --> 00:03:10,799
+我们刚刚泄露了栈金丝雀
+we just leaked the stack canary
+
+58
+00:03:12,966 --> 00:03:15,599
+这看起来像是其他地方的偏移
+this looks like an offset somewhere else
+
+59
+00:03:15,600 --> 00:03:17,866
+我猜这是一个栈偏移
+so I'm guessing this is a stack offset
+
+60
+00:03:19,500 --> 00:03:27,200
+这是一个库函数偏移量，或者反过来
+and this is a library function offset maybe or or vice versa
+
+61
+00:03:27,400 --> 00:03:28,666
+估计是反过来
+probably vice versa
+
+62
+00:03:30,100 --> 00:03:33,500
+这可能是栈上的某个地方
+this is probably about somewhere on the stack
+
+63
+00:03:35,900 --> 00:03:37,866
+不，我还是坚持我最初的判断
+nah I'm gonna go with my initial assessment
+
+64
+00:03:37,900 --> 00:03:38,700
+但
+but
+
+65
+00:03:39,100 --> 00:03:42,300
+你可以看到我们从一个过量读中泄露了很多数据
+you can see we are leaking a lot of data from an overread
+
+66
+00:03:42,366 --> 00:03:45,766
+如果我们同时有过量读和过量写
+and then if we had both an overread and an overrite
+
+67
+00:03:47,100 --> 00:03:47,900
+然后
+then
+
+68
+00:03:48,500 --> 00:03:53,800
+我们可以泄露出栈金丝雀，然后
+we could leak out the stack canary and then
+
+69
+00:03:54,266 --> 00:03:57,799
+当我们进行覆盖时，用正确的值覆盖它
+when we do the overwrite write it with a correct value
+
+70
+00:03:59,333 --> 00:04:01,366
+这样就绕过了栈金丝雀检查
+so that the stack canary check passes
+
+71
+00:04:01,366 --> 00:04:01,999
+或
+or
+
+72
+00:04:02,000 --> 00:04:05,066
+当我们进行覆盖时，我们写入了正确的地址
+when we do the overwrite we write the correct address
+
+73
+00:04:05,100 --> 00:04:06,733
+这样尽管开启了ASLR
+so that despite ASLR
+
+74
+00:04:06,800 --> 00:04:09,000
+还是可以正常工作
+we can function properly
+
+75
+00:04:09,166 --> 00:04:10,866
+好吧，当然我是说
+okay and of course I mean
+
+76
+00:04:12,900 --> 00:04:16,900
+像这个指向哪里等等问题
+the question of where does this point and so forth 
+
+77
+00:04:17,766 --> 00:04:19,766
+我们可以通过GDB
+we can understand by stepping through in GDB and 
+
+78
+00:04:19,700 --> 00:04:22,300
+看这些数据从何而来，来理解程序
+seeing where does data comes from to understand the program
+
+79
+00:04:22,566 --> 00:04:23,366
+好吧
+all right
+
+80
+00:04:24,133 --> 00:04:26,866
+下一个问题字符串终止符
+next problem string termination
+
+81
+00:04:26,866 --> 00:04:29,333
+字符串终止符是一个非常令人头痛的问题
+string termination is a giant headache
+
+82
+00:04:30,800 --> 00:04:34,600
+字符串在C中没有显式的大小元数据
+strings do not have explicit size metadata at C
+
+83
+00:04:34,600 --> 00:04:37,333
+就像很多其他事情一样
+like many other things um
+
+84
+00:04:37,400 --> 00:04:42,300
+所以那里的C开发人员智慧友善的决定
+and so the C developers in there in friend and wisdom decide
+
+85
+00:04:42,333 --> 00:04:44,166
+这很好解决
+okay well this is an easy thing to solve 
+
+86
+00:04:44,200 --> 00:04:46,400
+这是个很容易解决的问题
+an easy problem to solve
+
+87
+00:04:46,500 --> 00:04:50,600
+不传递占用内存的大小元数据
+that isn't passing around the size which takes up space and memory
+
+88
+00:04:50,666 --> 00:04:52,999
+不然你还要跟踪大小等等
+and then you have to track the size and so forth
+
+89
+00:04:53,166 --> 00:04:55,599
+我们规定字符串
+we'll just allow strings
+
+90
+00:04:56,000 --> 00:05:00,700
+是一个字节缓冲区加一个null字节
+to be buffers of bytes and at then of that buffer there's a null byte
+
+91
+00:05:00,700 --> 00:05:04,000
+无论null字节在哪，我们都假设它以null结尾
+and wherever the null byte is we'll assume it's null terminated
+
+92
+00:05:04,066 --> 00:05:06,133
+这就导致了一些问题
+so this leads to problems
+
+93
+00:05:06,100 --> 00:05:13,000
+一个是字符串操作很容易导致溢出
+one is it's very easy with a string operation to cause overflows
+
+94
+00:05:13,100 --> 00:05:18,700
+我们在之前的视频中讨论过这个
+right and we talked about this in a in a previous video in this module
+
+95
+00:05:18,733 --> 00:05:22,399
+但这也很容易导致内存泄露
+but it's also very easy to cause memory disclosures
+
+96
+00:05:23,166 --> 00:05:25,333
+就像列在这里的程序一样
+which the program listed here does
+
+97
+00:05:25,333 --> 00:05:27,799
+这个程序非常简单，它读取一个flag
+this program is pretty simple it reads a flag
+
+98
+00:05:28,133 --> 00:05:31,266
+然后它读取我的名字，然后说你好+名字
+and then it reads my name and then it says hello name
+
+99
+00:05:31,766 --> 00:05:34,199
+这个程序不应该打印flag
+right this program shouldn't print me the flag
+
+100
+00:05:34,700 --> 00:05:39,700
+但我会展示给你看，它会为我打印flag
+but I will show you that it will print me the flag
+
+101
+00:05:40,300 --> 00:05:41,100
+好吧
+all right
+
+102
+00:05:41,866 --> 00:05:42,999
+让我们来看看
+so let's take a look
+
+103
+00:05:43,166 --> 00:05:44,466
+这是程序
+here's the program
+
+104
+00:05:49,300 --> 00:05:50,066
+很简单
+nice and simple
+
+105
+00:05:50,066 --> 00:05:50,999
+umm
+so what it it
+
+106
+00:05:51,133 --> 00:05:54,966
+它将name缓冲区初始化为0
+it initializes this to to zero the name buffer
+
+107
+00:05:54,966 --> 00:05:56,299
+然后它会读入
+then it reads into it
+
+108
+00:05:57,800 --> 00:05:59,200
+然后输出hello name
+then it prints hello name
+
+109
+00:05:59,200 --> 00:06:01,966
+顺便说一句
+and as an aside
+
+110
+00:06:02,100 --> 00:06:04,200
+在这一切之前，它会读入flag
+before it all does all this it reads into the flag
+
+111
+00:06:05,166 --> 00:06:05,966
+所以让我们
+so let's
+
+112
+00:06:10,066 --> 00:06:11,166
+编译一下
+let's compile it
+
+113
+00:06:14,733 --> 00:06:15,733
+运行它
+let's run it
+
+114
+00:06:21,366 --> 00:06:22,266
+哦,这
+oh it
+
+115
+00:06:23,100 --> 00:06:23,966
+这是恼人的
+that's annoying
+
+116
+00:06:24,200 --> 00:06:25,700
+好了它
+okay it
+
+117
+00:06:27,933 --> 00:06:28,733
+让我
+let me just
+
+118
+00:06:29,900 --> 00:06:31,666
+修改一下，输出换行
+let's change this to have a new line
+
+119
+00:06:31,666 --> 00:06:33,466
+这样它才会清空输出这个缓冲区
+so that it flushes this buffer
+
+120
+00:06:35,200 --> 00:06:36,266
+编译它
+compile it
+
+121
+00:06:38,266 --> 00:06:39,899
+这是怎么回事
+what's going on what
+
+122
+00:06:41,733 --> 00:06:42,699
+编译它
+compile it
+
+123
+00:06:44,533 --> 00:06:47,299
+运行它好吧，我叫什么名字，我的名字是Yan
+run it okay what's my name my name is Yan
+
+124
+00:06:47,300 --> 00:06:48,266
+你好,Yan
+hello Yan
+
+125
+00:06:49,366 --> 00:06:52,366
+它有点懒，由新行才输出
+okay it's a little lazy it it it got the new line
+
+126
+00:06:52,366 --> 00:06:55,733
+好的，但有趣的是
+all right but the interesting thing here
+
+127
+00:06:56,700 --> 00:07:08,100
+这个数组的大小是10
+is that this array is sized uh uh size 10
+
+128
+00:07:10,166 --> 00:07:12,999
+然而这里是64
+and then there's a size 64 right here
+
+129
+00:07:18,100 --> 00:07:23,800
+我将读取10个字节
+I will read in 10 bytes
+
+130
+00:07:25,100 --> 00:07:26,766
+那空字节放在哪里呢
+so where's the null byte gonna go
+
+131
+00:07:27,200 --> 00:07:31,300
+这里有一个非常类似的东西
+there's a very analogous thing of a little bit
+
+132
+00:07:31,700 --> 00:07:33,766
+很多这样的终止符问题
+a lot of these termination issues
+
+133
+00:07:33,766 --> 00:07:35,966
+类似于off by one 问题
+are analogous to off by one errors
+
+134
+00:07:35,966 --> 00:07:36,999
+因为如果我读入9字节
+because if I'd read 9
+
+135
+00:07:38,066 --> 00:07:40,333
+我仍然有第10个字节作为终止符
+I'd still have one of the initial 10 null bytes
+
+136
+00:07:40,333 --> 00:07:41,966
+但因为我读入了10字节
+but since I read 10
+
+137
+00:07:44,000 --> 00:07:46,066
+当我给它一堆a
+I can give it a bunch of As
+
+138
+00:07:48,533 --> 00:07:50,933
+这是它打印的东西，你好
+and here is what it prints hello
+
+139
+00:07:51,700 --> 00:07:52,533
+当然对于%s
+and of course %s 
+
+140
+00:07:52,700 --> 00:07:55,366
+当他打印时，它会说ok
+when it's printing out it says okay
+
+141
+00:07:55,366 --> 00:07:58,266
+Printf会在这里打印一个字符串
+printf is gonna print a string here right
+
+142
+00:07:58,700 --> 00:08:03,000
+在这里，它说打印一个name指向的字符串，
+right here it says print a string point to by name
+
+143
+00:08:03,266 --> 00:08:05,566
+没有大小元数据
+there's no size metadata
+
+144
+00:08:05,500 --> 00:08:08,900
+而只是一直打印直到遇到一个空字节
+other than just keep printing until you find a null byte
+
+145
+00:08:09,300 --> 00:08:12,700
+问题是我消除了所有的空字节
+and the problem is I eliminator all the null bytes
+
+146
+00:08:13,766 --> 00:08:16,066
+我用这个输入覆盖了它们
+I overwrote them with this input
+
+147
+00:08:16,300 --> 00:08:17,966
+它说，好，你好
+and so it says okay hello
+
+148
+00:08:17,966 --> 00:08:23,799
+然后打印出10个A, 1 2 3 4 5 6 7 8 9 10
+and then in prints 10 A's 1 2 3 4 5 6 7 8 9 10
+
+149
+00:08:24,700 --> 00:08:26,066
+然后继续打印
+and then it keeps printing
+
+150
+00:08:26,066 --> 00:08:27,333
+因为它没有找到一个空字节
+because it hasn't found an null byte
+
+151
+00:08:27,300 --> 00:08:33,300
+栈上name旁边是下一个缓冲区
+and next to my name on the stack is this next buffer
+
+152
+00:08:33,500 --> 00:08:34,533
+flag
+that's the flag
+
+153
+00:08:35,100 --> 00:08:37,600
+突然间我把flag泄露了
+and suddenly I've leaked the flag 
+
+154
+00:08:37,600 --> 00:08:39,733
+但同样的，我也泄露了一些其他的东西
+but in the same way I've leaked some other stuff too by the way
+
+155
+00:08:40,400 --> 00:08:41,700
+看看我泄露了什么
+let's see what I've leaked
+
+156
+00:08:44,200 --> 00:08:45,566
+传到hexdump
+pipe it to HD
+
+157
+00:08:47,366 --> 00:08:48,799
+我泄露了
+I have leaked
+
+158
+00:08:56,066 --> 00:08:59,733
+就在这里，看起来像个指针
+right here what looks like a pointer somewhere
+
+159
+00:09:00,766 --> 00:09:01,566
+这
+this
+
+160
+00:09:09,133 --> 00:09:09,933
+现在
+now
+
+161
+00:09:12,066 --> 00:09:12,866
+3880
+3880
+
+162
+00:09:15,266 --> 00:09:16,166
+不，是这个
+no, this yeah
+
+163
+00:09:16,733 --> 00:09:19,733
+所以我泄露了一个看起来像指针的东西
+so I've leaked something that looks like a pointer
+
+164
+00:09:20,400 --> 00:09:23,400
+然后这个换行符的后面就是00（终止符不打印）
+and then the ??? point to new line is the end of the thing
+
+165
+00:09:23,466 --> 00:09:25,899
+所以你也可以泄露内存地址
+so you can also leak memory addresses
+
+166
+00:09:26,200 --> 00:09:28,733
+只要里面不含0
+as long as they don't have 0 inside them
+
+167
+00:09:28,766 --> 00:09:29,899
+这非常酷
+which is super cool
+
+168
+00:09:30,733 --> 00:09:33,566
+提醒一句，你可能马上会想哦
+one word of caution you might immediately think ooh
+
+169
+00:09:33,566 --> 00:09:34,366
+哦哦
+ooh ooh
+
+170
+00:09:34,400 --> 00:09:35,966
+我可以泄露栈金丝雀
+I can leak the canary
+
+171
+00:09:36,266 --> 00:09:37,466
+事实并非如此
+that is not the case
+
+172
+00:09:37,466 --> 00:09:39,699
+金丝雀设计师想到了这一点
+the canary designers thought of this
+
+173
+00:09:40,566 --> 00:09:43,266
+如果你看一下我们的缓冲区过量读的例子
+if you look at our buffer overread example
+
+174
+00:09:43,400 --> 00:09:45,533
+因为这是打印金丝雀的简单方法
+because that's an easy way to print the canary
+
+175
+00:09:46,366 --> 00:09:47,666
+看这个金丝雀
+look at this canary
+
+176
+00:09:48,266 --> 00:09:50,166
+金丝雀从一个空字节开始
+the canary starts with a null byte
+
+177
+00:09:50,700 --> 00:09:52,300
+正是为了这个目的
+exactly for this purpose
+
+178
+00:09:52,300 --> 00:09:59,900
+正是如此，遇到字符串终止问题导致内存泄露时
+exactly so that using a string termination issue leading to a memory disclosure 
+
+179
+00:10:02,600 --> 00:10:03,733
+你无法泄露金丝雀值
+ you cannot leak out the canary
+
+180
+00:10:04,066 --> 00:10:06,866
+可以看出这类问题很常见
+that's how common these types of issues are
+
+181
+00:10:07,200 --> 00:10:08,266
+金丝雀
+that a canary
+
+182
+00:10:08,266 --> 00:10:09,899
+金丝雀给出了整整一个字节
+an entire byte of a canary was given over
+
+183
+00:10:09,933 --> 00:10:13,299
+来停止这些失控的字符串操作
+ to stop these runaway string operations
+
+184
+00:10:13,600 --> 00:10:14,400
+好
+all right
+
+185
+00:10:15,100 --> 00:10:17,366
+最后一个 未初始化的数据
+last one uninitialized data
+
+186
+00:10:17,366 --> 00:10:19,366
+这是漏洞中的一大类
+this is a giant class of vulnerability
+
+187
+00:10:19,366 --> 00:10:21,199
+就其本身而言
+on all by itself
+
+188
+00:10:22,300 --> 00:10:26,100
+回想一下我在本模块开始时说过的
+recall as I said in the beginning of this module
+
+189
+00:10:26,100 --> 00:10:28,000
+C不会为你收拾残局
+C will not clean up after you
+
+190
+00:10:28,000 --> 00:10:29,900
+你得自己收拾干净
+you have to clean up after yourself
+
+191
+00:10:30,000 --> 00:10:31,300
+C很底层
+C is extremely low level
+
+192
+00:10:31,300 --> 00:10:33,400
+你让它做什么它就只会做什么
+it will do exactly what you tell it to do
+
+193
+00:10:34,666 --> 00:10:36,399
+这包括栈
+and that includes the stack
+
+194
+00:10:36,966 --> 00:10:39,266
+当你释放一个栈帧时
+when you deallocate a stack frame
+
+195
+00:10:39,500 --> 00:10:40,933
+没有数据被销毁
+no data is destroyed
+
+196
+00:10:40,933 --> 00:10:43,499
+做的就是改变栈指针的值
+all you do is change the value of the stack pointer
+
+197
+00:10:43,533 --> 00:10:44,699
+还有帧指针的值
+and the frame pointer
+
+198
+00:10:45,300 --> 00:10:46,500
+旧数据还在那里
+the old data is there
+
+199
+00:10:46,500 --> 00:10:48,566
+那么这里发生了什么
+so what happens here 
+
+200
+00:10:48,800 --> 00:10:50,800
+我们有一个main函数调用foo，然后调用bar
+we have a main that calls foo and then calls bar
+
+201
+00:10:51,066 --> 00:10:51,933
+在foo中
+in foo
+
+202
+00:10:52,900 --> 00:10:57,100
+它分配一个64字节的缓冲区，并将flag读入其中
+it allocates a 64 byte buffer and reads the flag into it
+
+203
+00:10:57,766 --> 00:11:00,866
+在bar中会把缓冲区写出来
+and in bar it writes that buffer out
+
+204
+00:11:01,533 --> 00:11:02,733
+没有过量读取
+there's no over reads
+
+205
+00:11:02,933 --> 00:11:04,333
+一切都是合法的
+everything is legit
+
+206
+00:11:05,300 --> 00:11:06,366
+问题是
+problem is
+
+207
+00:11:07,700 --> 00:11:15,300
+flag还在内存中
+that the flag is still in memory 
+
+208
+00:11:16,366 --> 00:11:17,333
+这是，怎么了
+so here's , what's going on
+
+209
+00:11:18,900 --> 00:11:22,700
+这是uninitialized.c
+so here is the uninitialized.c
+
+210
+00:11:23,500 --> 00:11:26,566
+我们来编译一下这个程序
+that exact program let's compile it
+
+211
+00:11:31,066 --> 00:11:31,866
+运行它
+run it
+
+212
+00:11:33,200 --> 00:11:39,700
+flag和其他一堆垃圾碰巧在栈上
+the flag and a bunch of other garbage that happened to be on the stack
+
+213
+00:11:41,600 --> 00:11:46,000
+这些乱七八糟的存在不是因为读取flag导致过量写入
+that wasn't over written by the read of the flag
+
+214
+00:11:46,800 --> 00:11:48,933
+再次强调，栈本身是一团乱
+again the stack is a mess
+
+215
+00:11:48,933 --> 00:11:50,899
+如果你想确定
+if you want to be very sure
+
+216
+00:11:51,166 --> 00:11:53,066
+你没有使用未初始化数据
+that you don't have an initialized data
+
+217
+00:11:53,333 --> 00:11:54,533
+初始化它
+initialize it
+
+218
+00:11:55,500 --> 00:11:57,400
+如果你想确定
+if you want to make very sure
+
+219
+00:11:57,700 --> 00:12:04,300
+你没在栈上留下秘密，比如flag
+that you are not leaving around secrets on the stack in memory such as the flag
+
+220
+00:12:04,966 --> 00:12:06,799
+显式地删除它们
+explicitly erase them
+
+221
+00:12:07,600 --> 00:12:11,300
+顺便说一下，这也适用于动态内存分配
+this also applies by the way to dynamic memory allocation
+
+222
+00:12:11,900 --> 00:12:13,900
+当你释放一些东西
+when you free something
+
+223
+00:12:15,100 --> 00:12:17,200
+这些数据大部分还保存在内存中
+that data mostly stays in memory
+
+224
+00:12:17,200 --> 00:12:18,333
+如果你malloc了
+if you malloced
+
+225
+00:12:18,600 --> 00:12:21,566
+使用一些东西，然后释放它，数据还会一直存在
+use something and then free it that data stays around
+
+226
+00:12:21,500 --> 00:12:28,700
+我们将在动态分配器误用模块中更详细地讨论这一点
+and we'll cover that in much more detail in the dynamic allocator misuse module
+
+227
+00:12:28,866 --> 00:12:30,533
+我还要提一件事
+I'll mention one more thing
+
+228
+00:12:30,533 --> 00:12:32,566
+即使你试着做一个细心的人
+even if you try to be a careful person
+
+229
+00:12:33,400 --> 00:12:35,466
+然后你意识到
+and you realize that hey
+
+230
+00:12:35,866 --> 00:12:38,799
+我读到的这个flag是敏感的，我应该删除它
+this flag I read is sensitive and I should remove it
+
+231
+00:12:38,966 --> 00:12:41,399
+这里这段代码使用memset
+here this code is using memset
+
+232
+00:12:41,533 --> 00:12:42,399
+memset
+memset
+
+233
+00:12:43,466 --> 00:12:44,933
+为什么不行，好了
+why doesn't it okay
+
+234
+00:12:45,200 --> 00:12:49,100
+Memset将用一个常量字节填充内存
+memset wil fill a memory with a constant byte
+
+235
+00:12:49,100 --> 00:12:57,500
+它会用常量字节c在地址s上写入n个字节
+it will location s with byte C for n bytes okay
+
+236
+00:12:58,200 --> 00:12:59,333
+让我们看看它会做什么
+let's take a look at what this does
+
+237
+00:13:00,566 --> 00:13:04,333
+这应该读入flag
+ that this should read in the flag
+
+238
+00:13:06,600 --> 00:13:09,400
+从内存中删除，然后调用bar
+wipe it from memory and then call bar
+
+239
+00:13:09,666 --> 00:13:12,199
+然后写出缓冲区
+right and then write out that buffer
+
+240
+00:13:12,800 --> 00:13:17,400
+现在那里应该都被memset归零了
+which now should be all zeroed out from that memset
+
+241
+00:13:17,800 --> 00:13:19,900
+让我们来看看实际发生了什么
+let's take a look at what actually happens
+
+242
+00:13:19,900 --> 00:13:24,900
+我在uninitialized-safe中实现了这个
+right so I implemented this in uninitialized safe
+
+243
+00:13:26,600 --> 00:13:28,966
+这儿是memset
+here it is here's the memset
+
+244
+00:13:29,700 --> 00:13:35,700
+我们来编译一下
+so let's compile it
+
+245
+00:13:37,133 --> 00:13:39,366
+运行一下，啥也没输出
+let's run it nothing
+
+246
+00:13:39,500 --> 00:13:41,333
+如果你用hexdump查看，都是0
+if you hex dump all zeros
+
+247
+00:13:42,866 --> 00:13:47,099
+64字节的0，你可以看到这个星号，和0x40
+64 bytes of zeros you can see this star with a hex 40
+
+248
+00:13:47,333 --> 00:13:48,699
+十六进制40是64
+hex 40 is 64
+
+249
+00:13:50,466 --> 00:13:53,133
+全是0，太棒了，我们解决了这个问题吗？
+it's all zeros awesome did we solve the problem
+
+250
+00:13:53,800 --> 00:14:03,100
+并没有，这实际上是加密实现中的一个大问题
+not really this is actually a huge um problem in crypto implementations
+
+251
+00:14:03,600 --> 00:14:08,500
+编译器会对代码优化
+a compiler that is run with optimizations
+
+252
+00:14:08,500 --> 00:14:12,500
+当你编译代码时，你一般会启用编译器优化
+which typically when you compile code to ship you enable compiler optimization
+
+253
+00:14:12,533 --> 00:14:14,366
+这样你的代码运行得更快
+so that your code runs a lot faster
+
+254
+00:14:14,800 --> 00:14:17,966
+（编译器）会认为你写的memset毫无意义
+will decide that hey this memset it's pointless
+
+255
+00:14:19,000 --> 00:14:20,066
+为什么它毫无意义
+why is it pointless
+
+256
+00:14:20,000 --> 00:14:24,800
+因为这是一个局部变量，在这个memset之后就不用了
+because this is a local variable and it's not used after this memset
+
+257
+00:14:25,166 --> 00:14:27,966
+编译器意识不到
+the compiler isn't going to realize that 
+
+258
+00:14:28,300 --> 00:14:31,533
+这个和这个占用相同的内存空间
+this is occupying the same memory space as this
+
+259
+00:14:31,933 --> 00:14:35,166
+它只会觉得为什么要执行
+it's just going to see okay why are they making
+
+260
+00:14:35,500 --> 00:14:38,933
+这些耗时的内存写入等等操作
+costly operations memory writes and all of this crap
+
+261
+00:14:39,266 --> 00:14:40,899
+为了一个永远不会被用到的变量
+to a variable that's never gonna be used
+
+262
+00:14:40,900 --> 00:14:41,800
+我们把它去掉吧
+let's just remove it
+
+263
+00:14:41,800 --> 00:14:43,700
+让我给你看看这个
+let me show you this
+
+264
+00:14:44,733 --> 00:14:46,733
+让我们回到
+let's get back our
+
+265
+00:14:47,200 --> 00:14:49,700
+让我们启用优化
+okay and let's enable optimizations
+
+266
+00:14:49,700 --> 00:14:52,066
+这是一个很高的优化级别
+this is a high level of optimizations
+
+267
+00:14:52,066 --> 00:14:54,366
+我必须禁用一个优化
+I have to disable one optimization 
+
+268
+00:14:54,466 --> 00:14:56,599
+不是因为它会使我说的不成立
+because not that it breaks this fundamentally
+
+269
+00:14:56,700 --> 00:15:00,200
+只是内联函数使栈不对齐，因此很难演示
+but it inline functions  disalligns the stack  so it's harder to demonstrate
+
+270
+00:15:00,600 --> 00:15:07,200
+使用这些优化编译它
+ compile it with these optimizations
+
+271
+00:15:08,100 --> 00:15:08,966
+然后运行它
+and run it
+
+272
+00:15:09,666 --> 00:15:11,066
+又看到了我们的flag
+and there's our flag again
+
+273
+00:15:11,166 --> 00:15:15,133
+为什么？因为GCC拿掉了对memset的调用
+why because GCC took out the call to memset
+
+274
+00:15:15,200 --> 00:15:17,900
+不优化时我们可以看到
+we can see it without optimizations
+
+275
+00:15:17,966 --> 00:15:19,299
+如果我们objdump 看一下
+if we object dump
+
+276
+00:15:27,900 --> 00:15:29,533
+我们看一下main
+and we look in main
+
+277
+00:15:30,500 --> 00:15:31,400
+嗯，在foo中
+um in foo
+
+278
+00:15:31,733 --> 00:15:33,333
+我们看到了对memset的调用
+we see the call to memset
+
+279
+00:15:34,000 --> 00:15:35,066
+如果我们看一下
+if we look at
+
+280
+00:15:35,700 --> 00:15:38,900
+开启优化后
+optimizations turned on
+
+281
+00:15:40,366 --> 00:15:41,699
+我们看一下foo
+and we look at foo
+
+282
+00:15:42,366 --> 00:15:43,666
+没有memset调用
+no memset call
+
+283
+00:15:44,500 --> 00:15:47,566
+我看到它还做了很多其它事
+I see a lot of other weird stuff being done
+
+284
+00:15:48,133 --> 00:15:49,499
+但是没有memset调用
+but no memset call
+
+285
+00:15:50,300 --> 00:15:52,933
+所以它优化掉了很多东西
+so it optimized a bunch of stuff away
+
+286
+00:15:55,933 --> 00:15:57,599
+最终它优化掉了系统的安全性
+it optimize the way the security
+
+287
+00:15:57,600 --> 00:15:59,666
+这种情况经常发生
+this actually happens a lot
+
+288
+00:15:59,600 --> 00:16:06,200
+在加密库实现中真有这种漏洞，它导致了密钥泄露
+it's a real vulnerability class in crypto implementations that lead to key disclosures
+
+289
+00:16:08,500 --> 00:16:11,500
+所以当你写代码的时候要小心
+so when you're writing code be careful about that
+
+290
+00:16:11,500 --> 00:16:13,200
+当然正确的解决方法
+the correct fix here of course
+
+291
+00:16:13,300 --> 00:16:18,800
+在程序开始时将此缓冲区初始化为零
+is to initialize this buffer to zero at the start of the program
+
+292
+00:16:18,866 --> 00:16:20,599
+所以你应该在函数的开始
+so you should all at the start of the function
+
+293
+00:16:20,700 --> 00:16:21,866
+所以你总是应该
+so you should always
+
+294
+00:16:22,066 --> 00:16:26,966
+在使用变量之前初始化代码中的变量
+initialize variables in your code before they are used
+
+295
+00:16:27,600 --> 00:16:34,200
+太棒了，嗯，我们要谈论的数据泄露漏洞就是这些
+awesome that um is it for the data disclosure vulnerabilities we'll talk about here
+
+296
+00:16:34,266 --> 00:16:36,466
+当然还有任意复杂的组合
+of course there are arbitrarily complex ones
+
+297
+00:16:36,400 --> 00:16:40,200
+你可以覆盖指针，然后将它用作读取等等
+you could overwrite pointers that are then used as a read etc etc
+
+298
+00:16:40,933 --> 00:16:43,866
+但是这些简单的方法可以帮助你开始
+but these are some simple ones to get you started
+
+299
+00:16:44,200 --> 00:16:48,100
+我希望你们喜欢内存错误模块
+I hope you have enjoyed memory errors and
+
+300
+00:16:49,100 --> 00:16:50,966
+祝你在作业上好运
+good luck on the challenge problems

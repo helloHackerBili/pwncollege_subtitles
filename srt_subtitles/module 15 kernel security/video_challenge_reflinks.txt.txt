@@ -1,0 +1,26 @@
+01 Introduction
+    https://www.youtube.com/watch?v=j0I2AakUAxk&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og
+
+02 Environment Setup
+    https://www.youtube.com/watch?v=mDn5IxMetgQ&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=2
+
+03 Kernel Modules
+    https://www.youtube.com/watch?v=DLWBWeN2ebM&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=3
+
+04 Privilege Escalation
+    https://www.youtube.com/watch?v=8ty-IFWvuHM&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=4
+
+05 Escaping Seccomp (for real!)
+    https://www.youtube.com/watch?v=mKzUA3j6myg&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=5
+
+06 Memory Management
+    https://www.youtube.com/watch?v=SygLhZUTmKQ&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=6
+
+07 Mitigations
+    https://www.youtube.com/watch?v=8nWw8jlQnew&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=7
+
+08 Writing Kernel Shellcode
+    https://www.youtube.com/watch?v=L9dJNJDIa5M&list=PL-ymxv0nOtqowTpJEW4XTiGQYx6iwa6og&index=8
+    
+practice here
+    https://pwn.college/system-security/kernel-security/

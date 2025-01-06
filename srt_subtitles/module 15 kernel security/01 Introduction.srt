@@ -1,0 +1,2745 @@
+1
+00:00:02,300 --> 00:00:03,666
+你好黑客
+hello hackers
+
+2
+00:00:03,800 --> 00:00:06,666
+欢迎来到pwn学院的另一个模块
+welcome to another module in pwn College
+
+3
+00:00:06,666 --> 00:00:09,866
+这是内核模块的开头
+this is the beginning of the kernel module
+
+4
+00:00:10,500 --> 00:00:14,200
+这个模块将会是一次非常有趣的经历
+this module is going to be a very interesting experience
+
+5
+00:00:14,233 --> 00:00:19,833
+它将把我们带入一个不同的层次
+it's going to take us into a different level of abstraction 
+
+6
+00:00:19,900 --> 00:00:22,800
+相较于我们一直所处的
+than where we've been operating until now
+
+7
+00:00:23,600 --> 00:00:27,566
+希望你会喜欢这趟旅程
+hopefully you will enjoy this ride
+
+8
+00:00:28,033 --> 00:00:29,666
+什么是内核
+what is a kernel
+
+9
+00:00:30,666 --> 00:00:38,733
+我是在2020年美国大选前不久，录制的这段视频
+I'm recording this lecture shortly before the 2020 United States general election
+
+10
+00:00:39,300 --> 00:00:42,933
+所以我会用一个基于美国环境的类比
+so I will use a US centric analogy 
+
+11
+00:00:43,033 --> 00:00:46,333
+如果你是外国人，那很抱歉
+apologies if you are watching this from outside of the country
+
+12
+00:00:46,333 --> 00:00:48,333
+从美国视角看
+but basically in a US centric view 
+
+13
+00:00:48,333 --> 00:00:49,199
+你可以这样想
+you can imagine
+
+14
+00:00:49,300 --> 00:00:54,033
+独立的进程就像独立的州
+individual processes are basically individual states
+
+15
+00:00:54,766 --> 00:00:58,733
+每个州管理它们自己的内部事务
+and individual states manage their own affairs internally etc etc
+
+16
+00:00:58,933 --> 00:01:02,799
+但联邦政府，计算机的内核
+but the federal government which is the kernel 
+
+17
+00:01:02,966 --> 00:01:06,166
+会管理不同州之间的互动
+manages the states interactions with each other 
+
+18
+00:01:06,400 --> 00:01:09,900
+还有外部资源，外交等等
+and with external resources other countries and so forth
+
+19
+00:01:11,600 --> 00:01:14,066
+这是一个很好的类比吧
+that's a good analogy right
+
+20
+00:01:14,233 --> 00:01:18,466
+那么只有内核才能访问的外部资源是什么呢
+and so what are these external resources that only the kernel has access to
+
+21
+00:01:20,500 --> 00:01:25,533
+有几个可以直接用的例子
+we have several immediate examples we can use
+
+22
+00:01:25,933 --> 00:01:26,999
+在计算机中
+in computing
+
+23
+00:01:27,333 --> 00:01:31,399
+共享资源基本就是你的计算机
+a shared resource is basically your computer nowadays
+
+24
+00:01:31,700 --> 00:01:34,500
+即使你不与其他人共享你的电脑
+even if you don't share your computer with other people 
+
+25
+00:01:34,700 --> 00:01:39,133
+计算机上的进程彼此共享计算机的硬件
+the processes on your computer share the computer the hardware with each other
+
+26
+00:01:39,566 --> 00:01:41,166
+当然很多时候
+and then often times of course
+
+27
+00:01:41,600 --> 00:01:44,400
+如果你在使用服务器
+if you are in a on a server or whatever 
+
+28
+00:01:44,400 --> 00:01:47,066
+你会与其他人共享服务器
+you share that server with other people
+
+29
+00:01:48,466 --> 00:01:51,899
+我们来看看指令
+so let's look specifically at instructions
+
+30
+00:01:52,000 --> 00:01:57,600
+有哪些仅供内核使用
+what are these kernel-only
+
+31
+00:01:58,300 --> 00:02:00,300
+非常敏感的
+very sensitive instructions 
+
+32
+00:02:00,433 --> 00:02:08,399
+需要被保护以防进程随意使用的指令
+that need to be protected against just basically unfettered use by individual processes 
+
+33
+00:02:08,466 --> 00:02:10,299
+其中一个指令就是HLT
+one such instruction is hlt
+
+34
+00:02:10,500 --> 00:02:14,566
+hlt会关闭CPU计算
+hlt shuts down that should say CPU computation 
+
+35
+00:02:14,666 --> 00:02:15,899
+只是停止了
+just stops it 
+
+36
+00:02:16,400 --> 00:02:18,166
+实际上并没有关闭系统
+it doesn't actually turn off the system
+
+37
+00:02:18,533 --> 00:02:20,566
+它只会让CPU停止工作
+it just stops the CPU until
+
+38
+00:02:20,666 --> 00:02:22,033
+关闭系统还需要做更多
+there's more work to be done 
+
+39
+00:02:22,200 --> 00:02:24,133
+但这个指令
+but this is a instruction that 
+
+40
+00:02:24,333 --> 00:02:32,133
+应该只有硬件管理者能执行
+really only the manager of the hardware should be making
+
+41
+00:02:32,266 --> 00:02:34,199
+这个管理者就是内核
+that manager is the kernel 
+
+42
+00:02:34,300 --> 00:02:37,466
+有些指令直接与硬件外设交互
+there're instructions were interacting directly with hardware peripherals
+
+43
+00:02:37,466 --> 00:02:41,266
+两个这样的指令，in和out，分别用于输入和输出
+two such instructions are in and out for input and output
+
+44
+00:02:43,166 --> 00:02:46,299
+它们是用来与
+they are used to communicate with
+
+45
+00:02:47,333 --> 00:02:51,466
+如，你往电脑上插的小卡片，通信的
+like the little cards you plug into your machine 
+
+46
+00:02:51,466 --> 00:02:56,399
+其他交互技术也是保留给内核使用的
+among other interaction techniques that are also reserved for kernel use 
+
+47
+00:02:56,666 --> 00:02:59,299
+还有一些外部资源
+and then there's actually a bunch of
+
+48
+00:02:59,533 --> 00:03:02,566
+不光是指令，还有特殊寄存器
+not only instructions but also special registers 
+
+49
+00:03:02,666 --> 00:03:03,499
+例如
+for example
+
+50
+00:03:04,100 --> 00:03:05,333
+控制寄存器3
+control register 3 
+
+51
+00:03:05,633 --> 00:03:11,599
+CR3记录着页表信息
+cr3 is a reference to the page table 
+
+52
+00:03:11,666 --> 00:03:13,533
+它用于
+that is used to 
+
+53
+00:03:14,000 --> 00:03:16,266
+将进程的虚拟地址
+translate virtual addresses of your process
+
+54
+00:03:16,266 --> 00:03:20,399
+转换为实际内存中的物理地址
+into physical addresses in your actual RAM
+
+55
+00:03:20,500 --> 00:03:23,066
+就在你电脑里的内存条里
+right in the RAM stick inside your computer
+
+56
+00:03:23,366 --> 00:03:26,066
+你可以在维基百科上读到更多
+you can read more about them on Wikibedia it's a
+
+57
+00:03:26,866 --> 00:03:30,499
+或者在互联网上的很多地方
+or many many places around the internet
+
+58
+00:03:32,000 --> 00:03:36,766
+不管你信不信，这个寄存器能直接用mov访问
+but it's a register that can just be accessed using mov believe it or not
+
+59
+00:03:37,000 --> 00:03:40,533
+但是只能在内核模式下访问
+but can only be accessed in kernel mode
+
+60
+00:03:41,000 --> 00:03:43,933
+因为如果你能控制CR3寄存器
+because if you could control the CR3 register 
+
+61
+00:03:44,066 --> 00:03:46,699
+基本上你可以
+you could basically 
+
+62
+00:03:48,666 --> 00:03:54,899
+任意控制进程的内存映射
+arbitrarily control the memory mappings of your process
+
+63
+00:03:55,066 --> 00:03:57,099
+然后你就可以修改你的系统内存
+and then you could clob your system memory 
+
+64
+00:03:57,233 --> 00:03:58,499
+做各种各样的坏事
+and do all sorts of bad stuff
+
+65
+00:03:59,066 --> 00:04:05,666
+所以CR3只能由内核控制
+so CR3 is only controllable by the kernel
+
+66
+00:04:06,800 --> 00:04:12,833
+类似地，有一个特殊的寄存器叫做MSR_L STAR
+in a similar vein there's a special register called MSR_L STAR
+
+67
+00:04:12,900 --> 00:04:14,800
+它是基于特定模式的寄存器
+it's a Model-Specific Register
+
+68
+00:04:15,166 --> 00:04:18,166
+长模式 系统调用 目标 地址 寄存器
+Long mode Syscall Target Address Register
+
+69
+00:04:18,200 --> 00:04:20,666
+这个寄存器
+this is the register that 
+
+70
+00:04:20,766 --> 00:04:24,966
+记录了系统调用会跳转到那里执行
+defines where the syscall instruction transfers control flow to
+
+71
+00:04:25,566 --> 00:04:26,999
+通常是在内核内部
+usually that's inside the kernel
+
+72
+00:04:27,000 --> 00:04:28,500
+显然，如果你能设置它
+obviously if you could set that
+
+73
+00:04:28,666 --> 00:04:30,899
+你就可以截取所有的
+then you could intercept all sorts
+
+74
+00:04:31,000 --> 00:04:32,333
+你会造成很大的破坏
+you could wreak a lot of havoc
+
+75
+00:04:32,500 --> 00:04:34,666
+原因很多，稍后会讲到
+for a lot of reasons that you'll go into later
+
+76
+00:04:35,000 --> 00:04:37,566
+有两个指令
+and there are two instructions
+
+77
+00:04:38,166 --> 00:04:42,433
+wrmsr和rdmsr是用来访问这个寄存器的
+writemsr and readmsr that are used to mess with this register
+
+78
+00:04:42,866 --> 00:04:43,699
+当然
+and of course
+
+79
+00:04:43,966 --> 00:04:48,966
+这些指令也仅供内核使用
+these instructions are also reserved only for kernel use
+
+80
+00:04:51,533 --> 00:04:53,499
+现在我们已经将内存分为
+now we've established this kind of dichotomy
+
+81
+00:04:53,666 --> 00:04:57,299
+内核，和用户空间
+where you have the kernel you have user space 
+
+82
+00:04:57,500 --> 00:05:01,200
+这两者是不相等的
+and the two are not equivalent
+
+83
+00:05:02,700 --> 00:05:05,666
+我来调节一下音量
+so let me adjust volume
+
+84
+00:05:05,700 --> 00:05:08,133
+我刚刚注意到声音有点大
+I just now notice it's getting a little crazy 
+
+85
+00:05:09,100 --> 00:05:12,633
+那么你的电脑是怎么知道
+so how does your computer know 
+
+86
+00:05:12,933 --> 00:05:16,766
+你是否能运行
+if you are allowed to run 
+
+87
+00:05:17,266 --> 00:05:20,133
+你是否可以访问CR3寄存器
+if you're allowed to touch the CR3 register or not
+
+88
+00:05:20,233 --> 00:05:22,333
+如果你执行 mov CR3, rax
+if you do mov CR3 rax
+
+89
+00:05:23,166 --> 00:05:25,066
+它怎么知道该不该让你执行呢
+how does it know whether to let you do that
+
+90
+00:05:26,400 --> 00:05:28,566
+当CPU执行时
+the CPU as it's executing 
+
+91
+00:05:28,666 --> 00:05:32,766
+会记录当前正在执行的权限级别
+tracks the privilege level at which you're currently executing
+
+92
+00:05:32,866 --> 00:05:35,799
+这个权限级别被分成不同圈层，不同的环
+and this privileged level is split into rings
+
+93
+00:05:36,000 --> 00:05:40,700
+这是基于x86的
+this is again an x86 centric view of things
+
+94
+00:05:41,700 --> 00:05:44,300
+有的架构有很多环
+there are architectures with many rings
+
+95
+00:05:44,400 --> 00:05:47,400
+有的架构不用环的概念
+there are architectures don't use the terminology of rings
+
+96
+00:05:47,766 --> 00:05:49,533
+有的架构只分2个环
+there are architectures with only two rings 
+
+97
+00:05:49,633 --> 00:05:50,466
+实际上
+realistically
+
+98
+00:05:50,866 --> 00:05:53,033
+X86只使用两个半环
+x86 you only kind of use two and a half rings
+
+99
+00:05:53,100 --> 00:05:55,966
+接下来会讲到这个半环
+I'll go into the half next but
+
+100
+00:05:57,166 --> 00:05:58,866
+历史上有这四个环
+historically there have been these four rings 
+
+101
+00:05:58,933 --> 00:05:59,799
+0环
+ring 0
+
+102
+00:06:00,300 --> 00:06:00,666
+实际上
+actually 
+
+103
+00:06:00,733 --> 00:06:02,899
+我们先从熟悉的用户层开始
+let's start from user space which we are familiar with
+
+104
+00:06:03,266 --> 00:06:05,599
+3环是最外面的环
+ring 3 the outermost ring 
+
+105
+00:06:05,600 --> 00:06:06,766
+最小权限环
+the least privilege ring
+
+106
+00:06:06,833 --> 00:06:10,699
+我们在整个课程中都处在这个环中
+we've been living in this ring throughout this entire course
+
+107
+00:06:11,933 --> 00:06:13,066
+这里有很多限制
+it's very restrictive
+
+108
+00:06:13,233 --> 00:06:15,733
+你不能设置CR3寄存器
+you can't do stuff like set the CR3 register 
+
+109
+00:06:15,833 --> 00:06:20,266
+你不能与硬件外设交互
+you can't interact with hardware peripherals 
+
+110
+00:06:20,300 --> 00:06:21,466
+你不能执行HLT
+you can't do hlt
+
+111
+00:06:21,633 --> 00:06:24,266
+有很多很多事情你是不能做的
+there's many many things you're not allowed to do
+
+112
+00:06:24,700 --> 00:06:27,533
+但足以运行谷歌浏览器
+but you know that's still enough to run Google Chrome
+
+113
+00:06:27,766 --> 00:06:33,099
+还有cs等等
+and another advanced counter strike and so forth
+
+114
+00:06:33,266 --> 00:06:35,166
+非常酷的软件
+very cool advanced software 
+
+115
+00:06:35,166 --> 00:06:35,699
+当然
+and of course 
+
+116
+00:06:35,766 --> 00:06:38,199
+当软件在这个环上运行时
+when this software running in this ring 
+
+117
+00:06:38,200 --> 00:06:41,300
+需要和系统交互时
+it needs to do anything in terms of interactive with the system
+
+118
+00:06:41,533 --> 00:06:43,333
+它需要和1环交互（口误）
+it needs to talk to ring 1
+
+119
+00:06:43,800 --> 00:06:46,933
+还有2环和1环
+there is ring 2 and ring 1
+
+120
+00:06:47,066 --> 00:06:48,666
+哦，抱歉，它需要和0环交互
+oh sorry it has to talk to ring 0 
+
+121
+00:06:48,766 --> 00:06:49,966
+还有2环和1环
+so there's ring 2 and ring 1
+
+122
+00:06:50,200 --> 00:06:52,666
+最初，它们是为设备驱动准备的
+they were originally envisioned for device drivers 
+
+123
+00:06:52,766 --> 00:06:56,099
+区分了不同访问级别
+of different access levels
+
+124
+00:06:56,533 --> 00:07:01,899
+也许你想要一些代码能使用in和out指令
+maybe you wanted some piece of code that had access to the in and out instruction
+
+125
+00:07:02,033 --> 00:07:04,499
+但没有权限访问CR3寄存器
+but didn't have access to the CR3 register
+
+126
+00:07:05,533 --> 00:07:07,466
+实际上，它们并没有被使用
+realistically they're not used
+
+127
+00:07:08,533 --> 00:07:13,699
+实际上，在安全性方面，我们没有认真到用上它们
+we are not actually that serious about security to actually utilize these
+
+128
+00:07:14,800 --> 00:07:16,033
+但它们确实存在
+but they exist 
+
+129
+00:07:16,066 --> 00:07:22,233
+接下来我会简单讲一下1环的一个用例
+and I'll actually talk briefly about a use case for ring 1 for example next
+
+130
+00:07:22,266 --> 00:07:23,666
+然后是0环
+and then you have ring 0
+
+131
+00:07:23,933 --> 00:07:25,699
+这被称为主管模式
+this is called supervisor mode 
+
+132
+00:07:25,700 --> 00:07:26,700
+这里是没有限制的
+it's unrestricted
+
+133
+00:07:26,700 --> 00:07:27,866
+你可以做任何事
+you can do anything
+
+134
+00:07:28,266 --> 00:07:31,366
+你能做一些直接损害硬件的事情
+you could do stuff that will directly harm your hardware
+
+135
+00:07:31,466 --> 00:07:34,499
+你可以锁定CPU的
+you could lock your CPU's
+
+136
+00:07:40,533 --> 00:07:41,399
+叫什么来着
+what's it called
+
+137
+00:07:42,800 --> 00:07:44,000
+CPU时钟
+your CPU clock 
+
+138
+00:07:44,333 --> 00:07:45,399
+在非常高处
+to be very high 
+
+139
+00:07:45,533 --> 00:07:48,933
+关闭温度限制
+disable Thermal throttling
+
+140
+00:07:49,033 --> 00:07:53,099
+取决于你的主板，你可以关掉风扇
+and you could shut down fans depending on how fancy your motherboard is
+
+141
+00:07:53,233 --> 00:07:56,399
+在0环中，如果你真的想，你可以烧掉你的CPU
+and you could burn out your CPU if you really wanted to in ring 0 
+
+142
+00:07:57,166 --> 00:07:57,566
+你可以
+you can
+
+143
+00:07:57,600 --> 00:07:58,366
+取决于硬件
+depending on hardware 
+
+144
+00:07:58,500 --> 00:07:59,966
+取决于驱动支持等
+depending on driver support etc
+
+145
+00:08:00,066 --> 00:08:01,333
+但你可以做很多
+but you can do a lot
+
+146
+00:08:01,866 --> 00:08:02,766
+你可以很危险
+you can be very dangerous
+
+147
+00:08:02,866 --> 00:08:04,699
+你可以摧毁系统
+you can certainly destroy the system
+
+148
+00:08:04,900 --> 00:08:06,600
+永久性的，或暂时的
+whether permanently or temporarily
+
+149
+00:08:10,266 --> 00:08:10,899
+实际上
+realistically
+
+150
+00:08:10,900 --> 00:08:11,333
+正常情况
+normally
+
+151
+00:08:11,333 --> 00:08:12,399
+这是内核运行的地方
+this where your kernel runs 
+
+152
+00:08:12,566 --> 00:08:13,699
+而且它不会破坏你的系统
+and does not destroy your system 
+
+153
+00:08:13,900 --> 00:08:20,100
+通常情况下，它能很好地管理一堆模块
+normally it manages a peaceful cohabitation of a bunch of modules 
+
+154
+00:08:20,166 --> 00:08:23,766
+一堆用户空间进程
+a bunch of your user space processes
+
+155
+00:08:24,100 --> 00:08:25,800
+以及他们使用的所有资源
+and all the resources that they use
+
+156
+00:08:26,133 --> 00:08:29,799
+类似于操作系统会记录你的uid
+and similar to an operating system tracking your user ID 
+
+157
+00:08:29,966 --> 00:08:31,099
+在整个课程中
+and throughout this course
+
+158
+00:08:31,566 --> 00:08:34,799
+你总是关心自己是否以root身份运行
+you're constantly concerned with am I running as root
+
+159
+00:08:34,800 --> 00:08:35,900
+自己的eid是多少
+what's my effective ID
+
+160
+00:08:35,900 --> 00:08:36,933
+实际id是多少
+what's my real ID
+
+161
+00:08:37,100 --> 00:08:39,533
+在解决setuid题目的过程中
+with the setuid challenges you've been solving
+
+162
+00:08:40,133 --> 00:08:40,899
+类似的
+similar to that
+
+163
+00:08:40,900 --> 00:08:43,700
+CPU会记录你当前的特权级别
+the CPU tracks your current privilege level
+
+164
+00:08:43,966 --> 00:08:45,866
+记录当前运行在哪个环上
+says okay what ring am I in right now
+
+165
+00:08:45,866 --> 00:08:47,466
+在用户空间中，你在3环上
+in user space you're in ring 3
+
+166
+00:08:47,600 --> 00:08:54,700
+在内核模式下，你在0环，等等
+in kernel mode you're in ring 0 obviously and so on
+
+167
+00:08:55,100 --> 00:08:58,533
+我们来简单讨论一下这些环
+so let's talk briefly about these rings 
+
+168
+00:08:58,600 --> 00:09:02,333
+实际上现在超越了0环
+actually we go now beyond ring 0
+
+169
+00:09:02,333 --> 00:09:05,366
+实际上有一个-1环，我会解释原因
+there's actually a ring negative 1 and I'll explain why
+
+170
+00:09:06,600 --> 00:09:09,666
+只有0环，限制了
+the limitations of just having a ring 0
+
+171
+00:09:09,666 --> 00:09:10,766
+这就是内核所在的地方
+that's where the kernel lives 
+
+172
+00:09:10,900 --> 00:09:16,400
+以内核作为系统的终极超级权威
+and the kernel is the end to be all super authority of the system
+
+173
+00:09:16,833 --> 00:09:21,466
+在21世纪初，随着虚拟机的兴起，开始出现裂痕
+started showing its cracks in the early 2000s with the rise of virtual machines
+
+174
+00:09:21,666 --> 00:09:29,533
+虚拟机基本上是在计算机中运行的客户系统
+a virtual machine is basically a guest system you run inside your computer
+
+175
+00:09:29,900 --> 00:09:31,333
+例如，如果你运行的是Linux
+for example if you're running Linux
+
+176
+00:09:31,333 --> 00:09:32,566
+你想要用Windows电脑
+and you want the Windows machine
+
+177
+00:09:32,666 --> 00:09:34,733
+或者你运行的是Windows，想用Linux机器
+or if you're running Windows and you want the Linux machine
+
+178
+00:09:35,333 --> 00:09:36,566
+或者其他的
+or whatever
+
+179
+00:09:37,100 --> 00:09:39,700
+或者如果你是云主机提供商
+or if you are a cloud computer provider 
+
+180
+00:09:39,766 --> 00:09:42,133
+你想把虚拟机出租给别人
+and you want to rent out virtual machines to people
+
+181
+00:09:42,200 --> 00:09:47,533
+基本上，你有一个服务器
+you basically have a server workstation
+
+182
+00:09:47,766 --> 00:09:50,766
+上面有个操作系统，即宿主机操作系统
+on which you have an operating system that is the host operating system
+
+183
+00:09:50,766 --> 00:09:52,066
+在它里面
+and inside that
+
+184
+00:09:52,133 --> 00:09:55,333
+各个虚拟机中，运行着不同的客户机操作系统
+in virtual machines run different guest operating systems 
+
+185
+00:09:55,400 --> 00:09:57,200
+你可以将它们授权给别人使用
+that you can grant access to
+
+186
+00:09:57,200 --> 00:09:59,000
+这些客户机操作系统
+these guest operating systems
+
+187
+00:09:59,866 --> 00:10:04,166
+不应该对你的硬件有无限制的访问权限
+should not have unlimited access to your hardware 
+
+188
+00:10:04,733 --> 00:10:06,233
+这说得通
+this makes sense 
+
+189
+00:10:06,566 --> 00:10:09,533
+如果它们对你的硬件有无限制的访问权限
+if they had unlimited access to your hardware
+
+190
+00:10:11,966 --> 00:10:12,766
+他们就可以
+they could
+
+191
+00:10:12,966 --> 00:10:14,766
+如果他们有真正的0环访问权限
+if they had true ring 0 access 
+
+192
+00:10:14,900 --> 00:10:16,700
+他们就可以关掉你的机器
+they could shut down your machine 
+
+193
+00:10:16,800 --> 00:10:18,366
+他们可以做很多
+they could do a lot of stuff 
+
+194
+00:10:18,466 --> 00:10:20,666
+你不想让客户机操作系统
+that you don't want a guest operating system
+
+195
+00:10:20,866 --> 00:10:24,999
+不想让客户虚拟机，对宿主机做的事情
+a guest virtual machine doing to your host system 
+
+196
+00:10:25,133 --> 00:10:28,866
+所以在21世纪初虚拟机刚出现时的解决方案
+so the solution in early 2000s when virtual machines first came about 
+
+197
+00:10:28,866 --> 00:10:36,899
+大概是首个版本的VMware出现的时候
+and this is kind of when the first version of VMware and so forth came about 
+
+198
+00:10:37,033 --> 00:10:41,466
+是以一种有趣的方式进行虚拟化
+was to virtualize in this interesting way
+
+199
+00:10:41,666 --> 00:10:45,499
+强制客户机内核进入1环
+by forcing the guest kernel into ring 1
+
+200
+00:10:48,100 --> 00:10:50,166
+客户机内核将在1环中运行
+and the guest kernel would run in ring 1 
+
+201
+00:10:50,333 --> 00:10:53,766
+大多数时候都是正常的
+and many many things would actually work
+
+202
+00:10:54,100 --> 00:10:55,700
+它可以切换到3环上
+and it could switch into ring 3
+
+203
+00:10:55,700 --> 00:10:57,500
+也可以在3环切换回来
+and ring 3 could switch back and so forth 
+
+204
+00:10:57,633 --> 00:11:00,266
+但是当它要切换到
+but when it would switch into
+
+205
+00:11:02,666 --> 00:11:07,533
+当它想执行需要0环权限的操作时
+when it was tried to do functionality that relied on ring 0 access
+
+206
+00:11:07,600 --> 00:11:08,633
+事情会变得一团糟
+things would go haywire 
+
+207
+00:11:08,666 --> 00:11:09,933
+因为它不在0环中运行
+because it's not running in ring 0
+
+208
+00:11:10,033 --> 00:11:11,433
+CPU会拒绝运行它
+the CPU would refuse to run that 
+
+209
+00:11:11,766 --> 00:11:12,799
+它就会崩溃
+and it would crash
+
+210
+00:11:13,000 --> 00:11:15,533
+所以所有这些消耗大、复杂的
+so then all of these costly complex
+
+211
+00:11:16,200 --> 00:11:18,000
+基本上是软件模拟的方法
+basically software emulation methods
+
+212
+00:11:18,166 --> 00:11:22,733
+需要在客户机操作系统中模拟0环
+needed to be used to simulate ring 0 functionality inside the guest OS
+
+213
+00:11:22,966 --> 00:11:25,966
+这有很大的性能开销
+this had a lot of performance overhead 
+
+214
+00:11:26,100 --> 00:11:27,733
+而且非常复杂
+and just a lot of complexity
+
+215
+00:11:27,800 --> 00:11:29,733
+于是发明了一种现代的解决方案
+so a modern solution was invented 
+
+216
+00:11:29,833 --> 00:11:33,799
+我们有主管模式
+so we have the supervisor mode
+
+217
+00:11:34,266 --> 00:11:35,766
+它是用于运行内核的
+which is what the kernel runs 
+
+218
+00:11:35,800 --> 00:11:36,766
+它是0环
+this is ring 0
+
+219
+00:11:36,966 --> 00:11:41,566
+我们现在发明了hypervisor模式
+we have now as a society invented hypervisor mode
+
+220
+00:11:41,800 --> 00:11:45,466
+它基本上运行在0环以下
+this runs basically under ring 0
+
+221
+00:11:47,800 --> 00:11:51,033
+能够拦截某些敏感动作
+and is able to intercept certain sensitive actions 
+
+222
+00:11:51,033 --> 00:11:53,099
+不再需要软件模拟
+without having to do software emulation stuff 
+
+223
+00:11:53,100 --> 00:11:54,200
+纯粹的硬件支持
+purely in hardware
+
+224
+00:11:55,700 --> 00:11:57,700
+并在宿主机操作系统中处理它们
+and handle them in the host os 
+
+225
+00:11:57,833 --> 00:12:02,999
+比如在虚拟机中模拟虚拟硬件访问
+so stuff like simulated virtual hardware access in the virtual machine
+
+226
+00:12:04,000 --> 00:12:05,666
+等等
+and so on
+
+227
+00:12:06,400 --> 00:12:14,933
+这算是开启了现代云计算
+so this is what has actually enabled the modern kind of cloud compute paradigm
+
+228
+00:12:16,066 --> 00:12:22,566
+硬件上的hypervisor模式，使用了Intel的VTX技术
+this hypervisor mode in hardware using stuff like Intel's VTX
+
+229
+00:12:23,466 --> 00:12:28,133
+好像叫虚拟技术扩展，等等
+Virtual Technology Extensions maybe and so on
+
+230
+00:12:28,733 --> 00:12:32,966
+在本模块中，我们不会讨论hypervisors
+we're not going to talk about hypervisors in this module for sure
+
+231
+00:12:35,000 --> 00:12:38,366
+但你应该注意到它的存在
+but it's just something that you should be aware is there
+
+232
+00:12:41,400 --> 00:12:45,433
+那么这和现代操作系统有什么关系呢
+so what does this have to do with modern operating systems
+
+233
+00:12:46,166 --> 00:12:48,333
+这与现代操作系统有很大关系
+it has a lot to do with modern operating systems
+
+234
+00:12:48,400 --> 00:12:51,100
+显然，这就是现代操作系统的工作方式
+obviously this is how modern operating systems work
+
+235
+00:12:52,000 --> 00:12:56,766
+但是他们使用这些环的方式
+but the way that they use these ring system
+
+236
+00:12:57,400 --> 00:13:00,266
+这种环范式等等的方式
+ this kind of ring paradigm and so forth
+
+237
+00:13:00,300 --> 00:13:01,566
+是不同的
+is different 
+
+238
+00:13:01,933 --> 00:13:06,899
+所以有不同类型的操作系统
+so there are different types of kind of operating system genres
+
+239
+00:13:07,000 --> 00:13:12,066
+这基本上取决于内核是如何
+and it basically depends on how the kernel
+
+240
+00:13:12,366 --> 00:13:13,966
+操作系统的核心是如何
+the very core of the operating system
+
+241
+00:13:14,100 --> 00:13:15,200
+与其驱动程序交互
+interacts with its drivers 
+
+242
+00:13:15,333 --> 00:13:17,166
+并与用户空间程序交互的
+and interacts with user space program
+
+243
+00:13:17,500 --> 00:13:18,066
+对不起
+excuse me 
+
+244
+00:13:18,233 --> 00:13:24,866
+我们在这门课中要接触的系统当然是Linux
+the typical system that we are dealing with in this course of course is Linux
+
+245
+00:13:25,666 --> 00:13:28,399
+Linux和freebsd之类的
+Linux and things like freebsd and so forth
+
+246
+00:13:28,500 --> 00:13:30,166
+它们是宏内核
+they are monolithic kernels
+
+247
+00:13:30,266 --> 00:13:31,933
+只有一个内核二进制文件
+there's a single kernel binary 
+
+248
+00:13:32,400 --> 00:13:36,500
+它运行在0环
+that runs in ring 0 
+
+249
+00:13:37,000 --> 00:13:39,566
+处理所有操作系统级别的任务
+that handles all OS level tasks
+
+250
+00:13:39,666 --> 00:13:40,966
+当有一个驱动
+and when you have a driver
+
+251
+00:13:41,166 --> 00:13:44,933
+比如显卡驱动
+for a graphics card 
+
+252
+00:13:45,166 --> 00:13:46,333
+声卡驱动
+for a sound card 
+
+253
+00:13:46,500 --> 00:13:47,933
+或文件系统驱动
+for a file system
+
+254
+00:13:48,766 --> 00:13:54,066
+通常，它们会作为模块加载到内核中
+typically these are loaded as modules inside your kernel
+
+255
+00:13:56,666 --> 00:13:59,999
+和内核一样运行在0环
+running with the same you know inside ring 0
+
+256
+00:14:00,266 --> 00:14:04,699
+还有一种操作系统叫微内核
+there's another type of operating system called microkernel
+
+257
+00:14:05,400 --> 00:14:06,400
+微内核
+micro kernel
+
+258
+00:14:07,100 --> 00:14:11,100
+主要用于，要么是安全至关重要的情况
+which is mostly used either in security critical situations 
+
+259
+00:14:11,200 --> 00:14:12,366
+比如sel4
+such as sel4 
+
+260
+00:14:12,733 --> 00:14:14,499
+或是玩具内核中
+or in toy kernels 
+
+261
+00:14:14,700 --> 00:14:17,300
+比如Linux的祖先Minix
+such as Minix the ancestor of Linux
+
+262
+00:14:17,733 --> 00:14:23,066
+微内核系统，有一个运行在0环的微小内核
+a micro kernel has a tiny core that runs in ring 0 
+
+263
+00:14:23,400 --> 00:14:25,733
+它是唯一在0环中运行的
+and it's the only thing that runs in ring 0
+
+264
+00:14:25,933 --> 00:14:26,633
+其他的一切
+everything else 
+
+265
+00:14:26,866 --> 00:14:30,433
+驱动程序、用户空间程序等等
+drivers user space programs and so forth 
+
+266
+00:14:30,600 --> 00:14:34,166
+都运行在低权限环上
+they run in less privileged rings
+
+267
+00:14:34,700 --> 00:14:35,800
+看风格
+depending on the flavor
+
+268
+00:14:35,900 --> 00:14:38,066
+可能都运行在3环
+can be either just everything runs in ring 3
+
+269
+00:14:38,200 --> 00:14:40,666
+当他们需要和硬件通信时
+and when they need to do something like talk to the hardware
+
+270
+00:14:40,866 --> 00:14:45,399
+它们实际上会查询在0环中运行的内核
+they will actually query the kernel running in ring 0
+
+271
+00:14:45,566 --> 00:14:48,133
+让它代表他们与硬件通信
+and ask it to talk to the hardware on their behalf
+
+272
+00:14:49,700 --> 00:14:52,900
+微内核只用于特定情况
+this is only used really in niche situations 
+
+273
+00:14:53,000 --> 00:14:54,266
+因为很慢
+because it's slow 
+
+274
+00:14:54,433 --> 00:14:57,099
+所有这些环之间的通信，很慢
+all of this communication between rings
+
+275
+00:14:57,233 --> 00:14:59,266
+不同组件之间的通信，很慢
+communication between different components
+
+276
+00:14:59,600 --> 00:15:04,900
+驱动程序将硬件交互分派给内核
+the fact that a driver has to dispatch hardware interactions to the kernel 
+
+277
+00:15:05,100 --> 00:15:08,500
+而不是作为内核的一部分，自己执行硬件交互
+instead of being part of the kernel  and able to perform hardware interactions on its own
+
+278
+00:15:09,100 --> 00:15:11,866
+会有很高的运行开销
+has fairly high run time overhead 
+
+279
+00:15:12,066 --> 00:15:13,766
+所以通常不用微内核
+and so it's typically not used
+
+280
+00:15:13,900 --> 00:15:15,933
+然后还有一些介于两者之间的东西
+and then there's something slightly in between
+
+281
+00:15:16,033 --> 00:15:17,699
+混合内核
+there's a hybrid kernel 
+
+282
+00:15:17,766 --> 00:15:20,066
+它有一些微内核特性
+where there are some microkernel features 
+
+283
+00:15:20,233 --> 00:15:23,333
+部分操作系统功能存在于用户空间
+where some OS functionality really does live in user space
+
+284
+00:15:23,500 --> 00:15:25,166
+然后出于性能方面的原因
+and then for performance reasons 
+
+285
+00:15:25,333 --> 00:15:26,666
+或者兼容性原因
+or compatibility reasons 
+
+286
+00:15:26,833 --> 00:15:28,099
+或两者都有
+or mix of those
+
+287
+00:15:28,500 --> 00:15:32,533
+内核空间中还有一个独立的内核组件
+there's a monolithic kernel component that lives in kernel space 
+
+288
+00:15:32,633 --> 00:15:33,333
+例如
+for example
+
+289
+00:15:33,666 --> 00:15:39,399
+macOS就是这种Unix内核的混合系统
+macOS is a hybrid system of this kind of Unix core
+
+290
+00:15:39,600 --> 00:15:43,500
+基本上是基于BSD，外加一大堆苹果扩展
+basically based on BSD with a whole bunch of apple extensions
+
+291
+00:15:43,700 --> 00:15:45,466
+你可以把它看作一个混合内核
+you can view this as a hybrid kernel 
+
+292
+00:15:45,533 --> 00:15:48,499
+内核是一个宏内核
+where that core is a monolithic kernel 
+
+293
+00:15:48,666 --> 00:15:52,766
+这些扩展又有点微内核的味道
+and the extensions are have a bit of a micro kernel flavor
+
+294
+00:15:52,866 --> 00:15:55,966
+Windows或现代Windows是类似的
+Windows is or modern Windows is similar
+
+295
+00:15:56,400 --> 00:16:01,666
+如果你在Windows中做了很多高级事情
+if you have done a lot of kind of in depth power user type stuff in Windows 
+
+296
+00:16:01,766 --> 00:16:08,033
+你可能见过kernel32.dll，好像不对，kernel64.dll
+you might have seen kernel32.dll probably not kernel64.dll
+
+297
+00:16:08,133 --> 00:16:14,999
+不太清楚，我不经常用Windows
+I don't know I don't really use Windows regularly 
+
+298
+00:16:15,033 --> 00:16:17,466
+还有ntdll
+and versus ntdll
+
+299
+00:16:20,400 --> 00:16:25,233
+这些都是微内核组件
+and those are kind of the microkernel components 
+
+300
+00:16:25,333 --> 00:16:29,499
+他们都在用户空间
+and then that live inside user space 
+
+301
+00:16:29,533 --> 00:16:32,399
+然后有一个核心
+and then there's a core that runs in
+
+302
+00:16:32,600 --> 00:16:33,766
+一个非常大的核心
+a very large core
+
+303
+00:16:33,766 --> 00:16:35,199
+比微内核大
+larger than a microkernel 
+
+304
+00:16:35,200 --> 00:16:36,266
+它运行在0环
+that runs in ring 0
+
+305
+00:16:37,200 --> 00:16:37,933
+关键是
+the point is 
+
+306
+00:16:38,033 --> 00:16:40,799
+尽管在大多数情况下
+though for most intents and purposes 
+
+307
+00:16:41,000 --> 00:16:41,866
+Linux
+Linux 
+
+308
+00:16:42,399 --> 00:16:45,933
+甚至像Windows和macOS中许多有趣的部分一样
+and even like many interesting parts of Windows and macOS
+
+309
+00:16:46,133 --> 00:16:49,166
+都有宏内核的风格
+have a monolithic kernel flavor
+
+310
+00:16:49,600 --> 00:16:51,833
+或基本上就是一个宏内核
+or just basically are a monolithic kernel
+
+311
+00:16:51,866 --> 00:16:53,433
+而一个宏内核中
+and a monolithic kernel
+
+312
+00:16:53,500 --> 00:16:55,533
+所有与内核相关的东西
+everything that is related to the kernel
+
+313
+00:16:55,600 --> 00:16:57,333
+所有的这些驱动程序之类的
+all these drivers and everything
+
+314
+00:16:58,366 --> 00:16:59,866
+都是内核
+are the kernel
+
+315
+00:17:01,200 --> 00:17:02,466
+这有什么关系
+why is this relevant
+
+316
+00:17:02,533 --> 00:17:04,333
+这很重要
+this is relevant as we'll see
+
+317
+00:17:04,366 --> 00:17:05,433
+因为这意味着
+because that means that 
+
+318
+00:17:05,533 --> 00:17:09,166
+宏内核中设备驱动程序中的任何漏洞
+any vulnerabilities in a device driver in a monolistic kernel
+
+319
+00:17:10,366 --> 00:17:12,366
+都是一个内核漏洞
+is a kernel vulnerability
+
+320
+00:17:12,466 --> 00:17:16,799
+如果你利用了它，你就能完全控制系统
+if you exploit that you have complete control of the system
+
+321
+00:17:18,466 --> 00:17:19,299
+我们来看看
+so let's see
+
+322
+00:17:20,266 --> 00:17:22,399
+正常情况下
+you know when things aren't going wrong 
+
+323
+00:17:22,466 --> 00:17:25,099
+是如何在这些环之间切换的
+how do you switch between these rings 
+
+324
+00:17:25,233 --> 00:17:28,066
+比如在Linux或者说x86上
+let's say in Linux or on x86
+
+325
+00:17:28,200 --> 00:17:30,266
+每个架构都是不同的
+and it's different for every architecture
+
+326
+00:17:30,933 --> 00:17:36,066
+我主要讨论的是x86_64 amd64架构
+I'm talking specially about x86_64 amd64 architecture
+
+327
+00:17:36,200 --> 00:17:38,166
+我们概述一下
+let's have a high level overview
+
+328
+00:17:38,933 --> 00:17:41,633
+基本上，内核在0环启动
+basically your kernel boots in ring 0
+
+329
+00:17:42,366 --> 00:17:43,899
+在主管模式下
+in supervisor mode
+
+330
+00:17:44,533 --> 00:17:45,499
+当它启动时
+as it boots 
+
+331
+00:17:45,600 --> 00:17:48,300
+它会设置MSR_LSTAR寄存器
+it sets that MSR_LSTAR register
+
+332
+00:17:48,500 --> 00:17:49,533
+刚刚说的寄存器
+that we had talked about 
+
+333
+00:17:49,600 --> 00:17:52,400
+将其指向内核的一个例程
+to point to a routine in the kernel
+
+334
+00:17:52,566 --> 00:17:57,899
+我们会在下个视频中看到其中的一些
+and we actually look at some of this in the next video
+
+335
+00:17:58,966 --> 00:18:02,866
+它将MSR_LSTAR指向一个例程
+it will set MSR_LSTAR to point to a routine
+
+336
+00:18:03,133 --> 00:18:05,133
+它大致叫作entry_syscall
+that is basically called Enter syscall
+
+337
+00:18:05,633 --> 00:18:08,066
+它将处理系统调用
+that will handle the syscall
+
+338
+00:18:08,600 --> 00:18:12,000
+当用户空间进程想要与内核交互时
+when a user space process wants to interact with kernel
+
+339
+00:18:12,266 --> 00:18:13,566
+它会调用系统调用
+it calls syscall 
+
+340
+00:18:13,666 --> 00:18:15,866
+你已经做过无数次了
+you have done this a million times
+
+341
+00:18:17,166 --> 00:18:18,666
+当调用syscall时会发生什么
+what happens when you call syscall
+
+342
+00:18:18,666 --> 00:18:20,666
+一是
+well one thing that happens is
+
+343
+00:18:20,666 --> 00:18:24,399
+进程的特权级别切换到ring 0
+your privilege level of your process switches to ring 0
+
+344
+00:18:26,133 --> 00:18:27,333
+另一件事是
+another thing that happens is 
+
+345
+00:18:27,400 --> 00:18:33,466
+控制流跳转到MSR_LSTAR的值
+control flow jumps to the value of MSR_LSTAR
+
+346
+00:18:33,566 --> 00:18:36,766
+跳转到内核中系统调用处理程序的入口点
+to the entry point of the syscall handler in the kernel
+
+347
+00:18:36,933 --> 00:18:39,266
+现在你
+now you are
+
+348
+00:18:40,400 --> 00:18:43,533
+以前只要调用syscall，事情就奇迹般地发生
+used to just calling syscall and things magically happen
+
+349
+00:18:43,533 --> 00:18:45,666
+但在底层
+but under the hood
+
+350
+00:18:46,000 --> 00:18:47,500
+它就是另一个call
+it's just another call
+
+351
+00:18:47,833 --> 00:18:50,933
+这是一个有点特别的call
+it is a call that's a little special
+
+352
+00:18:51,300 --> 00:18:52,300
+第三件事是
+the third thing it does is 
+
+353
+00:18:52,433 --> 00:18:55,933
+它将返回地址保存到寄存器RCX中
+it saves the return address into the register RCX 
+
+354
+00:18:56,000 --> 00:18:58,433
+而不是把它放到栈上
+rather than putting it on the stack 
+
+355
+00:18:58,633 --> 00:18:59,499
+为什么会这样
+why is this
+
+356
+00:18:59,666 --> 00:19:01,999
+因为栈是不可信的
+because the stack is kind of untrusted
+
+357
+00:19:02,133 --> 00:19:04,966
+可能同时有另一个线程
+you could have another thread that is at the same time
+
+358
+00:19:05,600 --> 00:19:09,500
+在用不好的方式扰乱栈
+messing with the stack in some not good way 
+
+359
+00:19:09,633 --> 00:19:13,066
+这会引起大问题
+and you know causing big issues
+
+360
+00:19:13,200 --> 00:19:15,400
+所以把返回地址放入RCX
+so you put the return address into RCX
+
+361
+00:19:15,600 --> 00:19:16,333
+就这些
+and that's it 
+
+362
+00:19:16,500 --> 00:19:18,800
+它还做了一些其他杂七杂八的
+I mean it does a couple of other housekeeping tasks 
+
+363
+00:19:19,000 --> 00:19:20,400
+我相信也都很重要
+that I'm sure are very important
+
+364
+00:19:20,700 --> 00:19:23,500
+实际上，你可以点击这个链接
+and you can actually follow this link
+
+365
+00:19:24,266 --> 00:19:29,766
+获取syscall指令的伪代码
+to get the pseudo-code of the syscall instruction
+
+366
+00:19:29,933 --> 00:19:31,666
+也许我们应该看看这个链接
+actually maybe we should follow the link
+
+367
+00:19:32,700 --> 00:19:37,700
+我切换到浏览器
+let me switch over to a browser
+
+368
+00:19:45,166 --> 00:19:46,499
+如果我们放大这里
+if we zoom in here
+
+369
+00:19:46,533 --> 00:19:54,133
+这是syscall指令的伪代码
+this is the pseudocode of the syscall instruction
+
+370
+00:19:54,266 --> 00:19:54,899
+你可以看到
+and you can see
+
+371
+00:19:55,100 --> 00:19:55,933
+它的作用是
+what it does is 
+
+372
+00:19:56,033 --> 00:19:59,233
+它将返回地址放入RCX
+it puts the return address into RCX 
+
+373
+00:19:59,533 --> 00:20:05,666
+跳到这个LSTAR
+jumps to this LSTAR
+
+374
+00:20:07,766 --> 00:20:10,333
+LSTAR寄存器中的地址
+the address in the LSTAR register
+
+375
+00:20:10,700 --> 00:20:12,100
+然后它
+and then it has
+
+376
+00:20:14,866 --> 00:20:16,466
+这里
+somewhere here
+
+377
+00:20:17,300 --> 00:20:18,933
+也许这里
+here maybe 
+
+378
+00:20:18,933 --> 00:20:24,866
+它将特权级别（CPL）设置为0
+it sets the yeah the privilege level to zero
+
+379
+00:20:25,000 --> 00:20:26,100
+将其设置为0环
+sets it to ring 0 
+
+380
+00:20:26,233 --> 00:20:30,233
+所以它就是一个内部的记录
+so that's just an internal thing that's tracked 
+
+381
+00:20:30,566 --> 00:20:32,599
+非常简单，对吧?
+super straightforward right
+
+382
+00:20:33,600 --> 00:20:40,800
+这为现代的多进程等等提供了基础
+and this enables all of you know modern multi process computing and so forth
+
+383
+00:20:41,200 --> 00:20:43,400
+知道了特权级切换过程，你几乎可以
+knowing this you can almost 
+
+384
+00:20:43,533 --> 00:20:44,899
+显然还有很多要做的
+I mean obviously there's a lot to go
+
+385
+00:20:45,033 --> 00:20:47,299
+但你几乎可以实现你自己的操作系统
+but you can almost implement your own operating system
+
+386
+00:20:47,933 --> 00:20:49,566
+你只要这样做
+you just you know do this 
+
+387
+00:20:50,333 --> 00:20:50,933
+总之
+anyways 
+
+388
+00:20:50,933 --> 00:20:53,666
+当内核准备返回到用户空间时
+when the kernel is ready to return to user space
+
+389
+00:20:53,900 --> 00:20:57,666
+它会调用对应的返回指令
+it calls the appropriate return instruction
+
+390
+00:20:57,666 --> 00:21:00,299
+如果它调用的syscall
+so if it was invoked using syscall 
+
+391
+00:21:00,400 --> 00:21:02,333
+它会调用sysret
+it will call sysret
+
+392
+00:21:02,500 --> 00:21:05,300
+sysret所做的与syscall相反
+sysret does what syscall does in reverse
+
+393
+00:21:05,333 --> 00:21:08,466
+它将特权级别切换为ring 3
+it switches the privilege level to ring 3
+
+394
+00:21:08,566 --> 00:21:10,466
+然后跳转到RCX
+and then it jumps to RCX
+
+395
+00:21:10,466 --> 00:21:14,799
+你也可以在这个网站上查看
+and again you can follow over here in this site
+
+396
+00:21:14,800 --> 00:21:19,033
+上面也有sysret的伪代码
+it also has the sysret pseudocode 
+
+397
+00:21:19,133 --> 00:21:21,966
+你可以看到它做了很多其他重要的事情
+and you can see it does a lot of other important stuff
+
+398
+00:21:22,000 --> 00:21:23,333
+但基本上就是这样
+but that's basically it
+
+399
+00:21:24,133 --> 00:21:26,399
+其实很直接
+it's actually quite straightforward
+
+400
+00:21:29,400 --> 00:21:34,333
+我们快速讨论一下内核用户关系
+let's talk real quick about the kernel user relationship
+
+401
+00:21:34,666 --> 00:21:35,566
+基本上
+basically 
+
+402
+00:21:35,733 --> 00:21:41,733
+用户空间进程的虚拟内存都在低地址
+user space processes have virtual memory at low addresses 
+
+403
+00:21:42,933 --> 00:21:43,966
+这个图片可能看不清
+this might be hard to see
+
+404
+00:21:44,066 --> 00:21:45,099
+取决于屏幕的大小
+depending on the size of the screen
+
+405
+00:21:45,300 --> 00:21:52,900
+但你以前执行cat /proc/self/maps
+but you're used to do a cat /proc/self/maps 
+
+406
+00:21:54,033 --> 00:21:56,299
+内存空间映射
+the memory space mappings
+
+407
+00:21:57,133 --> 00:21:58,866
+基本上是
+basically they are 
+
+408
+00:21:59,033 --> 00:22:01,966
+所有这些地址都以两个00开头
+all of these addresses start with two null bytes
+
+409
+00:22:02,366 --> 00:22:06,933
+然后是7f等等，甚至更低
+and then there is 7f blah blah and lower
+
+410
+00:22:08,266 --> 00:22:11,599
+比它高的都是内核内存
+everything higher than that is kernel memory
+
+411
+00:22:11,600 --> 00:22:13,033
+你通常不会看到内核内存
+and you typically don't see kernel memory 
+
+412
+00:22:13,033 --> 00:22:18,766
+除了映射的这个Vsyscall
+with the sole exception of this Vsyscall page that's mapped
+
+413
+00:22:18,866 --> 00:22:20,199
+我会简单提一下
+I'll briefly mention
+
+414
+00:22:20,266 --> 00:22:21,333
+好吧，我现在就说一下
+well I'll mention right now 
+
+415
+00:22:21,433 --> 00:22:27,266
+基本上，它是一个过时的，加快系统调用的优化
+it's basically a obsolete optimization for making syscalls faster
+
+416
+00:22:27,800 --> 00:22:30,466
+现在用得越来越少了
+that is used less and less nowadays
+
+417
+00:22:31,066 --> 00:22:34,666
+基本上，它是一个用户空间可以访问的内核内存页
+but this is a kernel page that is accessible to userspace basically
+
+418
+00:22:34,733 --> 00:22:35,699
+这有点疯狂
+which is kind of crazy
+
+419
+00:22:35,700 --> 00:22:38,766
+内核有它自己的虚拟内存空间
+but basically the kernel has its own virtual memory space
+
+420
+00:22:39,333 --> 00:22:41,666
+与进程虚拟内存空间挨着（不考虑地址高16位）
+adjacent to your process virtual memory space
+
+421
+00:22:41,800 --> 00:22:42,933
+我的意思是，虚拟内存空间是相同的
+I mean it's the same virtual memory space
+
+422
+00:22:42,933 --> 00:22:46,166
+但是内核虚拟内存地址空间在更高处
+but the kernel has the high
+
+423
+00:22:48,866 --> 00:22:52,366
+内核的数据和代码等等都在高地址中
+the kernel has its data and code and so forth in high addresses
+
+424
+00:22:54,100 --> 00:22:55,000
+有趣的是
+interestingly
+
+425
+00:22:55,700 --> 00:22:58,666
+内核态下的类似于syscall指令的系统调用
+system calls that like the syscall instruction
+
+426
+00:22:58,666 --> 00:23:01,266
+不会切换虚拟内存映射之类的
+doesn't switch the virtual memory mapping or anything
+
+427
+00:23:01,866 --> 00:23:04,399
+它所做的就是切换到0环
+all it does is it switches into ring 0 
+
+428
+00:23:04,533 --> 00:23:06,399
+然后跳转到指令
+and then jumps to an instruction
+
+429
+00:23:06,600 --> 00:23:07,400
+但
+but
+
+430
+00:23:07,900 --> 00:23:11,200
+通常内核内存不能从3环访问
+normally kernel memory is not accessible from ring 3 
+
+431
+00:23:11,300 --> 00:23:14,600
+所以你不能猜一个内核地址，就直接跳转过去
+so you can't just guess at that address and jump there
+
+432
+00:23:16,700 --> 00:23:22,966
+而不先通过合法方式提升到0环
+without being allowed to do so by elevating into ring 0 
+
+433
+00:23:23,100 --> 00:23:25,200
+比如syscall
+by for example doing a syscall
+
+434
+00:23:28,733 --> 00:23:32,766
+这就是内核的概述
+so that's how the kernel works at a very very high level 
+
+435
+00:23:33,100 --> 00:23:36,700
+显然，我们会在以后的视频中更深入地研究它
+we'll dive into it a little more in future videos obviously
+
+436
+00:23:37,766 --> 00:23:39,966
+我们快速讨论一下内核安全
+let's talk real quick about security of the kernel
+
+437
+00:23:40,100 --> 00:23:41,266
+这是一门安全课程
+this is a security course
+
+438
+00:23:41,266 --> 00:23:43,699
+我们将探索内核漏洞
+and we'll be exploring kernel vulnerabilities
+
+439
+00:23:43,933 --> 00:23:46,066
+不是现在
+if not right this moment 
+
+440
+00:23:46,200 --> 00:23:49,100
+现在我只想让你们熟悉内核
+right now I just want you to become familiar with the kernel
+
+441
+00:23:49,266 --> 00:23:52,766
+熟悉交互方法和内核调试
+and familiar with interacting and debugging that
+
+442
+00:23:52,766 --> 00:23:55,066
+熟悉这个环境
+this environment and so forth
+
+443
+00:23:55,366 --> 00:23:58,933
+但最终我们将利用内核中的漏洞
+but eventually we'll be exploiting vulnerabilities in the kernel
+
+444
+00:23:59,133 --> 00:24:01,333
+那么内核中有哪些漏洞呢
+so what kind of vulnerabilities are in the kernel
+
+445
+00:24:01,333 --> 00:24:01,699
+好吧
+well
+
+446
+00:24:01,700 --> 00:24:05,066
+就是很多标准的漏洞
+they're the standard many many of the standard vulnerabilities 
+
+447
+00:24:05,166 --> 00:24:09,166
+我们已经讨论过，或将要讨论
+that we have talked about and will talk about in this course
+
+448
+00:24:09,500 --> 00:24:11,733
+内核代码也是代码
+code in the kernel is just code
+
+449
+00:24:11,733 --> 00:24:13,999
+只是它在更高的权限级别上运行
+it's just running in a higher privilege level
+
+450
+00:24:14,100 --> 00:24:17,266
+类似于利用setUID程序
+similar to exploiting a setUID executable
+
+451
+00:24:18,500 --> 00:24:21,866
+只是现在利用的是究极的setuid程序
+you are exploiting the ultimate setUid executable 
+
+452
+00:24:21,933 --> 00:24:23,999
+最具有特权的程序
+the ultimately privileged executable
+
+453
+00:24:26,000 --> 00:24:32,333
+通过我们很快会讲到的，特定通信渠道
+through very specific communication channels that we'll talk about soon
+
+454
+00:24:32,833 --> 00:24:34,933
+那么你为什么要
+so why might you want to
+
+455
+00:24:35,300 --> 00:24:37,266
+还有应该如何利用内核呢
+and how would you exploit the kernel 
+
+456
+00:24:38,400 --> 00:24:41,100
+你可以从几个方向攻击内核
+you can attack the kernel from a number of directions
+
+457
+00:24:41,966 --> 00:24:44,499
+过去有的攻击
+there have been attacks of vulnerabilities in the past
+
+458
+00:24:44,766 --> 00:24:47,899
+可以从外部触发漏洞
+that were triggerable from the outside world 
+
+459
+00:24:47,933 --> 00:24:51,166
+算是集中在过去90年代
+back this is kind of more in the domain of the 90s
+
+460
+00:24:51,166 --> 00:24:53,166
+但从那以后，就只有零星出现
+but it's popped up here and there since then
+
+461
+00:24:53,266 --> 00:25:00,266
+对于这种漏洞，你可以精心制作恶意网络数据包
+where you could craft a carefully created malicious network packet 
+
+462
+00:25:00,366 --> 00:25:02,133
+把它发送给目标机器
+send it at a machine
+
+463
+00:25:02,500 --> 00:25:04,266
+目标机器就会崩溃
+and the machine would crash 
+
+464
+00:25:04,333 --> 00:25:06,666
+或者可以代码执行
+or you would gain code execution 
+
+465
+00:25:06,766 --> 00:25:08,799
+这在Windows 95中经常发生
+this happened a lot in Windows 95
+
+466
+00:25:09,266 --> 00:25:10,466
+这在Linux中也发生过
+it has happened in Linux
+
+467
+00:25:10,566 --> 00:25:11,466
+非常罕见
+it's very rare 
+
+468
+00:25:11,466 --> 00:25:13,099
+现在尤其罕见
+especially rare nowadays
+
+469
+00:25:13,366 --> 00:25:14,899
+你可以想象，这样的事情
+you can imagine how something like this 
+
+470
+00:25:15,000 --> 00:25:20,900
+要是发生在现在，将非常恐怖
+might be extremely extremely terrifying in the modern world
+
+471
+00:25:21,900 --> 00:25:24,766
+你可以在用户空间发动攻击
+you can launch your attacks from userspace
+
+472
+00:25:24,933 --> 00:25:26,866
+这也是我们这里发动攻击的方式
+and this is how we will be launching our attacks
+
+473
+00:25:28,566 --> 00:25:35,633
+利用一会我调用的syscall处理程序中的漏洞
+or launch ?? by exploiting vulnerabilities in syscall handlers I will call 
+
+474
+00:25:35,833 --> 00:25:40,866
+以及我们将要讨论的其他内核接口
+and other kernel interfaces that we'll talk about
+
+475
+00:25:41,600 --> 00:25:50,500
+这是人们逃逸沙盒的一种非常常见的方式
+this is a very common way that people escape from sandboxed processes
+
+476
+00:25:50,700 --> 00:25:52,100
+在沙盒模块中
+in the sandboxing module 
+
+477
+00:25:52,366 --> 00:26:00,099
+我提供了一个漏洞库链接
+I had linked to a repository of vulnerabilities
+
+478
+00:26:00,966 --> 00:26:02,333
+沙盒逃逸的各种漏洞
+sandbox escape vulnerabilities
+
+479
+00:26:02,400 --> 00:26:04,600
+他们中的大多数
+the majority of them or very very many of them 
+
+480
+00:26:04,700 --> 00:26:06,566
+实际上利用了
+actually exploit a
+
+481
+00:26:08,533 --> 00:26:10,699
+使用的攻击向量是，从沙盒到内核的接口
+use an attack vector from the sandbox into a kernel interface
+
+482
+00:26:10,833 --> 00:26:15,933
+出于性能原因，沙盒允许这样做
+that is allowed by the sandbox for performance reasons
+
+483
+00:26:16,000 --> 00:26:19,000
+最终利用内核接口中的漏洞
+and exploit a vulnerability in the kernel interface
+
+484
+00:26:19,533 --> 00:26:22,699
+一个有趣的攻击向量是
+and an interesting attack vector is
+
+485
+00:26:22,866 --> 00:26:26,399
+从你插入的设备，发起漏洞利用
+launching exploits from devices that you plug in
+
+486
+00:26:26,533 --> 00:26:28,199
+有很多这样的例子
+so there have been many examples 
+
+487
+00:26:28,366 --> 00:26:34,199
+系统没处理好外围设备
+of systems that don't handle peripherals properly
+
+488
+00:26:34,266 --> 00:26:36,166
+这个处理也只是比特数据的交换
+that's also just an exchange of bits 
+
+489
+00:26:36,466 --> 00:26:38,133
+所以你可以买一个设备
+so you can buy a device 
+
+490
+00:26:38,200 --> 00:26:40,300
+一个可编程u盘
+a programmable USB stick 
+
+491
+00:26:40,500 --> 00:26:42,200
+比如teensy
+like the teensy for example
+
+492
+00:26:42,333 --> 00:26:44,166
+给它编一个攻击程序
+program it carefully with an attack
+
+493
+00:26:44,400 --> 00:26:46,700
+把它插到一些嵌入式设备上
+plug it into some embedded device 
+
+494
+00:26:46,700 --> 00:26:47,933
+实现代码执行
+and achieve code execution
+
+495
+00:26:47,933 --> 00:26:48,766
+非常酷
+it's very cool
+
+496
+00:26:50,933 --> 00:26:52,833
+你想利用攻击做什么
+what do you want to do with an attack
+
+497
+00:26:53,466 --> 00:26:55,866
+如果你从外面发起攻击的话
+if you were launching it from the outside actually
+
+498
+00:26:55,966 --> 00:26:59,066
+你可能希望在机器上实现持久化控制
+you might want to achieve persistence on the box
+
+499
+00:26:59,166 --> 00:27:00,699
+你可能想找存在感
+you might want to achieve a presence
+
+500
+00:27:00,700 --> 00:27:01,700
+你插入一个teensy
+you plug in a teensy
+
+501
+00:27:01,866 --> 00:27:06,966
+然后在你的游戏主机上执行代码
+and suddenly of code execution running on your game console or something 
+
+502
+00:27:07,666 --> 00:27:09,466
+如果你从用户空间发起攻击
+if you are launching it from user space
+
+503
+00:27:09,600 --> 00:27:10,500
+通常
+you typically
+
+504
+00:27:10,500 --> 00:27:12,700
+要么是想提升特权级别
+either want to escalate your privileges 
+
+505
+00:27:13,200 --> 00:27:15,333
+要么是希望在系统中安装rootkit
+or you want to install a root kit in the system 
+
+506
+00:27:15,400 --> 00:27:20,466
+在内核中隐藏一些恶意程序
+to kind of hide some maliciousness inside the kernel
+
+507
+00:27:21,666 --> 00:27:23,899
+或者让其它进程找不到它
+or hide it from other processes
+
+508
+00:27:24,266 --> 00:27:28,933
+或者你可能想要使用内核
+or you might want to use the kernel 
+
+509
+00:27:29,133 --> 00:27:31,299
+利用其对硬件不受限制的访问权限
+and its unfettered access to the hardware
+
+510
+00:27:31,300 --> 00:27:32,533
+更进一步
+to go further
+
+511
+00:27:32,700 --> 00:27:34,966
+我给大家举一个例子
+so I'll leave you with one example of this
+
+512
+00:27:35,333 --> 00:27:36,566
+2016年
+in 2016 
+
+513
+00:27:36,800 --> 00:27:42,600
+一个自称迈克·披萨的安全研究员
+a security researcher calling himself Mike Pizza
+
+514
+00:27:42,900 --> 00:27:47,966
+在华为P9手机上进行了一连串漏洞利用
+used a crazy chain of exploits on a Huawei P9 phone
+
+515
+00:27:48,166 --> 00:27:51,133
+当时很现代化的手机
+very modern phone at the time
+
+516
+00:27:52,900 --> 00:27:59,200
+首先通过正常方法安装一个正常的Android应用程序
+started with a normal Android application installed through normal methods
+
+517
+00:27:59,533 --> 00:28:00,499
+该应用程序
+that application 
+
+518
+00:28:00,533 --> 00:28:05,066
+利用了华为P9系统进程中的漏洞
+exploited a vulnerability in a system process on the Huawei P9 
+
+519
+00:28:05,233 --> 00:28:06,299
+获得了root权限
+to achieve root access 
+
+520
+00:28:06,933 --> 00:28:13,566
+从此应用程序便有了root权限
+from there the application now having root access 
+
+521
+00:28:13,766 --> 00:28:18,933
+对内核有了差不多是不受限制的访问权限
+had more or less unfettered access into the kernel
+
+522
+00:28:19,033 --> 00:28:21,433
+它可以进行任意的系统调用等等
+it could make arbitrary system calls and so forth
+
+523
+00:28:21,700 --> 00:28:27,133
+迈克·披萨利用这个能力
+and mike pizza use that capability 
+
+524
+00:28:27,166 --> 00:28:30,133
+利用了一个内核漏洞
+to exploit a kernel vulnerability 
+
+525
+00:28:30,333 --> 00:28:32,399
+获得了内核内的代码执行
+to gain code execution inside the kernel
+
+526
+00:28:32,700 --> 00:28:37,200
+使用这个内核中的代码执行
+used that execution that presence inside the kernel 
+
+527
+00:28:37,500 --> 00:28:44,000
+攻击了，附加安全设备中运行的应用程序
+to attack an application running on an attached security device 
+
+528
+00:28:44,266 --> 00:28:44,933
+信任区域
+Trust Zone 
+
+529
+00:28:45,100 --> 00:28:46,266
+一个独立的处理器
+a separate processor 
+
+530
+00:28:46,733 --> 00:28:53,166
+附加在手机常规处理器之外运行
+running attached to the processor typically present on your phone
+
+531
+00:28:53,400 --> 00:28:56,700
+信任区域，管理指纹身份验证之类的事情
+the Trust Zone handles things like fingerprint authentication
+
+532
+00:28:56,766 --> 00:29:03,966
+然后迈克·披萨通过破坏信任区内核攻击了它
+which then mike pizza attacked by compromising the trust zone kernel
+
+533
+00:29:04,133 --> 00:29:06,766
+并且能够使用信任区域内核
+and being able to use that trust zone kernel 
+
+534
+00:29:06,866 --> 00:29:09,899
+修改实际指纹模块
+modify the actual fingerprint module
+
+535
+00:29:11,300 --> 00:29:15,500
+让他解锁手机
+to allow him to unlock a phone
+
+536
+00:29:15,666 --> 00:29:18,166
+只要把他的鼻子贴在指纹传感器上
+just by pressing his nose against the fingerprint sensor
+
+537
+00:29:18,200 --> 00:29:19,700
+这非常疯狂
+this is a very crazy stuff 
+
+538
+00:29:19,800 --> 00:29:22,433
+基本上涉及两个内核漏洞
+involving basically two kernel vulnerabilities 
+
+539
+00:29:22,666 --> 00:29:25,166
+还有两个应用程序漏洞
+and two application vulnerabilities
+
+540
+00:29:25,233 --> 00:29:29,866
+一个应用程序漏洞，用来获得Android设备的root访问权限
+one application vulnerability to get root access into Android device
+
+541
+00:29:29,966 --> 00:29:32,199
+一个内核漏洞，用来进入内核
+then a kernel vulnerability to get into the kernel
+
+542
+00:29:32,300 --> 00:29:35,333
+然后一个漏洞，用来进入信任区域的用户空间
+then a vulnerability to get into the Trust Zone user space 
+
+543
+00:29:35,400 --> 00:29:36,766
+然后进入信任区域的内核
+and then into the Trust Zone kernel
+
+544
+00:29:37,066 --> 00:29:39,799
+并从信任区域内核，攻击信任区域中另一个应用
+and from that TrustZone kernel into another TrustZone application
+
+545
+00:29:40,000 --> 00:29:41,966
+这是一种
+this is the kind of thing that
+
+546
+00:29:42,100 --> 00:29:43,966
+我们现在拥抱的
+we are now opening up to 
+
+547
+00:29:44,133 --> 00:29:49,533
+这真的是在计算机系统中畅游无阻
+this is the world of truly flowing all throughout a computer system
+
+548
+00:29:49,866 --> 00:29:54,299
+并尽可能获取漏洞能提供的一切价值
+and getting everything you can out of the vulnerabilities present
+
+549
+00:29:54,733 --> 00:29:56,799
+下个视频见
+see you in future videos
+

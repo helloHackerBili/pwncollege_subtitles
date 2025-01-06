@@ -1,0 +1,1815 @@
+1
+00:00:01,200 --> 00:00:01,666
+你好黑客
+hello hackers
+
+2
+00:00:01,666 --> 00:00:04,999
+欢迎来到PWN学院的新模块
+welcome to a new module in pwn college
+
+3
+00:00:05,133 --> 00:00:09,499
+我很高兴今天能和大家讨论动态分配器误用
+i'm very excited to talk to you today about dynamic allocator misuse
+
+4
+00:00:09,500 --> 00:00:15,900
+介绍堆是什么
+with the introductory lecture about what the heap is
+
+5
+00:00:15,900 --> 00:00:24,000
+你们可能听过我在课上用堆这个词
+you probably heard me use the term heap just kind of casually throughout the course
+
+6
+00:00:24,733 --> 00:00:27,133
+我们将深入讲解它
+we're gonna dive into the vary cracks of it 
+
+7
+00:00:27,466 --> 00:00:31,266
+首先有几点要介绍的是
+so let's start from kind of something close to first principles
+
+8
+00:00:31,666 --> 00:00:36,499
+首先是内存的类型
+first principles consider the types of memory
+
+9
+00:00:37,600 --> 00:00:43,500
+到目前为止，我们学过很多种内存类型
+the types of memory that we've covered so far is kind of varies 
+
+10
+00:00:43,866 --> 00:00:48,199
+我们已经讨论了elf文件的不同部分
+right we've talked about different parts of an elf file
+
+11
+00:00:48,700 --> 00:00:50,900
+尤其是当它被加载到内存时的
+especially as it's loaded into memory
+
+12
+00:00:51,366 --> 00:00:54,566
+text段、plt、got
+the text section the plt the got
+
+13
+00:00:55,500 --> 00:01:02,100
+还有存放我们要用的全局变量的bss段等等
+that bss where we interacted with global variables and so on
+
+14
+00:01:03,733 --> 00:01:06,899
+我们已经广泛地讨论过栈
+we've talked about the stack pretty extensively as
+
+15
+00:01:07,200 --> 00:01:10,166
+在你ROP时
+you have used return oriented programming
+
+16
+00:01:11,100 --> 00:01:18,300
+通过在栈上编写串联返回地址来实现你的目标等等
+by programming return addresses onto the stack to accomplish your goals and so on
+
+17
+00:01:18,866 --> 00:01:22,666
+但有一种内存我们还一直没介绍过
+but what we haven't really covered yet is a use case that is
+
+18
+00:01:22,966 --> 00:01:24,966
+一种非常常见的类型
+a fairly common use case 
+
+19
+00:01:25,066 --> 00:01:27,699
+在程序中非常常见
+very common use case for programs
+
+20
+00:01:28,500 --> 00:01:35,400
+就是存储动态分配内存并需要较长生命周期的内存类型
+which is a place to store memory that is dynamically allocated but also long lived
+
+21
+00:01:35,466 --> 00:01:40,699
+栈上分配内存发生在函数调用时
+so the stack kind of allocates memory during the invocation of a function
+
+22
+00:01:41,233 --> 00:01:44,599
+或者在栈上分配内存
+or memory is allocated on the stack
+
+23
+00:01:44,666 --> 00:01:46,899
+当涉及到函数调用时，才在栈上保留空间
+space is reserved on the stack when a function is involved
+
+24
+00:01:46,900 --> 00:01:48,266
+但是当函数返回时
+but when the function returns
+
+25
+00:01:49,333 --> 00:01:51,199
+该内存被释放
+that memory is deallocated
+
+26
+00:01:53,100 --> 00:01:57,233
+但是如果你需要记录一个游戏的状态
+but what if you had for example a state of a game 
+
+27
+00:01:57,500 --> 00:02:03,700
+它记录了一系列实体，比如野怪之类的
+that had a list of entities like bad guys or something
+
+28
+00:02:04,100 --> 00:02:07,166
+你必须持续追踪这个列表。它可能会增长，可能会缩减
+that you had to track in this list. might grow might shrink
+
+29
+00:02:07,266 --> 00:02:10,199
+可能会有一些野怪被刷出来
+there might be some baddies that spawn
+
+30
+00:02:10,666 --> 00:02:13,099
+可能会有一些野怪被清掉
+ might be some baddies that get destroyed
+
+31
+00:02:13,866 --> 00:02:14,666
+并且
+and
+
+32
+00:02:16,400 --> 00:02:20,600
+这些数据需要被不同的函数访问
+all of this needs to survive across invocations of many different functions well
+
+33
+00:02:21,100 --> 00:02:22,266
+我们可以回想一下
+we can think back to the
+
+34
+00:02:22,266 --> 00:02:24,966
+我们接触过的内存类型
+type of memory that we've interacted with and
+
+35
+00:02:24,900 --> 00:02:29,100
+还有一个我之前没有提到的
+there's an additional one that i didn't mention previously
+
+36
+00:02:29,200 --> 00:02:32,266
+就是mmap申请的内存，对吧
+which is a mmap memory right 
+
+37
+00:02:33,000 --> 00:02:34,900
+我们已经看过了mmap的用法
+so we have seen the use of mmap 
+
+38
+00:02:35,166 --> 00:02:40,833
+可以根据需要申请并使用内存页
+to create pages in memory on demand and interact with them right 
+
+39
+00:02:41,233 --> 00:02:42,499
+这当然没问题
+and so of course it was okay 
+
+40
+00:02:42,766 --> 00:02:49,466
+对每个野怪、NPC、实体或对象，都没问题
+no problem for every baddie for every npc for every entity or every object 
+
+41
+00:02:50,100 --> 00:02:54,000
+对于需要在不同函数的不同调用中保持有效的数据
+that we need to persist across multiple invocations of multiple functions
+
+42
+00:02:54,100 --> 00:02:56,800
+我们都可使用mmap
+we will use mmap 
+
+43
+00:02:57,666 --> 00:03:01,066
+来创建一个内存页
+to create a page of memory
+
+44
+00:03:01,366 --> 00:03:02,299
+来映射一页内存
+ to map a page of memory
+
+45
+00:03:02,566 --> 00:03:04,133
+然后使用那个内存页
+and then use that page of memory
+
+46
+00:03:04,233 --> 00:03:06,666
+当我们用完后，我们再unmap掉
+and when we're done we'll unmap it
+
+47
+00:03:06,866 --> 00:03:07,933
+这很好
+so this is great and that 
+
+48
+00:03:08,166 --> 00:03:12,533
+它允许这种动态分配，动态释放
+it allows this dynamic allocation deallocation and 
+
+49
+00:03:14,700 --> 00:03:17,800
+并且分配的内存可在不同的函数中访问
+and the allocated memory survives across different functions 
+
+50
+00:03:17,966 --> 00:03:19,933
+这是很棒的，对吧
+that's awesome right however
+
+51
+00:03:19,933 --> 00:03:21,999
+它有几个问题
+it has problems a couple of problems 
+
+52
+00:03:22,166 --> 00:03:25,899
+一是分配大小非常不灵活
+one is the allocation size is very inflexible
+
+53
+00:03:25,900 --> 00:03:29,333
+它必须是4096字节的倍数
+it has to be a multiple of 40 96 bytes 
+
+54
+00:03:29,633 --> 00:03:33,199
+这是因为这就是页面的大小
+so that's because that's how big a page is 
+
+55
+00:03:33,533 --> 00:03:40,166
+而mmap只能以内存页为单位管理内存
+and mmap only works on the basis of a page
+
+56
+00:03:40,566 --> 00:03:41,733
+另一个问题是
+ the other problem is that
+
+57
+00:03:41,966 --> 00:03:44,099
+这是一个非常慢的方法
+this is a very very slow solution 
+
+58
+00:03:44,200 --> 00:03:50,033
+内存映射、创建内存映射，取消内存映射，更改内存映射
+memory mapping the creation unmapping the changing of memory maps
+
+59
+00:03:50,133 --> 00:03:51,599
+都要经过内核
+ it all has to go through the kernel
+
+60
+00:03:52,200 --> 00:03:54,066
+而这样速度很慢
+and it had and that's slow
+
+61
+00:03:54,100 --> 00:03:56,866
+你必须切换到内核空间，你必须
+right you have to switch into kernel space you have to
+
+62
+00:03:57,000 --> 00:03:59,200
+系统调用必须被处理等等
+the syscall has to be handled et cetera cetera
+
+63
+00:03:59,200 --> 00:04:01,966
+与此相关的开销相当大
+there's quite a lot of overhead associated with that
+
+64
+00:04:02,200 --> 00:04:05,900
+如果我们能聪明一点，我们说好的
+so if we could get a little bit more clever and we say okay
+
+65
+00:04:06,000 --> 00:04:09,366
+不需要为每个元素都进行内存映射
+but you don't need to memory map for every single element 
+
+66
+00:04:10,000 --> 00:04:14,500
+不管它是数组元素还是某个数据结构成员
+of an array of that element or of a data structure whatever
+
+67
+00:04:14,733 --> 00:04:17,433
+如果这个元素很小
+if that element is small right
+
+68
+00:04:17,766 --> 00:04:20,933
+如果它只是16字节
+ if it's 16 bytes
+
+69
+00:04:20,933 --> 00:04:24,466
+我们不需要分配一个有4096字节的完整内存页
+we don't have to allocate an entire page of 4096 bytes
+
+70
+00:04:24,533 --> 00:04:26,133
+只需要分配一个页面
+they just allocate that page
+
+71
+00:04:26,700 --> 00:04:31,200
+然后以一个小的单位管理它
+and then they'll slowly start handing of pieces right
+
+72
+00:04:31,200 --> 00:04:34,133
+你可以写一个库来做这个
+so if you could write a library that does this 
+
+73
+00:04:34,400 --> 00:04:36,900
+它有一个分配内存的函数
+that has an allocate memory function that
+
+74
+00:04:36,966 --> 00:04:38,866
+如果你需要一个128字节的内存
+you know if you say give me a hundred and twenty eight bytes
+
+75
+00:04:38,866 --> 00:04:42,099
+它会给你一个指向那块内存开头的指针
+and it gives you a pointer to the beginning of that page then
+
+76
+00:04:42,166 --> 00:04:43,133
+并且追踪记录
+and and keeps track
+
+77
+00:04:43,133 --> 00:04:44,999
+那128字节已经被使用
+that that a hundred and twenty eight has been used 
+
+78
+00:04:45,266 --> 00:04:47,566
+然后你又要256字节
+and you say give me another 256 bytes
+
+79
+00:04:48,066 --> 00:04:51,566
+然后它又给你一块256字节的内存
+then it'll give you the 256 bytes
+
+80
+00:04:51,800 --> 00:04:54,500
+然后你还会用到一些函数
+ and then maybe you can have some function
+
+81
+00:04:56,266 --> 00:04:58,966
+比如你不在需要这块内存了
+ for saying okay no longer need this memory
+
+82
+00:04:59,933 --> 00:05:02,933
+这就是一个动态分配器
+and what this is is a dynamic allocator
+
+83
+00:05:03,000 --> 00:05:06,500
+并且已经有现成的了，这也是内存被管理的方式
+and these exist this is in fact how memory is managed
+
+84
+00:05:07,100 --> 00:05:10,966
+我们不是第一个有这个想法的人，震惊
+we're not the first to have this idea shockingly right
+
+85
+00:05:11,800 --> 00:05:14,566
+图为Doug lea
+pictured here is Doug lea 
+
+86
+00:05:14,966 --> 00:05:16,799
+他创造并发布了第一个
+he created and released the first 
+
+87
+00:05:17,100 --> 00:05:25,833
+公开的大众都能获得到的动态分配器
+kind of very public very accessible allocator into the public domain
+
+88
+00:05:26,133 --> 00:05:27,699
+这很酷
+ so this was very cool 
+
+89
+00:05:28,133 --> 00:05:31,633
+它不仅仅是开源的，发布在互联网上
+it's kind of not just open source but it just dumped on the Internet
+
+90
+00:05:31,866 --> 00:05:35,066
+而且在1987年没有其它代替品
+deal with this or what you will in 1987
+
+91
+00:05:35,233 --> 00:05:37,499
+所以这个想法一点都不新鲜
+right so this idea is very much not new at all
+
+92
+00:05:38,000 --> 00:05:40,900
+事实上已经有三十多年了
+in fact over thirty years old um
+
+93
+00:05:41,600 --> 00:05:44,766
+Doug Lea创建一个dlmalloc DL是Doug Lea的缩写
+Doug Lea create a dlmalloc DL is Doug Lea
+
+94
+00:05:44,900 --> 00:05:49,800
+它已经演变成或者被fork并扩展成
+um which has morphed into or or was forked and expand
+
+95
+00:05:49,800 --> 00:05:52,366
+顺便说一下，dlmalloc仍然存在
+ a dlmalloc by the way still exist
+
+96
+00:05:52,366 --> 00:05:53,999
+你可以去Doug Lea的网站
+you can go to Doug Lea's a website
+
+97
+00:05:54,000 --> 00:05:57,866
+他现在是纽约的计算机科学教授
+he's a uh computer science professor in New York now
+
+98
+00:05:58,166 --> 00:05:58,966
+嗯
+um
+
+99
+00:05:59,733 --> 00:06:05,199
+就算在那时这张照片也已经很过时了
+and i think was back then this photo is already quite dated
+
+100
+00:06:05,366 --> 00:06:10,299
+我尽力找了一张像是1987年的照片
+ i tried to find a photo back from something that looked like 1987
+
+101
+00:06:11,900 --> 00:06:17,733
+后来，dlmalloc被fork到Linux用户空间
+later on dlmalloc was forked into the Linux userspace
+
+102
+00:06:18,100 --> 00:06:21,866
+被放到glibc中作为ptmalloc
+ are really into glibc as ptmalloc
+
+103
+00:06:22,133 --> 00:06:25,699
+pt代表支持Posix线程
+ pt stands for Posix Thread aware
+
+104
+00:06:26,300 --> 00:06:31,300
+它是dlmalloc的多线程实现
+so it's a multi threaded implementation of dlmalloc
+
+105
+00:06:31,700 --> 00:06:35,500
+还有其他的malloc
+and there are other mallocs and other parts of the computer world
+
+106
+00:06:35,600 --> 00:06:39,900
+FreeBSD有一个jemalloc
+FreeBSD had something called jemalloc
+
+107
+00:06:41,800 --> 00:06:46,300
+它被用于火狐，安卓和其他一些应用程序中
+it's also used in in Firefox Android a couple of other applications
+
+108
+00:06:47,300 --> 00:06:52,600
+Windows也有几种不同的堆实现
+Windows has several different heap implementations as well and then
+
+109
+00:06:53,166 --> 00:06:56,266
+内核中有很多自定义的
+there's a bunch of custom ones in kernel and so forth
+
+110
+00:06:56,600 --> 00:07:01,700
+这个有很多不同的实现
+there's quite a lot of different implementations of this
+
+111
+00:07:02,166 --> 00:07:03,866
+到处都是
+all over the place 
+
+112
+00:07:03,900 --> 00:07:06,100
+但在本课程中，我们专注于Linux
+but in this course we focus on Linux
+
+113
+00:07:06,100 --> 00:07:08,766
+我们将特别关注ptmalloc
+and we're going to focus on ptmalloc specifically
+
+114
+00:07:08,766 --> 00:07:10,633
+但是我们讨论的很多概念
+but a lot of the concepts that we discuss 
+
+115
+00:07:10,633 --> 00:07:16,133
+对其它种类的动态分配器都适用
+will be ??? across other dynamic allocators 
+
+116
+00:07:16,166 --> 00:07:19,699
+我一直在说heap, 这个词到底是从哪里来的
+i keep saying the heap where the heck did this word come from
+
+117
+00:07:19,866 --> 00:07:21,333
+实际上还不清楚
+it's actually unclear 
+
+118
+00:07:21,466 --> 00:07:25,566
+我尝试追踪堆这个词的历史使用情况
+i try to track down a historic usage of the heap
+
+119
+00:07:26,400 --> 00:07:33,000
+它被称为堆，和有相同名字的堆数据结构没关系
+it is not called the heap because of the similarly named data structure
+
+120
+00:07:33,600 --> 00:07:34,766
+堆实际是一个
+the heap is an actual
+
+121
+00:07:34,766 --> 00:07:37,533
+堆是计算机科学中的一种数据结构
+a heap is an actual data structure in computer science
+
+122
+00:07:37,600 --> 00:07:39,333
+我们说的不是这个
+that's not what we're talking about
+
+123
+00:07:40,100 --> 00:07:49,166
+我们说的是一堆东西的堆
+what we're talking about is more of usage in the sense of a heap of stuff like a pile the heap 
+
+124
+00:07:50,033 --> 00:07:52,066
+不管出于什么原因
+for whatever reason
+
+125
+00:07:52,200 --> 00:07:55,733
+由动态分配器管理的内存空间
+the memory space that's managed by dynamic allocator 
+
+126
+00:07:55,733 --> 00:07:57,866
+俗称堆
+is colloquially known as the heap
+
+127
+00:07:58,700 --> 00:08:04,500
+从这节课开始，我很少会说动态分配器
+and i think from here on in this module i'll rarely say dynamic allocator
+
+128
+00:08:04,900 --> 00:08:06,333
+一般会说堆
+probably say heap
+
+129
+00:08:06,766 --> 00:08:07,566
+好吧
+all right
+
+130
+00:08:08,066 --> 00:08:09,599
+这个堆做了什么？
+so what does the heap do
+
+131
+00:08:10,300 --> 00:08:16,100
+根据dlmalloc和ptmalloc等实现的
+as implemented by really dlmalloc and then now ptmalloc and all of its analogs
+
+132
+00:08:16,533 --> 00:08:17,499
+堆提供
+the heap provides 
+
+133
+00:08:17,733 --> 00:08:23,399
+实际上，如果了解一下malloc的历史
+and actually if we wanted to go into kind of the the ancient history of malloc 
+
+134
+00:08:23,833 --> 00:08:30,099
+可以看首个讲c的书《c programming language》
+the first book on c the c programming language 
+
+135
+00:08:30,266 --> 00:08:31,033
+我们搜索一下
+let's pull it up 
+
+136
+00:08:38,266 --> 00:08:49,499
+书里实际上有一个200行的malloc
+the c programming language actually included a 200 line version of malloc
+
+137
+00:08:49,633 --> 00:08:56,066
+这是C语言的创造者写的书
+this was the book written by the creators of C
+
+138
+00:08:56,466 --> 00:08:58,099
+它被称为K&R书
+ it's known as the K&R book
+
+139
+00:08:59,266 --> 00:09:02,199
+你应该考虑去看看
+you should consider checking it out 
+
+140
+00:09:02,566 --> 00:09:05,299
+维基百科上都有一篇关于它的文章
+there's a Wikipedia article it's that important
+
+141
+00:09:06,800 --> 00:09:10,100
+它出版于1978年
+and it was published in 1978
+
+142
+00:09:10,333 --> 00:09:11,666
+9年后
+and then nine years later
+
+143
+00:09:11,666 --> 00:09:14,233
+dlmalloc出现了
+dlmalloc came on to the scene 
+
+144
+00:09:14,333 --> 00:09:16,933
+接口非常类似
+i think with a very similar interface
+
+145
+00:09:17,666 --> 00:09:18,699
+哦，好的
+oops all right
+
+146
+00:09:18,866 --> 00:09:23,966
+接口有malloc，free等
+so the interface to allocators is malloc free right
+
+147
+00:09:23,966 --> 00:09:27,499
+使用malloc来获取一块内存
+use malloc to get a chunk of memory to use 
+
+148
+00:09:27,566 --> 00:09:30,333
+用free归还内存
+use free to give it back
+
+149
+00:09:31,133 --> 00:09:34,466
+还有一些辅助函数比如realloc
+there are also some auxiliary functions realloc 
+
+150
+00:09:35,133 --> 00:09:37,533
+之前分配了这块内存
+you say hey i had this previous allocation 
+
+151
+00:09:37,633 --> 00:09:40,333
+能把它弄大点吗
+can you please make it bigger 
+
+152
+00:09:40,700 --> 00:09:44,200
+Calloc也是一个辅助函数
+calloc is a helper function 
+
+153
+00:09:44,266 --> 00:09:46,499
+它将分配内存并将其归零
+that will allocate and zero out the memory right
+
+154
+00:09:46,500 --> 00:09:48,600
+正如在内存错误中讲过的
+so as we talked about in memory errors
+
+155
+00:09:51,166 --> 00:09:54,999
+未初始化数据可能导致数据泄露等等
+uninitialize data can lead to data disclosure and so forth
+
+156
+00:09:55,000 --> 00:09:56,666
+Calloc有助于防止这种情况
+calloc helps guard against that 
+
+157
+00:09:56,900 --> 00:10:00,266
+还有一些其他的接口，取决于你用的是什么
+there are a couple of other ones depending on what you're using 
+
+158
+00:10:00,600 --> 00:10:03,900
+例如，ptmalloc有一个叫做realloc数组的东西
+for example ptmalloc has something called realloc array
+
+159
+00:10:04,000 --> 00:10:06,466
+它是realloc的高级版本
+which is a fancier version of realloc  
+
+160
+00:10:06,633 --> 00:10:10,299
+但这里最常用的是malloc和free
+but for the most part the relevant things are malloc and free here
+
+161
+00:10:10,300 --> 00:10:12,600
+当然，其他因素也会起作用
+and then the others of course also come into play
+
+162
+00:10:14,000 --> 00:10:19,566
+基本上只要不是hello world的程序
+and basically every single program that is not hello world
+
+163
+00:10:20,133 --> 00:10:22,899
+甚至在很多情况下即使是hello world
+ and even in many cases hello world
+
+164
+00:10:23,566 --> 00:10:25,199
+都会使用堆
+uses the heap
+
+165
+00:10:26,000 --> 00:10:31,000
+这是软件积木中最重要的部分之一
+This is one of the most important parts of the building blocks of software
+
+166
+00:10:31,666 --> 00:10:35,933
+C + +程序使用这个功能
+c plus plus programs behind the scenes use this functionality
+
+167
+00:10:36,300 --> 00:10:39,566
+Scanf和printf使用这个功能
+scanf and printf behind the scenes use this functionality
+
+168
+00:10:39,566 --> 00:10:44,399
+任何中等复杂程度的程序都可能使用这个功能
+and likely any moderately complex program uses this functionality
+
+169
+00:10:44,933 --> 00:10:45,733
+好吧
+alright
+
+170
+00:10:46,466 --> 00:10:48,899
+堆是如何工作的
+how does the heap work
+
+171
+00:10:50,266 --> 00:10:51,366
+这是个好问题
+this is a good question
+
+172
+00:10:52,866 --> 00:10:58,533
+开头我们假设的堆实现
+our hypothetical dynamic allocator implementation from the beginning of this lecture
+
+173
+00:10:58,766 --> 00:10:59,899
+通过
+ worked by 
+
+174
+00:11:01,633 --> 00:11:05,333
+mmap然后把它获得的分成小块
+memory mapping something and then splitting off chunks of it 
+
+175
+00:11:05,433 --> 00:11:09,399
+有趣的是，ptmalloc不使用mmap
+interestingly ptmalloc does not use mmap
+
+176
+00:11:10,933 --> 00:11:13,766
+它使用所谓的数据段
+it uses what is called the data segment
+
+177
+00:11:13,800 --> 00:11:19,300
+数据段是一个历史上的怪东西，可以追溯到很久很久以前
+data segment is a historical oddity back from the the old old old times
+
+178
+00:11:20,500 --> 00:11:21,933
+在AMD 64以前
+Pre AMD 64
+
+179
+00:11:22,700 --> 00:11:24,900
+在X86以前
+Pre modern usage of X86
+
+180
+00:11:25,066 --> 00:11:27,566
+即使内存空间被分了很多段
+even when memory space was heavily segmented
+
+181
+00:11:28,200 --> 00:11:30,566
+还是有个数据的专属段
+and you had a segment just for data
+
+182
+00:11:31,266 --> 00:11:32,933
+现在已经
+nowadays this has been kind of 
+
+183
+00:11:32,966 --> 00:11:40,199
+使用现代内存替代技术将其纳入堆中
+coopted into the heap with modern memory replacement techniques
+
+184
+00:11:40,200 --> 00:11:42,533
+特别是加入了地址空间布局随机化
+specifically with address space layout randomization
+
+185
+00:11:42,700 --> 00:11:45,266
+数据段随机放置在
+the data segment is placed randomly
+
+186
+00:11:45,333 --> 00:11:52,799
+某个近似但不是绝对固定的偏移值
+somewhere near but not actually right up against not a constant offset of 
+
+187
+00:11:53,133 --> 00:11:56,799
+它就在位置无关二进制的基址附近
+it's just somewhere near the base of a position independent binary
+
+188
+00:11:57,266 --> 00:11:58,599
+它从大小为0开始
+it starts out with a size of zero
+
+189
+00:11:58,600 --> 00:12:02,600
+所以它实际上不会一开始显示在你的进程内存映射图上
+so it doesn't actually show up on your processes memory map
+
+190
+00:12:04,133 --> 00:12:06,566
+它由两个系统调用管理
+and it's managed by two system calls
+
+191
+00:12:07,033 --> 00:12:09,099
+一个系统调用是SBRK
+one system call is sbrk 
+
+192
+00:12:09,300 --> 00:12:12,533
+当你传递null给它时
+which returns when you pass null to it
+
+193
+00:12:12,533 --> 00:12:15,366
+它返回数据段的当前末尾
+it returns the current end of the data segment
+
+194
+00:12:16,400 --> 00:12:18,666
+如果你传递一个数字给它
+if you pass a number to it
+
+195
+00:12:18,666 --> 00:12:21,333
+它就把数据段增加那么多字节
+it shifts the data segment by that many bytes
+
+196
+00:12:21,666 --> 00:12:24,199
+另一个是BRK
+and another one is brk which is
+
+197
+00:12:25,100 --> 00:12:27,033
+如果你输入一个地址
+if you pass in an address 
+
+198
+00:12:27,166 --> 00:12:29,333
+它将把数据段的末尾扩展到该地址
+it'll expand the end of the data segment to that address
+
+199
+00:12:29,300 --> 00:12:32,600
+或者也可能缩小到这个地址
+ or probably shrink it as well
+
+200
+00:12:33,266 --> 00:12:34,199
+本质上
+under the hood
+
+201
+00:12:34,466 --> 00:12:36,666
+这些是对内核的内存调用
+so these are memory calls into the kernel
+
+202
+00:12:36,666 --> 00:12:37,399
+不是内存调用
+not memory calls
+
+203
+00:12:37,400 --> 00:12:38,533
+系统调用
+system calls into the kernel 
+
+204
+00:12:38,800 --> 00:12:41,533
+当然，本质上和mmap一样
+under the hood of course this all works just like mmap
+
+205
+00:12:42,166 --> 00:12:45,766
+内核映射内存，把它放在合适的位置，等等
+the kernel maps memory puts it in places and so forth
+
+206
+00:12:46,666 --> 00:12:49,766
+不是很清楚
+it's not exactly clear
+
+207
+00:12:50,166 --> 00:12:54,199
+为什么堆实现不直接使用mmap
+why the heap implementations don't just use mmap
+
+208
+00:12:54,633 --> 00:12:58,899
+至少从安全的角度来看，我不太清楚
+ at least not exactly clear to me from a security perspective 
+
+209
+00:12:59,133 --> 00:13:01,033
+很明显这不是很重要
+and obviously it's not so relevant 
+
+210
+00:13:02,100 --> 00:13:07,333
+但这是一个有趣的奇怪现象
+but it's just an interesting oddity
+
+211
+00:13:07,566 --> 00:13:11,099
+就是还有另一种管理内存的方法
+ that there's yet another way to manage memory
+
+212
+00:13:11,466 --> 00:13:18,633
+让我们快速查看一下数据段
+let's take a quick look at the data segment
+
+213
+00:13:18,733 --> 00:13:20,466
+它是如何在用户空间工作的
+ how it works from user space
+
+214
+00:13:25,600 --> 00:13:28,300
+我们来创建一个新函数
+let's just create a new function
+
+215
+00:13:28,466 --> 00:13:29,933
+一个新程序
+a new program
+
+216
+00:13:32,600 --> 00:13:38,333
+你要做的是malloc 16字节。
+okay so what are you going to do is malloc sixteen.
+
+217
+00:13:38,566 --> 00:13:38,999
+就是这样
+ that's it
+
+218
+00:13:39,233 --> 00:13:40,699
+只要malloc 16字节
+just malloc 16 bytes
+
+219
+00:13:42,000 --> 00:13:45,700
+如果我们编译这个
+if we compile this
+
+220
+00:13:48,266 --> 00:13:52,533
+运行它，很明显它什么都没做，strace一下
+all right run it obviously it does nothing but let's strace it
+
+221
+00:13:53,000 --> 00:13:55,600
+事情是这样的
+here's what happens
+
+222
+00:13:56,800 --> 00:13:57,600
+好吧
+alright
+
+223
+00:13:57,900 --> 00:14:00,400
+如果我们仔细看
+if we look through
+
+224
+00:14:01,000 --> 00:14:03,666
+它都调用了哪些系统调用
+what the system calls it makes
+
+225
+00:14:04,300 --> 00:14:05,300
+在这里
+here
+
+226
+00:14:06,800 --> 00:14:07,666
+我们来做一下
+actually let's do this
+
+227
+00:14:11,266 --> 00:14:12,699
+"马上要malloc"
+about to malloc
+
+228
+00:14:13,200 --> 00:14:16,300
+我们输出一下我们要malloc了
+ we want to say that we're about to malloc 
+
+229
+00:14:16,400 --> 00:14:22,733
+这样我们就能看到数据段何时被设置好
+and then we'll be able to see  when the data segment get set up
+
+230
+00:14:22,866 --> 00:14:23,899
+好了,那么
+ alright so
+
+231
+00:14:31,000 --> 00:14:32,866
+对不起，我应该早点准备这个的
+sorry i should have gotten this
+
+232
+00:14:36,200 --> 00:14:37,933
+应该早点把这个设置好
+should have set this up earlier
+
+233
+00:14:38,766 --> 00:14:41,899
+想着临场发挥，这绝不是个好主意
+i decided to go off script that is never a good idea
+
+234
+00:14:41,900 --> 00:14:44,100
+好了，这里我们输出 要malloc了
+all right here we say about to malloc
+
+235
+00:14:44,200 --> 00:14:48,700
+我们输出到标准输出
+let's just write to standard out
+
+236
+00:14:49,366 --> 00:14:50,599
+消息
+the message
+
+237
+00:14:52,000 --> 00:14:53,666
+与消息的长度
+with the length of message
+
+238
+00:14:54,066 --> 00:14:56,299
+我不用puts的原因是
+the reason i'm removing puts is 
+
+239
+00:14:56,366 --> 00:14:59,566
+puts有可能在内部使用malloc
+it's possible that puts uses malloc internally
+
+240
+00:14:59,566 --> 00:15:01,533
+我想捕捉malloc首次使用的场景
+i want to catch the first use of malloc
+
+241
+00:15:01,533 --> 00:15:03,999
+这样你就可以看到数据段的设置过程
+so that you can see the data segment being set up
+
+242
+00:15:04,600 --> 00:15:07,933
+好了，我们开始，你看，这就是发生的事
+alright here we go you see and that's what was happening in fact
+
+243
+00:15:08,000 --> 00:15:10,566
+我们输出了"要malloc了"
+so we've wrote about to malloc
+
+244
+00:15:10,900 --> 00:15:11,333
+好吧
+all right
+
+245
+00:15:11,333 --> 00:15:15,466
+很好，这是它的输出，然后调用malloc
+that's great here's the output of that and then it mallocs and
+
+246
+00:15:15,866 --> 00:15:18,733
+这是在libc中第一次使用堆
+the first time the heap is used in libc
+
+247
+00:15:19,800 --> 00:15:23,500
+完成数据段的设置
+the data segment is set up
+
+248
+00:15:25,500 --> 00:15:28,833
+这里它首先调用SBRK
+so here we have it first calls sbrk 
+
+249
+00:15:29,000 --> 00:15:31,466
+我不知道strace为什么会搞砸
+i'm not sure why strace screws this up
+
+250
+00:15:33,266 --> 00:15:35,399
+可能背后有什么疯狂的事
+it could be something crazy under the hood 
+
+251
+00:15:35,533 --> 00:15:36,733
+这是很有可能的
+that's very possible 
+
+252
+00:15:36,733 --> 00:15:40,166
+现在想起来可能是这样
+it could be that now that i think about it maybe
+
+253
+00:15:41,300 --> 00:15:44,300
+SBRK可能是一个库包装器，而不是系统调用
+sbrk is a library wrapper and not a system call
+
+254
+00:15:45,400 --> 00:15:49,533
+这两个系统调用都不属于
+both of these system calls are not part of 
+
+255
+00:15:49,633 --> 00:15:53,266
+Linux试图遵循的那种Unix标准，称为POSIX
+the kind of Unix standard that Linux tries to follow called POSIX
+
+256
+00:15:54,966 --> 00:15:57,199
+它们曾经是，但后来被去掉了
+they used to be but then they were taken out 
+
+257
+00:15:57,333 --> 00:15:59,299
+所以世事无常
+so things can vary 
+
+258
+00:15:59,400 --> 00:16:02,266
+所以很有可能它们是一样的
+so it's very possible that actually these are the same
+
+259
+00:16:03,200 --> 00:16:05,733
+不管怎样，当传入null时
+sys... well anyways when passed in with null
+
+260
+00:16:07,700 --> 00:16:13,200
+如我所说，它返回数据段当前末尾地址
+it returns the address of the current end address of the data segment as i said
+
+261
+00:16:13,300 --> 00:16:17,333
+它从0开始
+it starts out at zero size
+
+262
+00:16:17,733 --> 00:16:19,499
+然后它说好的
+ and then it says okay well 
+
+263
+00:16:19,566 --> 00:16:23,933
+让我们在数据段中分配一些空间
+let's allocate some amount of space in the data segment
+
+264
+00:16:24,133 --> 00:16:27,599
+它会增加末尾地址的值
+and it cause it with some increased value
+
+265
+00:16:28,866 --> 00:16:31,499
+我们可以在ipython中看看
+and we can actually jump into ipython
+
+266
+00:16:32,133 --> 00:16:34,266
+然后把值打印出来
+and print out what this
+
+267
+00:16:35,100 --> 00:16:39,200
+实际上这是那个较小的值
+actually that's gonna be the lower value
+
+268
+00:16:39,200 --> 00:16:42,333
+与栈不同的数据段向右正常增长（地址值从低到高）
+the data segment unlike the stack grows normally to the right
+
+269
+00:16:44,666 --> 00:16:46,466
+新地址减去旧地址
+the new address minus the old address
+
+270
+00:16:46,733 --> 00:16:49,466
+这就是它分配的数量
+this is exactly how much it allocates
+
+271
+00:16:49,933 --> 00:16:53,699
+十六进制21000
+hex 21 000 
+
+272
+00:16:54,133 --> 00:16:57,799
+这是它分配的21页内存
+that is 21 pages of memory that it just allocates
+
+273
+00:16:58,100 --> 00:17:01,900
+在第一次使用堆时
+the first time you use the heap
+
+274
+00:17:02,566 --> 00:17:06,333
+如果我们能看到的话
+um we can actually if we can see
+
+275
+00:17:09,966 --> 00:17:10,999
+不是/flag
+not slash flag
+
+276
+00:17:11,366 --> 00:17:13,399
+如果你查看/proc/self/maps文件
+if you look at proc self maps
+
+277
+00:17:20,000 --> 00:17:24,600
+这将读出分配前后的映射
+so this will read out the mapping before and after the allocation
+
+278
+00:17:28,100 --> 00:17:31,300
+再次strace，这是分配之前
+as trace it again so here this is before the allocation
+
+279
+00:17:33,300 --> 00:17:38,466
+您可以看到数据段和libc之间没有任何内容
+you can see there is nothing between the data segment and libc
+
+280
+00:17:38,633 --> 00:17:39,866
+还没有堆
+ there's no heap yet
+
+281
+00:17:40,200 --> 00:17:43,466
+然后发生了这两个BRK调用
+then this occurs these two brk calls 
+
+282
+00:17:43,633 --> 00:17:44,933
+现在我们有了堆
+and now we have the heap
+
+283
+00:17:45,200 --> 00:17:46,966
+这个堆正好是
+and that heap is exactly
+
+284
+00:17:47,900 --> 00:17:52,066
+从BRK返回的第一个地址
+from the first address that was returned by brk 
+
+285
+00:17:52,233 --> 00:17:56,699
+842000到863000
+842000 to this 863000 right here
+
+286
+00:17:57,933 --> 00:17:59,866
+好了，这就是堆
+alright so that is the heap 
+
+287
+00:18:00,066 --> 00:18:10,499
+如果我们尝试分配比数据段中可用的更多的数据呢
+now what if we try to allocate more than is available in the data segment 
+
+288
+00:18:11,133 --> 00:18:12,399
+假如有
+so let's say there is what 
+
+289
+00:18:12,400 --> 00:18:15,733
+有20000或2个10000
+there's 20000 or 2 10000
+
+290
+00:18:15,933 --> 00:18:18,999
+如果我们分配30000呢
+ what if we allocate 30000
+
+291
+00:18:22,300 --> 00:18:23,100
+和
+and
+
+292
+00:18:23,600 --> 00:18:25,700
+是的，所以如果我们
+yeah so if we
+
+293
+00:18:26,166 --> 00:18:27,799
+让我们用GCC。strace
+let's gcc it. strace
+
+294
+00:18:28,866 --> 00:18:29,799
+这里
+so here
+
+295
+00:18:30,166 --> 00:18:32,733
+这是我们分配大量内存的地方
+this is where we're allocating our large amount of memory
+
+296
+00:18:32,733 --> 00:18:41,033
+可以看到，堆被扩展，以适应内存分配请求
+and we can see that the heap is actually being expanded to fit all that allocation
+
+297
+00:18:41,333 --> 00:18:48,799
+ptmalloc是一个简洁的库
+ so basically ptmalloc is a neat library
+
+298
+00:18:49,466 --> 00:18:52,266
+它是开源的，显然你可以
+it's open source you can obviously
+
+299
+00:18:52,266 --> 00:18:53,799
+你可以去查一下，读一读
+you can go look it up and read it
+
+300
+00:18:53,800 --> 00:18:56,300
+大概有三五千行代码
+ it's something like three or five thousand lines of code
+
+301
+00:18:57,200 --> 00:19:02,166
+它主要帮你分配内存
+and it is what does allocation for you
+
+302
+00:19:02,300 --> 00:19:04,400
+顺便说一下，如果你想分配巨大的内存
+ by the way if you try to allocate gigantic things
+
+303
+00:19:04,400 --> 00:19:07,300
+它不会使用数据段之类的
+ rather than using data segments and so forth 
+
+304
+00:19:07,466 --> 00:19:10,699
+它会直接使用mmap，这很简洁
+it'll just use mmap which is pretty neat
+
+305
+00:19:11,133 --> 00:19:12,533
+好的
+all right so
+
+306
+00:19:13,300 --> 00:19:19,000
+堆有什么危险
+what are the dangerous of the heap
+
+307
+00:19:19,533 --> 00:19:20,566
+这是个好问题
+it's a good question
+
+308
+00:19:23,333 --> 00:19:24,699
+抱歉，技术故障
+sorry technical glitch um 
+
+309
+00:19:24,933 --> 00:19:26,766
+堆的危险是什么
+what are the dangers of the heap
+
+310
+00:19:27,466 --> 00:19:28,599
+问题当然是
+the problem is of course
+
+311
+00:19:28,600 --> 00:19:32,100
+堆是由不完美的程序员使用的
+the heap is used by imperfect human programmers right
+
+312
+00:19:32,100 --> 00:19:35,100
+安全问题的首要原因是人类
+the number one cause of security issues are humans
+
+313
+00:19:35,400 --> 00:19:36,866
+人类会忘记释放内存
+humans will forget to free memory 
+
+314
+00:19:37,100 --> 00:19:41,133
+人们会忘记指向已分配内存的指针存在哪里
+humans will forget where they've stored pointers to memory they've allocated 
+
+315
+00:19:41,233 --> 00:19:43,333
+人类会忘记他们释放了哪块内存
+humans will forget what they freed
+
+316
+00:19:44,066 --> 00:19:46,133
+就在他们记得明明释放内存的时候
+right when they do remember to free memory
+
+317
+00:19:46,700 --> 00:19:50,000
+再加上
+and that coupled with 
+
+318
+00:19:50,133 --> 00:19:56,833
+堆分配器对性能的追求几乎高于一切
+the fact that the heap allocators strive for performance almost above all else
+
+319
+00:19:57,066 --> 00:19:58,399
+他们需要速度快
+ they need to be fast
+
+320
+00:19:58,933 --> 00:20:00,266
+对，因为
+right because it's 
+
+321
+00:20:00,866 --> 00:20:04,466
+可能性能对使用它们的程序至关重要
+the programs that use them could be performance critical
+
+322
+00:20:04,466 --> 00:20:05,399
+例如
+for example
+
+323
+00:20:06,300 --> 00:20:10,966
+可能有一个电子游戏，它使用了很多动态分配器
+you could have a video game that uses dynamic allocators a lot
+
+324
+00:20:11,200 --> 00:20:12,533
+这个电子游戏需要运行得快
+and that video game needs to run fast
+
+325
+00:20:12,533 --> 00:20:15,333
+所以你的动态分配器需要很快
+and so your dynamic allocator needs to be fast
+
+326
+00:20:16,666 --> 00:20:22,099
+所以问题是，把重点放在优化上
+so the problem is that with a massive focus on optimization
+
+327
+00:20:22,366 --> 00:20:24,533
+安全就经常被遗忘
+securities often left behind
+
+328
+00:20:24,766 --> 00:20:29,666
+这就导致第一个问题
+and this leads to issues caused by number one 
+
+329
+00:20:29,666 --> 00:20:33,866
+与第二个问题结合起来就会成为了安全问题
+becoming security issues when combined with number two
+
+330
+00:20:34,100 --> 00:20:34,900
+好吧
+all right
+
+331
+00:20:35,300 --> 00:20:39,066
+我们如何发现用堆产生的问题和bug
+how do we detect problems bugs that we make with the heap
+
+332
+00:20:39,200 --> 00:20:40,366
+在它们成为问题之前
+ before they become issues
+
+333
+00:20:41,766 --> 00:20:43,299
+有几种方法
+there are a couple of ways 
+
+334
+00:20:43,400 --> 00:20:48,966
+一个是内存执行分析工具valgrind
+one is there's a memory execution analysis tool called valgrind
+
+335
+00:20:49,466 --> 00:20:52,533
+如果有能触发某些问题的测试用例
+if you have test cases that trigger some problem 
+
+336
+00:20:52,733 --> 00:20:56,099
+例如，一个非常常见的问题是您忘记释放内存
+for example a very common problem is you forget to free memory
+
+337
+00:20:56,100 --> 00:20:57,533
+耗尽了资源
+so you run out of resources
+
+338
+00:20:57,600 --> 00:20:59,866
+如果你有一个触发它的测试用例
+if you have a test cases that trigger that
+
+339
+00:20:59,866 --> 00:21:01,666
+Valgrind经常可以
+valgrind can often
+
+340
+00:21:03,933 --> 00:21:05,999
+当您通过valgrind执行这些测试用例时
+when you execute those test cases through valgrind
+
+341
+00:21:06,000 --> 00:21:07,566
+它可以找到错误
+it can find the error
+
+342
+00:21:07,966 --> 00:21:10,466
+Glibc本身有一些技术
+glibc itself has some hardening techniques 
+
+343
+00:21:10,466 --> 00:21:13,766
+您可以设置一些全局变量
+there are global variables you can set 
+
+344
+00:21:13,766 --> 00:21:17,466
+使堆更具防御性
+to make the heap a little more defensive oriented
+
+345
+00:21:18,133 --> 00:21:20,133
+其中很多会影响性能
+a lot of these will tank performance
+
+346
+00:21:20,266 --> 00:21:21,333
+尤其是这个
+especially this one 
+
+347
+00:21:21,400 --> 00:21:29,100
+这使得所有分配都通过mmap完成
+this one makes all allocations being be done through mmap 
+
+348
+00:21:29,200 --> 00:21:33,100
+但其中一些是
+but some of these are are
+
+349
+00:21:34,666 --> 00:21:37,199
+其中很多还是可以绕过的
+and a lot of these can still be bypassed
+
+350
+00:21:37,366 --> 00:21:38,266
+没有万能的办法
+ there's no silver bullet
+
+351
+00:21:38,800 --> 00:21:44,400
+还有很多更安全的分配器已经被开发出来了
+and then there are a lot of kind of more secure allocators that have been developed
+
+352
+00:21:46,133 --> 00:21:48,366
+但总的来说
+but in general
+
+353
+00:21:48,933 --> 00:21:50,633
+它们还没有真正投入使用
+they haven't really been deployed 
+
+354
+00:21:50,700 --> 00:21:54,966
+它们通常比我们熟悉和喜爱的分配器慢得多
+they're usually much slower than the allocators that we know and love
+
+355
+00:21:56,300 --> 00:22:01,100
+总的来说，没有通用的技术被创造出来
+and in general no generic technique has been created
+
+356
+00:22:01,333 --> 00:22:03,033
+用来检测这些错误
+for detecting these sorts of errors 
+
+357
+00:22:03,066 --> 00:22:07,666
+这与检测其他类型的错误是一个类似的主题
+and this is a similar theme to detecting other types of errors
+
+358
+00:22:07,900 --> 00:22:11,533
+所以问题很严重
+so problems are pretty serious
+
+359
+00:22:11,766 --> 00:22:14,333
+在这个模块中，我们会讨论很多这样的问题
+in this module we'll go through a lot of these problems
+
+360
+00:22:14,400 --> 00:22:15,100
+呃
+uh
+
+361
+00:22:15,100 --> 00:22:18,400
+从稍微深入一点的危险类型开始
+starting with a slightly deeper dive into the types of dangers
+
+362
+00:22:18,400 --> 00:22:22,300
+然后进入实际的实现细节
+and then going into actual implementations specifics
+
+363
+00:22:22,533 --> 00:22:24,766
+我希望你能玩得开心
+i hope you will have fun with this one
+

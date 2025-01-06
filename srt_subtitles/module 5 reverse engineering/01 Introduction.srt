@@ -1,0 +1,1584 @@
+1
+00:00:00,866 --> 00:00:02,099
+黑客们，你好
+hello hackers
+
+2
+00:00:02,300 --> 00:00:04,866
+欢迎来到pwn.college的另一个视频
+welcome to another pwn College video
+
+3
+00:00:04,866 --> 00:00:07,066
+今天我们将讨论逆向工程
+today we'll be talking about reverse engineering
+
+4
+00:00:07,066 --> 00:00:11,099
+具体来说，逆向工程是什么
+specifically what reverse engineering is
+
+5
+00:00:11,933 --> 00:00:12,799
+我们开始吧
+let's get started
+
+6
+00:00:12,800 --> 00:00:15,066
+我把我移到这儿
+let me move my video over here
+
+7
+00:00:15,066 --> 00:00:16,799
+我觉得这里不会影响后续展示
+I think this is a safe spot for it
+
+8
+00:00:16,800 --> 00:00:18,166
+在接下来的课程中
+for the rest of the lecture
+
+9
+00:00:18,533 --> 00:00:20,866
+逆向工程是什么呢？
+um what is reverse engineering well
+
+10
+00:00:21,100 --> 00:00:22,933
+要了解逆向工程
+to understand reverse engineering
+
+11
+00:00:23,000 --> 00:00:24,766
+首先让我们了解工程学
+first let's understand engineering
+
+12
+00:00:24,766 --> 00:00:25,533
+具体来说
+specifically
+
+13
+00:00:25,533 --> 00:00:28,166
+常规的软件工程
+kind of normal engineering and software development
+
+14
+00:00:28,333 --> 00:00:30,566
+我讲的是
+which I'll talk about in terms of
+
+15
+00:00:30,933 --> 00:00:32,733
+正向开发
+forward engineering here
+
+16
+00:00:32,900 --> 00:00:35,466
+对吧，工程过程
+right the engineering process
+
+17
+00:00:35,666 --> 00:00:38,899
+在这是创建一个程序的过程 （语气词）
+in this context is the creation of a program right
+
+18
+00:00:38,900 --> 00:00:40,200
+开发程序
+and the creation of a program
+
+19
+00:00:40,200 --> 00:00:41,000
+很直接
+is pretty straightforward
+
+20
+00:00:41,000 --> 00:00:42,533
+想好你要写啥
+you figure out what you want to write
+
+21
+00:00:43,066 --> 00:00:44,066
+写出来
+you write it
+
+22
+00:00:44,766 --> 00:00:45,899
+编译
+you compile it
+
+23
+00:00:45,900 --> 00:00:46,966
+编译可能是
+that might be
+
+24
+00:00:47,766 --> 00:00:49,133
+隐式步骤
+an implicit step
+
+25
+00:00:49,133 --> 00:00:50,966
+因为你的代码可能实际是由
+as your code is actually executed by
+
+26
+00:00:50,966 --> 00:00:52,733
+运行时编译引擎执行
+just in time compilation engine
+
+27
+00:00:54,066 --> 00:00:56,266
+或者其他类似的
+and or or things like that
+
+28
+00:00:56,900 --> 00:00:58,733
+然后你运行它
+and then you run it and
+
+29
+00:00:58,733 --> 00:01:01,266
+这是一种工程
+and that's kind of the engineering
+
+30
+00:01:01,300 --> 00:01:02,000
+流程
+you know process
+
+31
+00:01:02,000 --> 00:01:03,133
+运行可能不是流程的一部分
+I guess running it isn't
+
+32
+00:01:03,133 --> 00:01:04,166
+告诉我过程的一部分
+telling me part of the process
+
+33
+00:01:04,166 --> 00:01:05,999
+重点是
+but the point is
+
+34
+00:01:06,666 --> 00:01:07,966
+这个过程
+the process is kind of
+
+35
+00:01:10,266 --> 00:01:12,699
+近似 右边的步骤
+approximated on the right here
+
+36
+00:01:13,766 --> 00:01:14,566
+在那里
+there
+
+37
+00:01:16,133 --> 00:01:17,499
+有一堆步骤
+with a bunch of steps right
+
+38
+00:01:17,500 --> 00:01:18,900
+从设计开始
+you you start with the design
+
+39
+00:01:18,900 --> 00:01:21,300
+你编写代码，编译，还有一些
+you code you compile and then there's some
+
+40
+00:01:22,100 --> 00:01:22,900
+你知道
+you know
+
+41
+00:01:23,800 --> 00:01:26,300
+挫折在那里，然后最终事情成功了
+frustration there and then eventually things work
+
+42
+00:01:26,766 --> 00:01:27,999
+好吧
+all right um
+
+43
+00:01:29,333 --> 00:01:30,133
+
+the
+
+44
+00:01:30,300 --> 00:01:33,466
+关于逆向工程需要了解的是
+thing to understand about reverse engineering
+
+45
+00:01:33,566 --> 00:01:37,066
+这个过程中的每个环节都
+is that at every point in this process
+
+46
+00:01:37,666 --> 00:01:39,499
+有信息丢失
+information is lost
+
+47
+00:01:39,600 --> 00:01:42,300
+（语气词）逆向工程要
+right and reverse engineering is the
+
+48
+00:01:43,166 --> 00:01:45,733
+重新获取这些丢失的信息
+concept of getting that information back
+
+49
+00:01:45,900 --> 00:01:48,266
+这是非常复杂的。让我们
+which is very non trivial so let's
+
+50
+00:01:48,666 --> 00:01:49,533
+过一遍
+roll through
+
+51
+00:01:50,300 --> 00:01:52,300
+每一步什么样的信息可能会丢失
+you know what kind of information might be lost at
+
+52
+00:01:52,300 --> 00:01:53,733
+
+every step right first
+
+53
+00:01:54,333 --> 00:01:56,899
+在设计和
+between design and
+
+54
+00:01:57,966 --> 00:02:01,166
+代码创建过程中大量信息丢失
+the creation of code a lot of information is lost
+
+55
+00:02:01,166 --> 00:02:03,666
+如：意图
+this has to do with intent
+
+56
+00:02:03,666 --> 00:02:06,266
+这个程序想要做什么
+right what was this program supposed to do
+
+57
+00:02:07,966 --> 00:02:10,199
+你经常会看到一些代码
+oftentimes you look at some code even
+
+58
+00:02:10,333 --> 00:02:11,599
+甚至是你自己写的
+yourself has written
+
+59
+00:02:11,766 --> 00:02:14,399
+可能在一个学期，一年或十年前
+a semester or a year or a decade ago
+
+60
+00:02:14,666 --> 00:02:15,899
+你会觉得
+and you think what
+
+61
+00:02:16,166 --> 00:02:19,166
+我tm当时在想啥，或者
+was I thinking or sometimes as a bonus you think
+
+62
+00:02:19,300 --> 00:02:21,466
+这代码tmd谁写的
+who the heck wrote this code
+
+63
+00:02:22,000 --> 00:02:25,500
+对吧，结果就是你自己写的
+right and turns out it was you right
+
+64
+00:02:27,400 --> 00:02:29,866
+信息会丢的更多，
+and then things get worse when you
+
+65
+00:02:30,533 --> 00:02:34,499
+等到编译和汇编时
+get to that kind of compiling and assembling step
+
+66
+00:02:34,500 --> 00:02:37,533
+你把代码传给编译器
+you take your code you pass it through your compiler
+
+67
+00:02:37,666 --> 00:02:38,899
+编译器立马会
+and your compiler immediately
+
+68
+00:02:38,900 --> 00:02:40,733
+去掉所有注释
+strips out all of the comments
+
+69
+00:02:40,766 --> 00:02:42,333
+这些注释很有用
+right those comments are useful
+
+70
+00:02:42,333 --> 00:02:45,266
+这些注释有助于理解
+those comments are useful to understand the
+
+71
+00:02:46,133 --> 00:02:47,699
+您在编写代码时的意图
+your intent when writing the code
+
+72
+00:02:47,700 --> 00:02:49,600
+以及代码的功能
+and the functionality of the code
+
+73
+00:02:49,600 --> 00:02:50,600
+但他们现在已经没了
+but they're gone now
+
+74
+00:02:50,933 --> 00:02:52,866
+从编译步骤开始
+right just from the compilation step
+
+75
+00:02:53,500 --> 00:02:55,400
+你会丢失变量名
+you lose variable names
+
+76
+00:02:56,333 --> 00:02:58,366
+我来演示一下
+and I'll show a demo
+
+77
+00:02:58,900 --> 00:03:02,266
+变量就变成了内存地址
+variables just become memory locations right and then
+
+78
+00:03:03,066 --> 00:03:05,933
+大量语义知识丢失了
+a lot of semantic knowledge is lost
+
+79
+00:03:06,766 --> 00:03:08,933
+你经常会丢失函数名
+you often lose function names
+
+80
+00:03:10,466 --> 00:03:12,333
+您将丢失所有类型信息
+you lose all type information
+
+81
+00:03:13,800 --> 00:03:16,900
+有时候编译器可能会优化
+and sometimes the compiler might optimize out
+
+82
+00:03:16,966 --> 00:03:18,766
+一个完整的算法
+an entire algorithm
+
+83
+00:03:18,866 --> 00:03:21,799
+你有一些很好的
+right so you had some very well
+
+84
+00:03:23,900 --> 00:03:25,766
+指定的数学运算
+specified mathematical operation
+
+85
+00:03:25,766 --> 00:03:27,499
+编译器说哦
+and the compiler says oh
+
+86
+00:03:27,800 --> 00:03:30,300
+没问题，我知道一个更快的方法
+no problem I know a faster way to do this
+
+87
+00:03:30,400 --> 00:03:31,700
+然后把你指定的算法替换掉
+replace it with a faster way
+
+88
+00:03:31,700 --> 00:03:33,900
+如果你对代码进行逆向工程
+if you're reverse engineering that code
+
+89
+00:03:34,733 --> 00:03:37,299
+会发现无法理解作者的意图了
+it might no longer make sense right so
+
+90
+00:03:38,366 --> 00:03:40,599
+逆向工程要解决一个问题
+reverse engineering is kind of the question of you know
+
+91
+00:03:40,600 --> 00:03:43,200
+我们怎么把这些丢失信息都找回来
+how do we get all of this information back
+
+92
+00:03:43,266 --> 00:03:44,399
+从最终产品
+from the final product
+
+93
+00:03:44,400 --> 00:03:45,600
+从可执行文件
+from the executable
+
+94
+00:03:45,600 --> 00:03:46,900
+二进制代码
+the binary code
+
+95
+00:03:47,166 --> 00:03:49,666
+到目前为止，在这门课上我们一直在处理
+until now in this course we've been dealing with
+
+96
+00:03:49,866 --> 00:03:54,333
+源代码，从这个模块开始我们要接触
+source code this module really represents our jump into
+
+97
+00:03:55,133 --> 00:03:56,133
+二进制代码了
+binary code
+
+98
+00:03:57,300 --> 00:03:58,666
+或者说我们之前做题时一直能得到源码
+or rather we've been dealing a source code
+
+99
+00:03:58,666 --> 00:03:59,933
+
+in the practice problems
+
+100
+00:03:59,933 --> 00:04:02,699
+对，你有源代码
+right you always have gotten source code now
+
+101
+00:04:02,966 --> 00:04:05,566
+从现在开始我们不会在拿到
+from this point on we will no longer get
+
+102
+00:04:05,966 --> 00:04:07,066
+源代码了
+that source code
+
+103
+00:04:07,400 --> 00:04:08,200
+好吧
+all right
+
+104
+00:04:08,900 --> 00:04:09,700
+所以
+so
+
+105
+00:04:11,600 --> 00:04:15,566
+让我们来看看一些正向开发的工具
+let's look at some forward engineering tools
+
+106
+00:04:15,933 --> 00:04:16,799
+来
+to kind of
+
+107
+00:04:17,300 --> 00:04:20,866
+帮助理解逆向工程
+contextualize the reverse engineering process
+
+108
+00:04:21,600 --> 00:04:25,700
+我们会了解IDE, 我使用Vim
+we're going to look at an IDE I use Vim
+
+109
+00:04:26,900 --> 00:04:28,966
+有些人使用真正的IDE，但是
+some people use a Real IDE but
+
+110
+00:04:29,266 --> 00:04:30,899
+我们不会在这里这么做
+we will not be doing that here
+
+111
+00:04:31,266 --> 00:04:33,333
+然后我们将讨论编译后
+and then we will look at the compilation
+
+112
+00:04:33,533 --> 00:04:35,933
+还留下的东西
+process what it kind of leaves behind
+
+113
+00:04:36,333 --> 00:04:38,533
+什么信息还在
+what what information is still there
+
+114
+00:04:38,666 --> 00:04:39,466
+然后
+and then
+
+115
+00:04:39,600 --> 00:04:41,966
+当我们剥夺了这些信息会发生什么
+what happens when we strip that information away
+
+116
+00:04:42,266 --> 00:04:44,166
+好，让我们
+alright let's
+
+117
+00:04:44,733 --> 00:04:45,466
+探个究竟
+check this out
+
+118
+00:04:45,466 --> 00:04:47,866
+所以我有我的
+so I have my um
+
+119
+00:04:51,333 --> 00:04:52,966
+它（录频工具）选错了终端
+it picked up the wrong terminal
+
+120
+00:04:52,966 --> 00:04:55,533
+等一下，我来解决这个问题
+hold on a second let me fix this
+
+121
+00:04:59,600 --> 00:05:00,733
+好了，我们回来
+all right we're back
+
+122
+00:05:01,066 --> 00:05:03,966
+我们不得不和OBS做点斗争
+we had to fight with OBS a little bit to
+
+123
+00:05:04,066 --> 00:05:06,533
+来显示正确的窗口，但它现在好了
+get the right window to display but it's here now
+
+124
+00:05:07,766 --> 00:05:08,466
+好吧
+okay
+
+125
+00:05:08,466 --> 00:05:10,166
+我们在终端上
+so we're on the terminal
+
+126
+00:05:11,533 --> 00:05:14,899
+我写了一个hello world程序
+of course I wrote a hello world program
+
+127
+00:05:14,900 --> 00:05:18,100
+这是一个简单的程序，2个函数
+this is a simple program 2 functions
+
+128
+00:05:18,766 --> 00:05:19,899
+还有一个变量名
+and a variable name
+
+129
+00:05:19,900 --> 00:05:23,500
+它的变量名为my name
+right so it has this variable name of my name
+
+130
+00:05:23,966 --> 00:05:25,866
+程序从标准输入接收一个最长1000
+it reads in up to 1000
+
+131
+00:05:27,333 --> 00:05:29,266
+个字符的字符串到my_name数组中
+character along string into that
+
+132
+00:05:29,800 --> 00:05:31,300
+然后它调用 say_hello 函数
+then it calls say hello
+
+133
+00:05:31,800 --> 00:05:34,300
+参数为my_name，该函数输出 hello blabla
+with the name and it just says hello
+
+134
+00:05:35,266 --> 00:05:37,499
+如果你编译它
+right so if you compile it
+
+135
+00:05:39,400 --> 00:05:40,500
+然后运行它
+and run it
+
+136
+00:05:43,133 --> 00:05:43,933
+就是这样
+there it is
+
+137
+00:05:44,566 --> 00:05:46,666
+非常酷的hello world程序
+very cool hello world program all right
+
+138
+00:05:46,766 --> 00:05:48,899
+我们来看一条信息
+so let's see one information
+
+139
+00:05:49,733 --> 00:05:51,933
+就在这里，有几件条信息
+is here right there there's a couple things
+
+140
+00:05:52,366 --> 00:05:53,333
+一个是
+one is
+
+141
+00:05:54,600 --> 00:05:56,766
+变量my_name
+this variable my name
+
+142
+00:05:57,266 --> 00:05:59,899
+另一个是这个变量的长度
+another one is the length of this vary
+
+143
+00:06:00,333 --> 00:06:01,699
+uhh，数组的长度
+the length of the array
+
+144
+00:06:03,333 --> 00:06:04,499
+它是一个字符数组
+and it's a character array
+
+145
+00:06:04,500 --> 00:06:06,500
+因为它是由一串字符组成
+the fact that it's an array of characters
+
+146
+00:06:07,800 --> 00:06:08,466
+另一个信息是
+another
+
+147
+00:06:08,466 --> 00:06:11,266
+这个函数把
+piece of information is that this function takes
+
+148
+00:06:11,366 --> 00:06:14,066
+这个字符数组作为输入参数
+this array of characters as input
+
+149
+00:06:14,366 --> 00:06:16,699
+另一个是
+and another one is
+
+150
+00:06:17,300 --> 00:06:19,466
+这个函数名say hello
+that this functions named say hello
+
+151
+00:06:19,766 --> 00:06:20,099
+好吧
+okay
+
+152
+00:06:20,100 --> 00:06:22,533
+我来给你们看看每一步都丢失了什么
+and I'm gonna go through and show you what is lost
+
+153
+00:06:22,700 --> 00:06:23,766
+
+at every step
+
+154
+00:06:24,500 --> 00:06:25,933
+让我们从
+so let's start with
+
+155
+00:06:27,133 --> 00:06:28,733
+编译
+compilation
+
+156
+00:06:29,900 --> 00:06:32,100
+实际上，不是编译
+actually rather than compilation let's start
+
+157
+00:06:32,100 --> 00:06:33,666
+让我在这里加一个注释
+let me add a comment here
+
+158
+00:06:33,866 --> 00:06:34,666
+让我们从
+let's start with
+
+159
+00:06:35,100 --> 00:06:36,466
+预处理开始
+with the pre processing
+
+160
+00:06:37,966 --> 00:06:38,566
+这
+this
+
+161
+00:06:38,566 --> 00:06:41,799
+是一个变量用来保存我的名字
+is a variable to hold my name
+
+162
+00:06:41,800 --> 00:06:43,533
+好的，这里有了一个注释
+okay so here's a comment
+
+163
+00:06:43,533 --> 00:06:46,166
+编译过程中发生的第一件事
+the first thing that happens in the compilation process
+
+164
+00:06:46,366 --> 00:06:47,399
+我不记得对应的
+and I don't remember that
+
+165
+00:06:48,100 --> 00:06:49,166
+GCC命令参数了（-E）
+GCC flags are
+
+166
+00:06:49,400 --> 00:06:51,900
+gcc -E 的实现是调用cpp，所以这里直接调cpp了
+involved as directly as the c pre processor runs
+
+167
+00:06:51,933 --> 00:06:53,099
+c预处理器
+the c pre processor
+
+168
+00:06:53,100 --> 00:06:55,333
+处理所有的include语句
+handles all the include statements
+
+169
+00:06:55,666 --> 00:06:56,566
+和
+and
+
+170
+00:06:57,566 --> 00:06:59,666
+扩展宏等等
+expands macros and so forth
+
+171
+00:06:59,766 --> 00:07:01,099
+并且它会删除注释
+and it removes comments
+
+172
+00:07:01,100 --> 00:07:04,333
+这是实际被编译的代码
+so this is the code that actually gets compiled
+
+173
+00:07:04,333 --> 00:07:06,566
+如果我把所有东西都包括进去的话
+if I properly had included everything
+
+174
+00:07:06,566 --> 00:07:07,733
+我本应该包括
+I should have included
+
+175
+00:07:09,600 --> 00:07:10,866
+stdio . h
+stdio.h
+
+176
+00:07:10,866 --> 00:07:11,799
+所以现在
+so now that if
+
+177
+00:07:11,800 --> 00:07:14,000
+当我编译它时，我们没有得到任何警告
+when I compile it we don't get any warnings
+
+178
+00:07:14,300 --> 00:07:16,800
+c预处理程序实际上拷贝
+the c pre processor will actually include 
+
+179
+00:07:16,866 --> 00:07:18,999
+stdio . h。这是全部的内容
+stdio.h. this is all of the stuff
+
+180
+00:07:19,000 --> 00:07:22,500
+这些都是stdio。h
+this is all the stuff that is an stdio.h
+
+181
+00:07:24,000 --> 00:07:24,966
+让我用less看看
+let me less through this
+
+182
+00:07:24,966 --> 00:07:27,499
+这是所有include的东西
+so here's all of the stuff that's included
+
+183
+00:07:27,500 --> 00:07:29,700
+我的代码在最下面
+and my actual code is right at the bottom there
+
+184
+00:07:29,700 --> 00:07:31,200
+C预处理器
+and the C pre processor
+
+185
+00:07:31,566 --> 00:07:32,966
+删除了我的注释
+removed my comment
+
+186
+00:07:34,700 --> 00:07:35,533
+好了
+there you have it
+
+187
+00:07:35,533 --> 00:07:37,166
+好的，那么
+alright so then
+
+188
+00:07:37,700 --> 00:07:39,333
+把输出重定向到
+so this gets into
+
+189
+00:07:39,333 --> 00:07:41,766
+hello-preprocessed
+hello pre processed
+
+190
+00:07:41,766 --> 00:07:42,599
+点c
+dot c
+
+191
+00:07:43,200 --> 00:07:45,200
+然后有一个
+and then there is a
+
+192
+00:07:46,933 --> 00:07:48,166
+汇编步骤（口误）
+assembling step
+
+193
+00:07:48,166 --> 00:07:50,999
+我们的C代码，不好意思，是编译步骤
+right so our our C code or sorry a compilation step
+
+194
+00:07:51,000 --> 00:07:52,366
+我们的C代码被编译成
+our C code is compiled
+
+195
+00:07:52,700 --> 00:07:53,866
+汇编代码
+into assembly code
+
+196
+00:07:54,500 --> 00:07:56,566
+我最近才发现
+and I recently found out
+
+197
+00:07:57,366 --> 00:07:58,333
+内个
+that
+
+198
+00:08:02,766 --> 00:08:05,533
+我可以让GCC生成英特尔
+I can have GCC actually generate Intel
+
+199
+00:08:06,100 --> 00:08:08,066
+语法风格的汇编代码
+syntax assembly which is going to be much better
+
+200
+00:08:08,066 --> 00:08:10,266
+我们用预处理的hello
+so we take the pre processed hello
+
+201
+00:08:10,500 --> 00:08:12,200
+然后我们对它进行汇编（口误）
+and then we assemble it
+
+202
+00:08:12,800 --> 00:08:16,000
+现在我们把hello-preprocess.
+and now we have hello pre process dot 
+
+203
+00:08:16,000 --> 00:08:17,900
+哦，抱歉，我们把它编译成汇编代码
+oh sorry we compile it into a assembly code
+
+204
+00:08:18,166 --> 00:08:20,133
+这就是最终结果
+and this is the end result
+
+205
+00:08:20,133 --> 00:08:21,533
+那么这里发生了什么
+so what happened here
+
+206
+00:08:22,166 --> 00:08:23,466
+这是我们的
+this is now our
+
+207
+00:08:24,600 --> 00:08:26,533
+将要使用的汇编代码
+the assembly code that will be
+
+208
+00:08:26,666 --> 00:08:28,799
+汇编以生成C代码（口误，应该是机器码）
+assembled to generate the C code
+
+209
+00:08:28,800 --> 00:08:31,200
+这一步我们丢失了什么呢
+and what did we lose in this step well
+
+210
+00:08:31,733 --> 00:08:34,566
+我们失去的一条信息是
+one thing we lost is
+
+211
+00:08:35,700 --> 00:08:36,866
+我们看看main函数
+let's go to main
+
+212
+00:08:37,066 --> 00:08:38,466
+在main这里
+here in main
+
+213
+00:08:39,066 --> 00:08:43,066
+曾经有一个字符数组
+there used to be a character array
+
+214
+00:08:43,566 --> 00:08:45,666
+让我展示一下原始代码
+let me show the original source
+
+215
+00:08:47,966 --> 00:08:49,533
+有一个字符数组
+there was a character array
+
+216
+00:08:50,200 --> 00:08:52,166
+my_name,对吧
+with my name right
+
+217
+00:08:54,000 --> 00:08:54,866
+现在
+now
+
+218
+00:08:56,366 --> 00:08:58,533
+变量名my name没有了
+the variable name my name is gone
+
+219
+00:08:59,066 --> 00:09:01,066
+现在只是一段内存
+it is now just a memory
+
+220
+00:09:01,533 --> 00:09:03,066
+偏移（rbp-1040）在这
+reference right here
+
+221
+00:09:04,400 --> 00:09:06,000
+在栈的某个地方
+somewhere on on the stack
+
+222
+00:09:06,000 --> 00:09:08,333
+我们之后会讲到栈是什么等等
+we'll talk about what the stack is later and so forth
+
+223
+00:09:08,366 --> 00:09:10,299
+但它的名字已经不存在了
+but the name of it is gone
+
+224
+00:09:10,300 --> 00:09:12,933
+我们已经丢失了变量名
+we've already we lost variable names here
+
+225
+00:09:13,566 --> 00:09:16,133
+至少是函数的局部变量
+already at least local variables to functions
+
+226
+00:09:16,133 --> 00:09:18,066
+我们还丢失了所有类型信息
+we also lost all the type information
+
+227
+00:09:18,400 --> 00:09:19,866
+实际上原来这儿是
+the fact that it was
+
+228
+00:09:20,900 --> 00:09:23,866
+1024的大小，现在这儿是1040
+1024 in size you see this 1040
+
+229
+00:09:24,666 --> 00:09:25,866
+有些东西被填充了（内存对齐）
+something got padded
+
+230
+00:09:25,866 --> 00:09:26,866
+或者是
+or it's
+
+231
+00:09:26,866 --> 00:09:29,399
+对函数栈帧中的其他东西进行补偿
+compensating for other things in the function frame
+
+232
+00:09:29,533 --> 00:09:31,266
+我们稍后会讲到函数栈帧的位置
+we'll talk about where a function frame is later
+
+233
+00:09:31,266 --> 00:09:32,333
+在逆向教学模块中
+in the module as well
+
+234
+00:09:32,966 --> 00:09:36,766
+我们丢失了它是一个字符数组的信息
+we've lost the fact that it's a character array and
+
+235
+00:09:36,800 --> 00:09:37,266
+等等
+so on
+
+236
+00:09:37,266 --> 00:09:39,533
+是的，我们已经丢失了很多信息
+right so we've already lost quite a lot of information
+
+237
+00:09:39,533 --> 00:09:41,166
+但至少
+but at least the
+
+238
+00:09:41,666 --> 00:09:42,499
+say_hello（函数名）
+say hello
+
+239
+00:09:43,300 --> 00:09:44,533
+这个字符串还在这里
+the string is still there
+
+240
+00:09:44,700 --> 00:09:47,700
+如果我们完成了编译
+well if we finish compiling it
+
+241
+00:09:55,133 --> 00:09:58,499
+你对它反汇编，还能看到这个say_hello
+you can see here if you disassemble the result
+
+242
+00:09:58,566 --> 00:10:01,199
+say hello字符串仍然在那里
+the say hello string is still there
+
+243
+00:10:02,266 --> 00:10:05,266
+但软件通常不是这样的
+but this is not how
+
+244
+00:10:06,366 --> 00:10:07,699
+软件通常是
+software is typically
+
+245
+00:10:08,700 --> 00:10:10,766
+让我们反编译它
+let's decompile it just for
+
+246
+00:10:11,566 --> 00:10:12,899
+适当的错误
+appropriate mistake
+
+247
+00:10:13,133 --> 00:10:13,999
+就在那儿
+it's right there
+
+248
+00:10:14,066 --> 00:10:16,533
+软件通常不会这样
+this is not typically how software is
+
+249
+00:10:16,533 --> 00:10:19,566
+发布，软件通常也被剥离和
+shift typically software is also stripped and
+
+250
+00:10:20,133 --> 00:10:23,099
+删除任何不必要的元数据，以减小大小
+of any unnecessary metadata to reduce the size
+
+251
+00:10:23,100 --> 00:10:26,500
+如果你看一下hello的大小，然后再strip
+if you look at the size of hello and then you'll strip
+
+252
+00:10:26,933 --> 00:10:29,266
+hello，再看看它的大小
+hello look at the size of it again
+
+253
+00:10:29,500 --> 00:10:30,933
+变小了
+smaller nicer
+
+254
+00:10:31,200 --> 00:10:32,933
+对逆向工程不那么友好了
+less open to reverse engineering
+
+255
+00:10:33,100 --> 00:10:34,566
+现在你再反汇编一下
+now if you memory dump it
+
+256
+00:10:36,700 --> 00:10:40,133
+整个代码段没有信息
+the whole text segment has no information for G
+
+257
+00:10:40,366 --> 00:10:41,499
+能让objdump
+for object dump
+
+258
+00:10:41,533 --> 00:10:42,333
+找到
+to figure it
+
+259
+00:10:43,166 --> 00:10:44,499
+函数在哪儿了
+even where functions are
+
+260
+00:10:44,766 --> 00:10:45,666
+如果我们
+and if we
+
+261
+00:10:46,366 --> 00:10:47,733
+看看字符串
+look at strings
+
+262
+00:10:48,166 --> 00:10:49,699
+是另一件事
+which is the other thing
+
+263
+00:10:49,700 --> 00:10:50,900
+让我们重新编译一下
+let's recompile this
+
+264
+00:10:53,666 --> 00:10:55,866
+查看字符串和原始编译
+look at strings and original compilation
+
+265
+00:10:56,400 --> 00:10:58,266
+寻找我们的say name函数
+and look for our say name function
+
+266
+00:11:00,600 --> 00:11:01,900
+对不起，say hello函数
+sorry say hello function
+
+267
+00:11:02,266 --> 00:11:03,399
+就在这里
+it's right here
+
+268
+00:11:04,000 --> 00:11:04,800
+好吧
+okay
+
+269
+00:11:05,000 --> 00:11:06,300
+如果我们剥掉它
+if we strip it
+
+270
+00:11:09,400 --> 00:11:11,933
+它没了，所以我们失去的越来越多
+it's gone right so we lose more and more
+
+271
+00:11:13,400 --> 00:11:16,766
+随着我们越来越深入地研究
+data as we go further and further in to the
+
+272
+00:11:17,700 --> 00:11:19,000
+正向工程过程
+forward engineering process
+
+273
+00:11:19,000 --> 00:11:20,066
+现在有一件事
+now one thing
+
+274
+00:11:20,066 --> 00:11:22,733
+您可以带着所有这些数据发布二进制文件
+you can ship binaries with all of this data
+
+275
+00:11:22,733 --> 00:11:24,399
+大部分数据还在里面
+most of this data still in them
+
+276
+00:11:24,600 --> 00:11:26,300
+我们可以编译
+we can compile
+
+277
+00:11:26,800 --> 00:11:28,533
+从原来的二进制
+from the original binary
+
+278
+00:11:32,533 --> 00:11:33,333
+用
+with
+
+279
+00:11:33,700 --> 00:11:36,500
+-G参数，它将包括所有的
+dash G flag which will include all of the
+
+280
+00:11:37,266 --> 00:11:38,533
+信息
+information on
+
+281
+00:11:39,166 --> 00:11:42,666
+变量大小的变量名上的所有类型
+types on everything on variable names on variable sizes
+
+282
+00:11:42,733 --> 00:11:45,133
+如果我现在用strings查看hello里的字符串
+if I now do strings hello
+
+283
+00:11:46,266 --> 00:11:47,066
+我的名字
+my name
+
+284
+00:11:47,900 --> 00:11:50,700
+即使变量仍然显示变量名
+even the variable still shows up the variable name
+
+285
+00:11:50,866 --> 00:11:52,299
+但通常
+but typically
+
+286
+00:11:53,066 --> 00:11:55,366
+大部分信息都丢失了
+most of this information is lost
+
+287
+00:11:55,366 --> 00:11:58,199
+这是一个函数的定义
+the the definition that this is even a function
+
+288
+00:11:58,266 --> 00:11:59,499
+必须要恢复
+has to be recovered
+
+289
+00:12:00,100 --> 00:12:02,466
+使用逆向工程工具和
+using reverse engineering tools and
+
+290
+00:12:02,466 --> 00:12:04,966
+以及所有其他丢失的信息
+and and all of the other loss information as well
+
+291
+00:12:05,333 --> 00:12:06,133
+好吧
+alright
+
+292
+00:12:06,766 --> 00:12:07,566
+所以
+so
+
+293
+00:12:08,700 --> 00:12:10,666
+什么是逆向工程过程
+what is the reverse engineering process or
+
+294
+00:12:10,666 --> 00:12:12,599
+逆向工程的过程是
+the reverse engineering process is
+
+295
+00:12:12,733 --> 00:12:15,066
+基本上是反向的
+basically going backwards
+
+296
+00:12:15,366 --> 00:12:16,666
+从可执行文件开始
+starting from the executable
+
+297
+00:12:16,666 --> 00:12:18,066
+而不是从源代码
+instead of starting from the source code
+
+298
+00:12:18,066 --> 00:12:19,166
+或者从设计开始
+or starting from the design
+
+299
+00:12:19,166 --> 00:12:19,966
+甚至更好的
+even better
+
+300
+00:12:20,000 --> 00:12:22,333
+你从可执行文件开始反汇编它
+you start from the executable you disassemble it
+
+301
+00:12:22,400 --> 00:12:24,300
+反编译它
+you decompile it
+
+302
+00:12:24,966 --> 00:12:26,733
+无论是手动还是自动
+whether manually or automatically
+
+303
+00:12:26,733 --> 00:12:30,599
+你用你的直觉做了很多思考来推断
+you do a lot of thinking to infer using your intuition
+
+304
+00:12:30,900 --> 00:12:33,666
+代码背后的原始意图
+the original intent behind the code
+
+305
+00:12:33,666 --> 00:12:35,499
+这并不容易
+it is not easy
+
+306
+00:12:36,333 --> 00:12:38,299
+这是一门艺术
+and it is an art
+
+307
+00:12:38,666 --> 00:12:40,933
+是的，这是一门艺术
+right it's an art of
+
+308
+00:12:41,266 --> 00:12:42,866
+从
+putting yourself in the
+
+309
+00:12:42,900 --> 00:12:44,566
+开发者的角度
+mind and the shoes of the developer
+
+310
+00:12:44,566 --> 00:12:45,866
+试着去理解
+and trying to understand
+
+311
+00:12:46,533 --> 00:12:49,099
+在这个过程中，您通常使用几个工具来完成
+typically in this process you use several tools to
+
+312
+00:12:49,266 --> 00:12:50,466
+提取知识
+extract knowledge
+
+313
+00:12:50,466 --> 00:12:53,299
+然后你把这些知识放在你的大脑里
+and then you put this knowledge together in your brain
+
+314
+00:12:54,066 --> 00:12:56,099
+建立对程序的理解
+build up an understanding of the program
+
+315
+00:12:56,166 --> 00:12:58,466
+在本模块中，我们将学习如何做到这一点
+and throughout this module we'll learn how to do that
+
+316
+00:12:58,466 --> 00:12:59,899
+然后我们来练习一下
+and then we'll practice it
+
+317
+00:13:00,900 --> 00:13:01,733
+请继续关注
+stay tuned

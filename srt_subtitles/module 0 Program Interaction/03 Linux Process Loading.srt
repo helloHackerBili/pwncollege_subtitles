@@ -1,0 +1,4180 @@
+1
+00:00:02,566 --> 00:00:04,100
+你好,学生
+hello students
+
+2
+00:00:04,300 --> 00:00:08,600
+我是Yan，今天我们讨论一些基础知识
+I'm Yan and today we're going to be talking about some fundamentals
+
+3
+00:00:08,900 --> 00:00:12,466
+特别是Linux进程加载的基础知识
+specifically fundamentals of Linux process loading
+
+4
+00:00:13,300 --> 00:00:16,166
+这是基础知识系列中的一个
+this is an entry of our fundamental series
+
+5
+00:00:16,166 --> 00:00:18,300
+你应该已经掌握这些知识
+of knowledge that you should already have
+
+6
+00:00:18,333 --> 00:00:20,866
+才能继续后面的课程
+to be able to approach the rest of this course
+
+7
+00:00:20,900 --> 00:00:22,766
+如果知识上有空白
+just in case there are gaps in the knowledge
+
+8
+00:00:23,800 --> 00:00:26,966
+希望这节课能填补上
+hopefully this lecture will fill them in 
+
+9
+00:00:27,166 --> 00:00:28,033
+抱歉
+excuse me
+
+10
+00:00:31,366 --> 00:00:32,166
+好的
+all right
+
+11
+00:00:35,066 --> 00:00:35,933
+开工吧
+let's roll
+
+12
+00:00:36,300 --> 00:00:41,700
+我们将使用/bin/cat作为本课的示例程序
+we're gonna be using /bin/cat as an example program for this lecture
+
+13
+00:00:42,700 --> 00:00:47,433
+/bin/cat程序，从一个地方读入数据
+/bin/cat is a program that reads in data from one source
+
+14
+00:00:47,633 --> 00:00:50,466
+然后输出到标准输出
+and spews it out to standard output
+
+15
+00:00:51,700 --> 00:00:55,466
+我展示一下我写的/bin/cat的替代品
+let me show you a replacement for /bin/cat that I wrote 
+
+16
+00:00:55,566 --> 00:00:59,466
+用它更方便观察发生了什么
+so we have an easier time of tracking what is going on
+
+17
+00:01:00,333 --> 00:01:02,100
+它很简单
+it's quite simple
+
+18
+00:01:02,866 --> 00:01:05,733
+就在这儿，只有6行
+here it is just 6 lines
+
+19
+00:01:06,333 --> 00:01:10,299
+包括C代码中的花括号等等
+including curly brackets and so forth of C code
+
+20
+00:01:10,533 --> 00:01:12,566
+也许是7或8行，我没数
+maybe 7 or 8 I'm not counting
+
+21
+00:01:14,366 --> 00:01:16,866
+它只是打开一个文件
+that simply opens a file
+
+22
+00:01:17,900 --> 00:01:25,100
+如果没指定文件，则使用标准输入
+or use a standard input if files isn't specified
+
+23
+00:01:25,200 --> 00:01:29,100
+有数据输入，就输出
+and continually while there's data reads it and writes it
+
+24
+00:01:29,500 --> 00:01:30,466
+又好又简单
+nice and simple
+
+25
+00:01:30,866 --> 00:01:31,666
+好的
+all right
+
+26
+00:01:32,733 --> 00:01:39,133
+我们来讲讲这个文件的生命周期
+let's roll with the lifecycle of this file
+
+27
+00:01:39,400 --> 00:01:41,500
+我们先从进程的创建开始
+we'll start with process creation
+
+28
+00:01:41,500 --> 00:01:43,366
+一直到进程终结
+we'll end with process termination
+
+29
+00:01:43,466 --> 00:01:44,833
+以及这中间发生的全部内容
+and we'll cover everything in between 
+
+30
+00:01:45,000 --> 00:01:51,066
+本节课，我们将覆盖这前3个加载及初始化的部分
+in this lecture we'll cover these first three kind of the loading initialization parts
+
+31
+00:01:51,333 --> 00:01:53,533
+先从进程的创建开始
+starting from process creation
+
+32
+00:01:53,866 --> 00:01:55,866
+进程到底是什么
+so what the heck is a process 
+
+33
+00:01:56,100 --> 00:01:57,800
+我们一直用这个词
+we keep using this term
+
+34
+00:01:59,233 --> 00:02:02,166
+这个词当然是有含义的
+and the term of course has meanings
+
+35
+00:02:02,500 --> 00:02:08,900
+你电脑上的每一个程序
+every individual program on your computer
+
+36
+00:02:09,166 --> 00:02:13,600
+当它运行时，或多或少都是作为一个进程运行
+when it runs runs as a process right more or less
+
+37
+00:02:13,766 --> 00:02:18,333
+你的浏览器是一个进程
+so your browser is a process
+
+38
+00:02:18,366 --> 00:02:22,599
+实际上，现代浏览器通常每个标签页都有一个进程
+actually modern browsers have generally speaking one process per tab
+
+39
+00:02:22,700 --> 00:02:24,600
+插件用额外的进程
+with additional processes for plugins
+
+40
+00:02:24,700 --> 00:02:26,500
+这是一种安全措施
+this is a security measure
+
+41
+00:02:27,766 --> 00:02:29,966
+启动的终端，是一个进程
+a terminal when you launch it is a process
+
+42
+00:02:29,966 --> 00:02:32,766
+微软的Word是一个进程，等等
+Microsoft Word is a process and so on
+
+43
+00:02:32,766 --> 00:02:35,366
+当然它不运行在Linux上，但这个论据没问题
+of course not on Linux but the point stands
+
+44
+00:02:36,200 --> 00:02:39,800
+每个Linux进程都有一些属性
+every Linux process has a number of attributes that
+
+45
+00:02:41,000 --> 00:02:45,200
+一些是安全相关的
+it contains some of which are security relevance
+
+46
+00:02:45,300 --> 00:02:48,900
+一些是内核用来监控状态的，等等
+and some of which the kernel uses to figure out what the hell is going on and so on
+
+47
+00:02:50,000 --> 00:02:54,200
+这些属性是像当前进程状态之类的
+these attributes at a very high level are stuff like the current process state
+
+48
+00:02:54,200 --> 00:02:55,666
+像进程在运行吗
+is the process running
+
+49
+00:02:55,700 --> 00:02:58,900
+进程在等待资源吗
+is the process waiting on some resource to become available
+
+50
+00:02:58,966 --> 00:03:00,333
+进程停止了吗
+is the process stopped
+
+51
+00:03:00,333 --> 00:03:02,366
+如果你在shell中按Ctrl Z
+if you hit Ctrl Z in your shell
+
+52
+00:03:02,400 --> 00:03:05,100
+会把进程放在后台，并停止
+it'll background the process and stop it
+
+53
+00:03:05,100 --> 00:03:09,200
+然后你可以用shell内置的fg恢复它
+and then you can use the fg shell built in to resume it
+
+54
+00:03:10,400 --> 00:03:15,900
+进程的优先级是高，还是低
+does the process have a high low  or what is the priority of the process
+
+55
+00:03:15,933 --> 00:03:18,333
+它有助于内核调度进程
+this helps the kernel schedule a process
+
+56
+00:03:18,566 --> 00:03:21,600
+当然，任意时刻都有很多进程在运行
+of course you have a lot of processes running at any point in the time
+
+57
+00:03:21,700 --> 00:03:26,700
+你的计算机可能是2核的、4核的或8核的
+your laptop or desktop might have 2,4,8 cores
+
+58
+00:03:27,933 --> 00:03:31,300
+大量的进程需要
+and your huge population processes needs to
+
+59
+00:03:31,666 --> 00:03:37,266
+在不同时间点调度到这些核上
+get scheduled at various times among your computing cores
+
+60
+00:03:37,466 --> 00:03:39,333
+这样所有进程才能正常运行
+so that everything runs
+
+61
+00:03:40,500 --> 00:03:46,933
+内核使用进程状态信息或调度信息来解决这个问题
+the kernel uses process state information to figure this out or the scheduling information
+
+62
+00:03:47,266 --> 00:03:50,666
+进程有一个创建它的父进程
+a process has a parent process that created it
+
+63
+00:03:50,666 --> 00:03:52,066
+我们接下来会谈到这个
+we'll talk about that next
+
+64
+00:03:52,100 --> 00:03:56,600
+可能有它创建的子进程
+typically or not typically but it might have children processes that it creates
+
+65
+00:03:56,800 --> 00:04:00,366
+可能有同父进程创建的兄弟进程，等等
+might have sibling processes that his parent also created and so on
+
+66
+00:04:00,600 --> 00:04:02,733
+它们具有不同的安全含义
+these have different security implications
+
+67
+00:04:03,400 --> 00:04:08,700
+但在这节课中，我们主要讨论的是进程的创建
+but mostly in this lecture we'll just talk about the creation of processes
+
+68
+00:04:10,500 --> 00:04:14,000
+进程有许多共享资源
+a process will have a number of shared resources that it uses
+
+69
+00:04:14,100 --> 00:04:16,133
+文件、各种管道
+files various pipes 
+
+70
+00:04:16,200 --> 00:04:18,200
+标准输入、标准输出
+such as standard input standard output
+
+71
+00:04:18,600 --> 00:04:22,366
+套接字，如果要用网络的话，等等
+sockets if it does network communications and so forth
+
+72
+00:04:22,800 --> 00:04:24,600
+进程有自己的内存空间
+process has its own memory space
+
+73
+00:04:24,666 --> 00:04:26,866
+有了它，进程就能干自己想干的
+with which it can do whatever it wants
+
+74
+00:04:26,933 --> 00:04:29,300
+加载其他库等等
+load other libraries and so forth into this
+
+75
+00:04:29,300 --> 00:04:30,433
+或用它的一部分
+or use it as scratch bit
+
+76
+00:04:30,500 --> 00:04:32,066
+就是内存嘛
+obviously it's just memory
+
+77
+00:04:32,666 --> 00:04:34,800
+进程具有安全上下文
+and the process has security context
+
+78
+00:04:38,333 --> 00:04:39,533
+在另一节课中
+in a different lecture
+
+79
+00:04:40,133 --> 00:04:42,500
+你们要么已经听过，要么马上就会听到
+you will either have already heard or you will hear
+
+80
+00:04:42,600 --> 00:04:47,400
+是关于Linux安全上下文的，像用户组等等
+about the Linux security context with users groups and so forth
+
+81
+00:04:47,400 --> 00:04:49,333
+还有一个额外的东西叫做capabilities
+there's an additional thing called capabilities
+
+82
+00:04:49,333 --> 00:04:50,700
+它针对各进程记录
+which are tracked per process
+
+83
+00:04:50,700 --> 00:04:56,400
+估计等我们讲到沙盒时会讲到它
+most likely we will cover those when we talk about sandboxing in a different module
+
+84
+00:04:56,700 --> 00:04:57,500
+好的
+all right
+
+85
+00:04:57,966 --> 00:04:59,900
+这是进程的概述
+so this is a process at a nutshell
+
+86
+00:04:59,900 --> 00:05:02,166
+但是这些进程是从哪里来的呢
+but where do these processes come from
+
+87
+00:05:03,066 --> 00:05:07,966
+在Linux进程中或多或少通过有丝分裂进行传播
+in Linux process propagate by mitosis more or less
+
+88
+00:05:08,966 --> 00:05:10,066
+这是什么意思?
+what does this mean
+
+89
+00:05:10,133 --> 00:05:12,133
+这意味着有一个原始进程
+this means that you have an original process
+
+90
+00:05:12,266 --> 00:05:16,199
+然后发生了一些事情，有了两个进程
+and then something happens and you have two process
+
+91
+00:05:16,200 --> 00:05:18,600
+在细胞的生物学意义上
+in the biological sense with cells
+
+92
+00:05:18,966 --> 00:05:20,499
+旧细胞不再存在
+the old cell ceases to exist 
+
+93
+00:05:20,566 --> 00:05:22,699
+分裂成了两个新的细胞
+and splits into kind of two new cells
+
+94
+00:05:22,766 --> 00:05:23,700
+在Linux
+with Linux
+
+95
+00:05:23,700 --> 00:05:25,766
+这更像是克隆的场景
+it's more of a cloning scenario
+
+96
+00:05:25,833 --> 00:05:30,699
+进程将调用一个系统功能
+where a process will call an operating system functionality
+
+97
+00:05:31,166 --> 00:05:33,200
+一个Linux内核系统调用
+a Linux kernel system call
+
+98
+00:05:35,500 --> 00:05:39,700
+fork或是相对新的clone
+either fork or more recently clone
+
+99
+00:05:39,800 --> 00:05:43,100
+这两个系统调用将把该进程
+these two system calls will take the process
+
+100
+00:05:43,100 --> 00:05:46,700
+差不多是，直接拷贝一份
+and just copy it basically more or less let's say
+
+101
+00:05:47,500 --> 00:05:49,766
+可以简单理解为拷贝一份一模一样的
+an easy way to think of it is just an exact copy
+
+102
+00:05:50,500 --> 00:05:54,200
+只是新进程知道自己是子进程
+except for the the new process knows that as a child
+
+103
+00:05:54,766 --> 00:05:56,500
+旧进程成为了父进程
+making the old process the parent
+
+104
+00:05:56,666 --> 00:05:58,600
+子进程将，如果你想
+then the child if you want to
+
+105
+00:05:58,600 --> 00:06:02,200
+例如，如果你想在shell中执行/bin/cat
+for example if you are in your shell and you want to execute /bin/cat
+
+106
+00:06:03,300 --> 00:06:07,900
+shell执行完fork后，会有一个父进程一个子进程
+your shell will fork into a parent and a child
+
+107
+00:06:08,000 --> 00:06:10,566
+子进程知道自己是子进程
+and then the child knowing it's a child
+
+108
+00:06:10,700 --> 00:06:16,700
+会用另一个系统调用clone，替换自己
+will replace itself using another piece of Linux OS functionality the clone system call
+
+109
+00:06:16,966 --> 00:06:20,066
+它把自己替换成/bin/cat
+it will replace itself with /bin/cat
+
+110
+00:06:20,800 --> 00:06:24,000
+这就是如何启动/bin/cat的
+and that's how you launch /bin/cat
+
+111
+00:06:26,000 --> 00:06:29,700
+这很简单
+so that's pretty straightforward
+
+112
+00:06:29,700 --> 00:06:32,066
+这个替换具体是什么样的呢
+what does this replacing actually look like
+
+113
+00:06:32,066 --> 00:06:35,633
+它涉及加载/bin/cat
+you know it involves loading /bin/cat 
+
+114
+00:06:35,800 --> 00:06:37,666
+首先涉及到清空进程
+at first it involves emptying out the process
+
+115
+00:06:37,833 --> 00:06:39,533
+这个简单，内核自己就做了
+that's nice and easy the kernel does it
+
+116
+00:06:39,533 --> 00:06:43,266
+但当涉及到加载/bin/cat，就比较困难了
+but then it involves loading /bin/cat and this is harder
+
+117
+00:06:44,066 --> 00:06:46,699
+首先在加载进程时
+so first in the loading process
+
+118
+00:06:46,800 --> 00:06:47,466
+我们必须弄清楚
+we have to figure out
+
+119
+00:06:47,466 --> 00:06:50,066
+能加载我们想加载的文件吗
+can we load the file we want to load
+
+120
+00:06:50,166 --> 00:06:51,733
+加载失败的原因有很多
+there's a number of reasons why it might fail
+
+121
+00:06:51,733 --> 00:06:55,833
+最常见的是权限不对
+the most common one is permissions that aren't correct
+
+122
+00:06:56,500 --> 00:07:03,000
+例如，文件没有执行权限
+for example there is no execute permissions on that file
+
+123
+00:07:03,333 --> 00:07:04,866
+这没问题
+that's fine no problem
+
+124
+00:07:04,866 --> 00:07:06,266
+你可以赋个执行权限，再试一次
+you can mark it as executable try it again
+
+125
+00:07:06,366 --> 00:07:13,000
+但一般来说，没权限时，execve会失败
+but generally speaking in this scenario the execve call will fail
+
+126
+00:07:13,000 --> 00:07:14,600
+然后bash会提示
+and then bash will tell you something
+
+127
+00:07:14,600 --> 00:07:18,400
+一些类似文件没权限之类的
+along the lines of whatever file not executable or whatnot
+
+128
+00:07:19,400 --> 00:07:21,300
+假设没遇到问题
+so let's say it's all okay
+
+129
+00:07:21,900 --> 00:07:26,000
+然后当执行execve /bin/cat时
+then when you run execve /bin/cat
+
+130
+00:07:26,400 --> 00:07:28,900
+内核必须决定要加载的是什么
+the kernel has to decide what to load
+
+131
+00:07:28,900 --> 00:07:31,733
+这有很多不同选择
+and there are a number of different options
+
+132
+00:07:32,366 --> 00:07:33,500
+为了解决这个问题
+in order to figure this out
+
+133
+00:07:33,500 --> 00:07:35,900
+内核会查看该文件
+the kernel will actually look at the file
+
+134
+00:07:36,066 --> 00:07:37,866
+看看它是什么类型的文件
+and they'll say what kind of file is it
+
+135
+00:07:37,866 --> 00:07:38,900
+检查开头
+look at the beginning
+
+136
+00:07:38,966 --> 00:07:42,099
+如果文件以所谓的Shebang开头
+if the file starts with what is called a Shebang
+
+137
+00:07:42,233 --> 00:07:44,133
+就是#!
+a hash exclamation point
+
+138
+00:07:44,900 --> 00:07:48,800
+内核将把它当作一个脚本文件
+the kernel will treat this as a script file
+
+139
+00:07:48,800 --> 00:07:53,100
+你通常会在shell脚本、Python脚本中看到
+you generally see this with shell scripts Python scripts 
+
+140
+00:07:53,133 --> 00:07:56,133
+但是任何脚本文件都是这样的
+but any script file is like this
+
+141
+00:07:56,133 --> 00:07:57,800
+我们一会再讨论这个问题
+and we'll play around with that in a second
+
+142
+00:07:59,000 --> 00:08:00,933
+内核要做的是
+what the kernel will do is
+
+143
+00:08:01,100 --> 00:08:04,566
+从该行的其余部分提取出解释器
+extract the interpreter from the rest of that line 
+
+144
+00:08:04,733 --> 00:08:08,099
+然后用给的文件名做参数，执行这个解释器
+and run that interpreter with the original file as an argument
+
+145
+00:08:08,366 --> 00:08:11,533
+让我们来看看这里发生了什么
+let's actually take a look at what happens here
+
+146
+00:08:12,666 --> 00:08:13,466
+好吧
+all right
+
+147
+00:08:14,166 --> 00:08:16,666
+假设我要执行个脚本
+let's say I want to have a script
+
+148
+00:08:18,400 --> 00:08:23,166
+这是一个shell脚本，里面执行echo hi
+and I it's a shell script and I say echo hi
+
+149
+00:08:23,766 --> 00:08:26,100
+启动它
+let's launch it
+
+150
+00:08:26,666 --> 00:08:29,300
+权限被拒绝，权限检查失败
+permission denied there's that permission check failing
+
+151
+00:08:30,100 --> 00:08:32,000
+给它执行权限
+let's make it executable
+
+152
+00:08:32,766 --> 00:08:33,733
+再次启动
+launch it again
+
+153
+00:08:34,200 --> 00:08:35,566
+好的，成功了
+okay that worked
+
+154
+00:08:35,566 --> 00:08:39,333
+这就是我们的脚本/bin/sh echo hi
+so there's our script /bin/sh echo hi
+
+155
+00:08:39,533 --> 00:08:42,399
+它确实有效
+and it is it works
+
+156
+00:08:42,500 --> 00:08:44,366
+是这样的
+so what happens was
+
+157
+00:08:44,733 --> 00:08:48,200
+内核查看了第一行
+the kernel looks at that first line
+
+158
+00:08:48,400 --> 00:08:52,166
+或者说查看了前两个字节
+or looks at the first two bytes really
+
+159
+00:08:52,166 --> 00:08:53,800
+它看到了那个#!
+it sees that hash bang
+
+160
+00:08:53,800 --> 00:08:56,666
+然后读入那行剩下的，执行它
+then it reads the rest of the line and executes that
+
+161
+00:08:57,166 --> 00:08:58,133
+简单
+nice and simple
+
+162
+00:08:59,600 --> 00:09:03,066
+把这个文件名作为参数执行它
+executes that with this file name as an argument 
+
+163
+00:09:03,233 --> 00:09:06,599
+我们可以更清楚地看到这一点
+we can actually see this more explicitly
+
+164
+00:09:07,100 --> 00:09:10,700
+如果我们把这个解释器改成/bin/echo
+if we change this interpreter to something like /bin/echo
+
+165
+00:09:11,300 --> 00:09:13,366
+我保存这个文件
+if I just save this file
+
+166
+00:09:13,600 --> 00:09:18,400
+/bin/echo会回显你输入的内容
+/bin/echo will just echo back you know whatever you type in
+
+167
+00:09:20,666 --> 00:09:23,400
+如果用这个/bin/echo来执行some-script
+now if you execute some-script with this /bin/echo
+
+168
+00:09:23,400 --> 00:09:24,533
+看一下
+let me show it to you again
+
+169
+00:09:25,500 --> 00:09:26,566
+执行它
+execute it
+
+170
+00:09:26,633 --> 00:09:29,599
+它输出了./some-script
+and it echoes out some-script
+
+171
+00:09:29,600 --> 00:09:30,500
+为什么会这样呢
+why does it do that 
+
+172
+00:09:30,666 --> 00:09:34,366
+内核看到/bin/echo是脚本的解释器
+well the kernel saw that /bin/echo as the interpreter of the script
+
+173
+00:09:34,533 --> 00:09:37,466
+然后调用了/bin/echo ./some-script
+ and called /bin/echo space ./some-script
+
+174
+00:09:37,466 --> 00:09:38,500
+就是这个
+this exact thing
+
+175
+00:09:44,266 --> 00:09:45,066
+像这样
+that
+
+176
+00:09:45,200 --> 00:09:47,733
+看吧
+boom some-script all right
+
+177
+00:09:49,566 --> 00:09:52,900
+有趣的是，这可以递归
+interestingly this can be recursive
+
+178
+00:09:53,866 --> 00:09:56,733
+这个解释器也可以是一个shell脚本
+that interpreter can also be a shell script
+
+179
+00:09:56,733 --> 00:09:59,599
+我们看一下some-script2
+so if we look at some-script2
+
+180
+00:09:59,600 --> 00:10:05,000
+我们创建个脚本，它调用some-script
+we create something here that calls into some-script 1
+
+181
+00:10:06,666 --> 00:10:08,266
+给它执行权限
+and we make that executable
+
+182
+00:10:11,300 --> 00:10:12,166
+启动它
+we launch it
+
+183
+00:10:13,500 --> 00:10:16,700
+能看到给echo的是./some-script和./some-script2
+we see echo being called with some-script one some-script2
+
+184
+00:10:16,766 --> 00:10:17,933
+发生了啥
+so what happens here
+
+185
+00:10:18,100 --> 00:10:23,800
+some-script2把some-script当作解释器
+well some-script 2 calls some-script as its interpreter
+
+186
+00:10:23,800 --> 00:10:25,566
+所以最终执行了这个
+so this ends up getting executed
+
+187
+00:10:29,500 --> 00:10:34,900
+然后some-script调用了它的解释器echo
+okay and then some-script calls echo as its interpreter
+
+188
+00:10:35,600 --> 00:10:38,100
+所以最终被执行了这个
+so this ends up getting executed
+
+189
+00:10:41,600 --> 00:10:45,600
+这正是执行some-script2时的情况
+and that is exactly what happens when you execute some-script2
+
+190
+00:10:46,600 --> 00:10:47,400
+酷
+cool
+
+191
+00:10:49,266 --> 00:10:50,500
+非常有趣的东西
+pretty interesting stuff
+
+192
+00:10:51,300 --> 00:10:55,300
+当然，这里也可以有参数
+of course you can also have arguments here
+
+193
+00:10:56,800 --> 00:11:02,300
+然后它们也会作为参数传给解释器
+and then they will also be passed on as arguments to the interpreter
+
+194
+00:11:02,800 --> 00:11:05,700
+它会把文件名作为最后一个参数
+and it'll just tack on as the last argument the file name
+
+195
+00:11:06,700 --> 00:11:14,900
+很棒，我们继续讲进程加载
+very awesome let's move on to our loading process
+
+196
+00:11:14,933 --> 00:11:17,466
+假设它不是一个脚本文件
+all right so let's say it's not a script file
+
+197
+00:11:18,100 --> 00:11:23,000
+那么内核会查看一个内核配置
+then the kernel moves on and looks in a kernel configuration
+
+198
+00:11:23,000 --> 00:11:26,700
+它在linux /proc下
+which is exposed in a directory in Linux in the proc filesystem
+
+199
+00:11:27,733 --> 00:11:29,500
+的一个叫binfmt_misc的目录
+called binfmt_misc
+
+200
+00:11:29,500 --> 00:11:33,200
+binfmt是一个管理如何执行文件的内核子系统
+bin format is the kernel subsystem that figures out how to execute files
+
+201
+00:11:33,200 --> 00:11:36,533
+binfmt_misc这种方式
+binfmt_misc is this sort of way 
+
+202
+00:11:36,566 --> 00:11:41,666
+能给它任意配置来执行文件
+to give it arbitrary configurations of things to execute
+
+203
+00:11:42,933 --> 00:11:45,166
+让我们来看看
+let's take a look at that 
+
+204
+00:11:45,366 --> 00:11:51,366
+如果我们进入/proc/sys/fs/binfmt_misc
+if we go to /proc/sys/fs/binfmt_misc
+
+205
+00:11:52,300 --> 00:11:54,266
+能看到很多不同的配置
+we see a bunch of different configurations
+
+206
+00:11:54,266 --> 00:11:57,666
+我这有一个jar文件的配置
+so I have a configuration for jar files
+
+207
+00:11:58,466 --> 00:12:01,100
+因为我曾经安装了java运行环境
+because I installed the Java runtime at some point
+
+208
+00:12:01,100 --> 00:12:03,300
+还有一堆不同架构的配置
+I have a configuration for a bunch of different architectures
+
+209
+00:12:03,400 --> 00:12:06,300
+因为我安装了QEMU
+because I've installed the Qemu user static package
+
+210
+00:12:06,333 --> 00:12:07,266
+如果看一下这些配置
+if you look at these
+
+211
+00:12:07,766 --> 00:12:09,966
+比如jar文件配置
+like the jar file configuration
+
+212
+00:12:10,200 --> 00:12:11,566
+简单明了
+it's nice and simple
+
+213
+00:12:12,100 --> 00:12:17,000
+如果内核发现要执行文件的开头是这些字节
+if it finds that a file that I'm trying to execute begins with these bytes
+
+214
+00:12:17,966 --> 00:12:19,733
+偏移量为0处
+at offset 0 of course 
+
+215
+00:12:20,300 --> 00:12:21,766
+就是在最开头处
+so right at the beginning
+
+216
+00:12:21,966 --> 00:12:23,666
+如果字节是50
+if I have the bytes 50
+
+217
+00:12:23,900 --> 00:12:28,200
+这是ASCII码 504b 0304
+this is ASCII code 504b 0304
+
+218
+00:12:28,366 --> 00:12:31,500
+我们能看一下这些字节是什么字符
+we can actually see what these bytes are
+
+219
+00:12:31,900 --> 00:12:37,100
+这样做
+by doing 504b
+
+220
+00:12:37,833 --> 00:12:39,299
+是PK
+that's PK
+
+221
+00:12:39,500 --> 00:12:41,600
+如果文件开头是字符PK
+if a file starts with PK 
+
+222
+00:12:41,766 --> 00:12:44,499
+这意味着它是一个Java包
+that means it is a Java archive 
+
+223
+00:12:44,700 --> 00:12:48,133
+然后内核会用jexec执行它
+and then it is run with jexec
+
+224
+00:12:48,200 --> 00:12:51,000
+jexec是用来执行java包的程序
+which is a program that runs a Java archive
+
+225
+00:12:51,866 --> 00:12:52,666
+很酷
+super cool stuff
+
+226
+00:12:52,666 --> 00:12:54,800
+现在我可以直接./java包
+now I can just dot slash a Java archive
+
+227
+00:12:54,800 --> 00:12:56,200
+就和执行shell脚本一样
+just like I can a shell script
+
+228
+00:12:56,366 --> 00:12:58,099
+也和稍后讨论的二进制文件一样
+or we'll talk later on a binary
+
+229
+00:12:58,266 --> 00:12:59,333
+有趣的是
+interestingly
+
+230
+00:13:00,500 --> 00:13:05,100
+看一下qemu-mips的配置
+if you look at this qemu-mips configuration
+
+231
+00:13:05,400 --> 00:13:07,766
+这个配置是执行ELF的
+this is a configuration to run an ELF file
+
+232
+00:13:07,933 --> 00:13:10,999
+能看到ELF的文件头
+you can see the header of an ELF file
+
+233
+00:13:11,100 --> 00:13:18,300
+这个7F，ASCII的E、L、F，都是大写的
+the 7f E is in ASCII L in ASCII F in ASCII all caps
+
+234
+00:13:18,900 --> 00:13:22,200
+7F、E、L、F是ELF文件头中的魔数
+7f E L F is the ELF file header magic number
+
+235
+00:13:23,133 --> 00:13:24,533
+就在ELF文件的开头
+right at the beginning of the ELF file
+
+236
+00:13:24,666 --> 00:13:26,800
+还有一堆需要匹配的东西
+and then it has a bunch of other stuff that needs to match
+
+237
+00:13:26,800 --> 00:13:30,300
+还有一个掩码，表示哪些要匹配，哪些不要
+and then it has a mask of what needs to match and what doesn't need to match
+
+238
+00:13:30,300 --> 00:13:35,200
+因为一个ELF文件描述能适合很多架构
+because an ELF file describes can be for a number of architectures
+
+239
+00:13:35,333 --> 00:13:37,200
+所以要有个掩码
+so this mask on an ELF file 
+
+240
+00:13:38,100 --> 00:13:44,800
+有了这些，其中某一位匹配意味着它是一个MIPS文件
+with all of these any one bit in it matching will mean that it is a MIPS file
+
+241
+00:13:45,900 --> 00:13:52,400
+如果你看一下mips和mipsel
+interestingly here if you look at MIPS versus MIPS little endion
+
+242
+00:13:52,900 --> 00:13:57,900
+它们的掩码有些许不同
+there is slight difference in this mask here
+
+243
+00:13:59,500 --> 00:14:00,300
+在这里
+there
+
+244
+00:14:01,600 --> 00:14:05,400
+然后它就知道了这是一个不同架构的ELF文件
+and then it'll just determine okay this is an ELF file for a different architecture
+
+245
+00:14:05,466 --> 00:14:06,733
+我们在qemu中运行它
+let's run it in qemu
+
+246
+00:14:06,800 --> 00:14:11,400
+它甚至通过匹配这些不同格式能找到合适的qemu
+boom it figures out even the correct qemu by matching these different formats
+
+247
+00:14:11,566 --> 00:14:14,066
+有趣
+super interesting stuff very fun to mess around with
+
+248
+00:14:14,066 --> 00:14:17,999
+你可以在这里设置一下
+you can set things up here
+
+249
+00:14:18,066 --> 00:14:21,499
+让系统能用wine之类的自动执行windows可执行文件
+to automatically run Windows executables through wine etc etc
+
+250
+00:14:21,500 --> 00:14:25,533
+放到以前我不一定推荐这么做
+I wouldn't necessarily recommend that back in 
+
+251
+00:14:27,400 --> 00:14:31,200
+最开始引入这个技术时，21世纪初还是什么时候
+where these things were originally introduced like the early 2000s or something
+
+252
+00:14:31,200 --> 00:14:34,833
+我当时觉得binfmt_misc超级棒
+the binfmt_misc I thought it was super awesome 
+
+253
+00:14:34,966 --> 00:14:40,799
+为了自动运行PE文件，我配置了PE格式
+and I configured Windows executables PE files to automatically run them
+
+254
+00:14:40,866 --> 00:14:43,899
+的魔数，PE......
+ their magic numbers PE something something something
+
+255
+00:14:44,200 --> 00:14:45,766
+让它能自动在wine中执行
+to automatically run in wine
+
+256
+00:14:46,566 --> 00:14:47,766
+这一切都很棒
+and this was all great
+
+257
+00:14:47,933 --> 00:14:50,899
+直到遇到一些疯狂的情况
+until through some insane situation 
+
+258
+00:14:50,933 --> 00:14:56,366
+最终我的Linux机器感染了Windows恶意软件
+I ended up infecting my Linux box with Windows malware
+
+259
+00:14:56,600 --> 00:14:59,566
+因为wine足够模拟恶意软件所需的
+because wine was good enough to emulate that malware
+
+260
+00:14:59,566 --> 00:15:05,199
+不过，这可以是一个有趣的旅程
+anyways it can be an interesting journey
+
+261
+00:15:06,566 --> 00:15:07,600
+关键是
+the point is
+
+262
+00:15:08,466 --> 00:15:10,666
+这里的一个要点是
+one takeaway from this is
+
+263
+00:15:10,700 --> 00:15:12,400
+文件扩展名不重要
+the file extension doesn't matter
+
+264
+00:15:12,400 --> 00:15:18,300
+.sh .py对于使用哪种解释器无关紧要
+.sh .py does not matter for figuring out what interpreter to use
+
+265
+00:15:18,366 --> 00:15:20,866
+主要是看文件的开头
+all that matters is the beginning of that file
+
+266
+00:15:21,100 --> 00:15:27,300
+好吧，我们接着看第三点
+all right let's move on to No. 3
+
+267
+00:15:27,600 --> 00:15:31,166
+如果它不是这些binfmt_misc文件中的任何一个呢
+what if it is not any of these binfmt_misc files
+
+268
+00:15:31,166 --> 00:15:34,666
+如果它是一个ELF，一个动态链接的ELF
+what if it is an elf a dynamically-linked ELF 
+
+269
+00:15:34,933 --> 00:15:36,866
+它开头是7F E L F 
+so it's a 7F elf 
+
+270
+00:15:37,033 --> 00:15:42,599
+这与任何binfmt_misc配置都不匹配
+that doesn't match any of the binfmt_misc configurations
+
+271
+00:15:45,500 --> 00:15:46,666
+并且是动态链接的
+and is dynamic link
+
+272
+00:15:49,800 --> 00:15:56,533
+这意味着还要加载ELF文件依赖的库
+dynamic link means that the ELF file relies on some libraries that it also needs to load 
+
+273
+00:15:57,166 --> 00:16:04,133
+负责加载库、初始化等事物的实体
+and the entity that is responsible for loading these libraries and initializing everything and so forth
+
+274
+00:16:04,233 --> 00:16:08,466
+称为该ELF文件的解释器
+is called the interpreter of that ELF file
+
+275
+00:16:08,499 --> 00:16:10,199
+通俗地说就是加载器
+colloquially the loader
+
+276
+00:16:10,400 --> 00:16:11,400
+好的，让我们
+right so let's
+
+277
+00:16:13,300 --> 00:16:14,533
+我们接下来会深入讨论这个问题
+we'll dive into that next
+
+278
+00:16:14,533 --> 00:16:19,266
+我还会提到静态链接ELF，它可能是最简单的了
+I'll also mention a statically linked Elf is probably the simplest part of this
+
+279
+00:16:19,566 --> 00:16:20,833
+内核直接加载它
+the kernel loads it
+
+280
+00:16:20,966 --> 00:16:24,133
+再跳转到ELF文件中指定的入口地址
+and just jumps into the entry point specified in the ELF file
+
+281
+00:16:24,733 --> 00:16:26,799
+还支持其他遗留格式
+other legacy formats are also supported 
+
+282
+00:16:26,966 --> 00:16:31,499
+当然，这些是非常非常罕见的
+but it is very very rare to see these of course
+
+283
+00:16:33,200 --> 00:16:36,400
+如前面说的，它可以递归
+and these as mentioned before it can be recursive
+
+284
+00:16:36,500 --> 00:16:40,500
+binfmt_misc中配置的解释器可以是
+a binfmt_misc interpreter can be 
+
+285
+00:16:40,933 --> 00:16:45,833
+一个shell脚本，而脚本的解释器是一个ELF
+a shell script that has an interpreter that is a normal elf 
+
+286
+00:16:45,933 --> 00:16:48,433
+或者任何疯狂的组合
+or any crazy combination
+
+287
+00:16:48,500 --> 00:16:51,966
+好的，我们继续
+no problem alright let's run 
+
+288
+00:16:51,966 --> 00:16:55,299
+假设你有一个动态链接的ELF
+so let's say you have a dynamic linked elf 
+
+289
+00:16:55,366 --> 00:16:57,899
+想加载，你执行它
+and you want to load you're execving it
+
+290
+00:16:58,400 --> 00:17:01,000
+之前提到过，内核即会加载解释器
+mentioned the kernel will load both the interpreter 
+
+291
+00:17:01,166 --> 00:17:05,999
+也会加载程序，/bin/cat或别的，到内存
+and the original binary the /bin/cat or whatever into memory
+
+292
+00:17:06,600 --> 00:17:09,566
+然后运行解释器
+and then run the interpreter
+
+293
+00:17:09,800 --> 00:17:14,200
+现在我们来看看这个解释器
+so let's look at this interpreter right now
+
+294
+00:17:17,000 --> 00:17:17,800
+所以
+so
+
+295
+00:17:19,133 --> 00:17:20,000
+回到原来目录
+go back 
+
+296
+00:17:20,000 --> 00:17:22,566
+我们可以编译
+we can compile
+
+297
+00:17:22,566 --> 00:17:25,166
+提醒一下，这是我们的cat.c
+just as a reminder here is our cat.c
+
+298
+00:17:25,300 --> 00:17:31,300
+可以编译cat.c成cat
+you can compile cat.c into cat
+
+299
+00:17:31,533 --> 00:17:33,066
+这是cat
+now here is cat
+
+300
+00:17:33,866 --> 00:17:34,600
+很酷
+cool
+
+301
+00:17:34,600 --> 00:17:37,733
+好的，它能回显我们给的数据
+all right it echoes back what we put to it 
+
+302
+00:17:37,866 --> 00:17:41,066
+也可以用它输出cat.c
+or we can cat out cat.c
+
+303
+00:17:42,533 --> 00:17:43,166
+那现在呢
+now what 
+
+304
+00:17:43,233 --> 00:17:46,199
+现在我们看看这个ELF文件
+now we can look at this elf file
+
+305
+00:17:46,200 --> 00:17:49,366
+我们在上节课已经做过了
+we've of course done that in the binary files lecture
+
+306
+00:17:49,600 --> 00:17:53,900
+但我们来看看它的解释器
+but let's look at cat and look at its interpreter
+
+307
+00:17:54,200 --> 00:17:55,266
+这是它的解释器
+here's its interpreter
+
+308
+00:17:55,266 --> 00:17:57,666
+它就设置在其中一个头域中
+it's just set in one of the headers
+
+309
+00:17:59,700 --> 00:18:04,900
+这就是负责加载其它库的解释器
+so this is the file that gets loaded that is responsible for loading everything else
+
+310
+00:18:05,000 --> 00:18:11,500
+我们也可以直接执行它，指定它作为解释器
+of course we can also load this file or execute it directly as a true interpreter
+
+311
+00:18:12,100 --> 00:18:14,700
+然后运行cat
+and run cat
+
+312
+00:18:17,066 --> 00:18:17,866
+像这样
+like this
+
+313
+00:18:19,100 --> 00:18:20,866
+或者输出cat.c
+or of course output cat.c 
+
+314
+00:18:21,500 --> 00:18:23,000
+这是可行的
+and it works
+
+315
+00:18:24,000 --> 00:18:25,766
+这不是内核运行它的方式
+this isn't how the kernel runs it
+
+316
+00:18:26,000 --> 00:18:28,766
+它不会像执行shell脚本那样，把文件名当参数执行
+it doesn't run it like a shell script with the argument of the file 
+
+317
+00:18:29,033 --> 00:18:31,533
+但这是它
+but it is how 
+
+318
+00:18:31,700 --> 00:18:39,700
+但它支持这种方法
+but it does faithfully support this sort of convention
+
+319
+00:18:40,000 --> 00:18:44,800
+解释器也可以被更改
+anyways the interpreter can also be modified
+
+320
+00:18:44,900 --> 00:18:49,700
+有一个叫patchelf的工具可以设置解释器
+so there's a utility called patchelf that can set interpreter
+
+321
+00:18:50,400 --> 00:18:52,966
+比如/some/interpreter
+let's say /some/interpreter
+
+322
+00:18:54,066 --> 00:18:55,733
+显然这是不存在的
+obviously this doesn't exist
+
+323
+00:18:56,266 --> 00:18:57,400
+执行cat
+do cat
+
+324
+00:18:58,300 --> 00:19:01,100
+当解释器不存在时，奇怪的事情发生了
+so when the interpreter doesn't exist bizarre stuff happens
+
+325
+00:19:01,300 --> 00:19:02,666
+我尝试执行cat
+so I tried to run cat
+
+326
+00:19:02,666 --> 00:19:05,333
+但bash返回没有cat这个文件或目录
+and bash returns with cat no such file or directory
+
+327
+00:19:05,333 --> 00:19:06,533
+为什么会这样
+why does this happen
+
+328
+00:19:06,933 --> 00:19:08,733
+这很让人沮丧
+well it's a very frustrating thing 
+
+329
+00:19:08,866 --> 00:19:10,933
+你可能为此挠破脑袋
+and you might tear out a lot of hair
+
+330
+00:19:11,200 --> 00:19:12,100
+为此抓狂
+going crazy over this
+
+331
+00:19:12,100 --> 00:19:15,166
+这是因为bash调用到内核
+it happens because bash calls into the kernel
+
+332
+00:19:16,500 --> 00:19:20,766
+额，子进程执行execve调用时，进入内核
+when the child process when it does execve calls into the kernel
+
+333
+00:19:20,866 --> 00:19:25,466
+说把我这个子进程换成/bin/cat
+says hey replace me with /bin/cat
+
+334
+00:19:25,633 --> 00:19:27,899
+本例中，换成我们写的cat
+or ./cat in this case
+
+335
+00:19:27,900 --> 00:19:30,066
+内核将打开cat
+the kernel will open cat
+
+336
+00:19:30,100 --> 00:19:36,600
+看到它的解释器是/some/interpreter
+it'll see its interpreter which now is /some/interpreter
+
+337
+00:19:36,666 --> 00:19:38,799
+发现这是一个动态链接的ELF
+ says oh it's a dynamically linked elf
+
+338
+00:19:38,866 --> 00:19:40,766
+咱们去加载这个解释器吧
+let's load up this interpreter
+
+339
+00:19:40,766 --> 00:19:43,166
+试图打开/some/interpreter并加载到内存中
+tries to open /some/interpreter and load into memory
+
+340
+00:19:43,300 --> 00:19:46,400
+这失败了
+that fails and the kernel returns with
+
+341
+00:19:46,633 --> 00:19:51,899
+execve返回一个错误码，说没有这个文件
+returns from execve with a failure case saying hey there's no such file
+
+342
+00:19:52,933 --> 00:19:58,299
+如果你看一下execve的帮助文档
+so if you look at the execve man page
+
+343
+00:19:58,400 --> 00:20:01,133
+我们看一下返回值
+and we look at return values
+
+344
+00:20:02,600 --> 00:20:06,600
+这里是各种可能返回的错误码
+right here the various errors that can go wrong
+
+345
+00:20:07,200 --> 00:20:11,200
+其中一个是ENOENT
+and one of them is ENOENT
+
+346
+00:20:11,833 --> 00:20:16,233
+文件路径名，可以是/bin/cat或cat之类的
+the file pathname which is the bin cat or cat or whatever 
+
+347
+00:20:16,333 --> 00:20:20,999
+或是脚本、ELF解释器不存在
+or script or elf interpreter does not exist right
+
+348
+00:20:21,166 --> 00:20:22,966
+对于so库也是如此
+same with shared libraries
+
+349
+00:20:23,400 --> 00:20:25,533
+加载so库也可能因此而失败
+it can fail because of that as well
+
+350
+00:20:27,700 --> 00:20:28,733
+很有趣
+pretty interesting
+
+351
+00:20:29,466 --> 00:20:31,733
+基本上就是这样的
+basically what happens is that
+
+352
+00:20:32,400 --> 00:20:37,800
+因为某些依赖项不存在，导致加载失败
+the whole loading process fails because some dependency isn't there 
+
+353
+00:20:37,966 --> 00:20:41,533
+看看ldd能不能
+and we can let's see can we do this ldd
+
+354
+00:20:42,133 --> 00:20:45,766
+好的，太棒了，这显然是不对的
+yeah awesome so this is obviously not correct
+
+355
+00:20:45,900 --> 00:20:49,600
+但你能用ldd看到依赖的库
+but you can see ldd and see what libraries depends on
+
+356
+00:20:49,600 --> 00:20:52,366
+和解释器
+including the interpreter all right
+
+357
+00:20:53,733 --> 00:20:55,833
+这是一个非常有用的工具
+this is a very useful utility 
+
+358
+00:20:56,066 --> 00:21:00,299
+有助于弄清楚程序不能执行的原因
+when you want to figure out why a program trying to run is not working
+
+359
+00:21:00,766 --> 00:21:02,566
+这就是解释器
+so that's the interpreter
+
+360
+00:21:03,166 --> 00:21:04,800
+我们继续探讨
+let's roll on to 
+
+361
+00:21:05,200 --> 00:21:11,800
+解释器如何找到程序需要的库，如libc.so
+how the interpreter then finds other libraries like libc.so that a program might need
+
+362
+00:21:11,866 --> 00:21:15,766
+再之后，我们讨论一下libc
+then we'll talk about libc in a little bit later
+
+363
+00:21:17,200 --> 00:21:24,400
+现在我们讨论一下实际的加载过程
+so let's talk about the actual loading process now
+
+364
+00:21:24,400 --> 00:21:27,600
+好的，内核已经加载了程序的解释器
+so we've had the program the interpreter loaded by the kernel
+
+365
+00:21:27,733 --> 00:21:29,866
+接下来该解释器定位库了
+next the interpreter locates the libraries
+
+366
+00:21:30,133 --> 00:21:33,100
+它通过查看好几个不同地方实现
+and it does this by looking in a number of different places
+
+367
+00:21:33,700 --> 00:21:44,000
+这样实现是因为格式的不断演化以及兼容性等
+it's a little bit of a crazy long story of evolving formats and legacy support and so forth
+
+368
+00:21:44,166 --> 00:21:48,466
+但是默认情况下
+but by default without any extra funny business
+
+369
+00:21:48,866 --> 00:21:52,066
+我们只需考虑2中的步骤d和e
+we just have to worry about 2d and 2e over here
+
+370
+00:21:52,800 --> 00:22:00,100
+2d表示在ld.so.conf系统配置中找
+2d means it looks in system configuration ld.so.conf
+
+371
+00:22:00,166 --> 00:22:03,366
+这个配置项定义了库的可能位置
+which defines all the various places libraries can be
+
+372
+00:22:03,466 --> 00:22:05,200
+然后尝试从那里加载库
+and it tries to load libraries from there
+
+373
+00:22:05,200 --> 00:22:10,366
+如果失败了，它会尝试/lib和/usr/lib，以兼容老系统
+and then if that fails it tries /lib and /usr/lib for old time sake
+
+374
+00:22:10,500 --> 00:22:14,266
+我们一般说的就是ld.so.conf
+mostly we're talking about ld.so.conf
+
+375
+00:22:14,400 --> 00:22:21,900
+它是日常与动态链接库交互时最常见的
+which is the biggest thing you'll see in your everyday interaction with dynamic link libraries
+
+376
+00:22:22,700 --> 00:22:28,700
+我们看一下控制库加载的其它方法
+let's take a look at some of the other ways that you can mess with library loading though
+
+377
+00:22:30,200 --> 00:22:32,066
+LD_PRELOAD非常有名
+LD_PRELOAD is a pretty well known one
+
+378
+00:22:32,233 --> 00:22:38,500
+你可以用一个要加载的库的路径，设置一个环境变量
+you can define an environment variable with a path to a library that you can load
+
+379
+00:22:39,700 --> 00:22:43,100
+它将在加载其他库之前加载
+that will be loaded first before any other libraries are loaded
+
+380
+00:22:43,800 --> 00:22:45,500
+甚至在开始执行前
+and before execution goes on
+
+381
+00:22:45,500 --> 00:22:47,366
+这有助于调试
+this is super useful for debugging 
+
+382
+00:22:47,566 --> 00:22:52,499
+同时，在某些情况下也有安全隐患
+and also has security implications in certain contexts
+
+383
+00:22:54,500 --> 00:22:57,966
+也可以创建LD_LIBRARY_PATH环境变量
+you can create an LD_LIBRARY_PATH environment variable 
+
+384
+00:22:58,200 --> 00:23:09,700
+这将增加一个查找库的路径
+which will add an additional path in which libraries are looked for
+
+385
+00:23:13,166 --> 00:23:15,866
+该路径会在系统范围的配置前查找
+before using the system-wide configuration
+
+386
+00:23:16,100 --> 00:23:19,400
+你也可以在二进制程序中控制它
+and then in the binary itself you can actually mess with it 
+
+387
+00:23:19,666 --> 00:23:25,066
+可以指定不同的库加载路径
+and specify several different places to search for libraries as well
+
+388
+00:23:27,600 --> 00:23:28,900
+你可以
+you can use
+
+389
+00:23:29,066 --> 00:23:31,066
+有旧的方法，也有新的
+there's a legacy way and a modern way
+
+390
+00:23:31,066 --> 00:23:31,900
+这并不重要
+doesn't really matter
+
+391
+00:23:31,900 --> 00:23:34,266
+我会展示新的方法
+I'll show you the modern way right now
+
+392
+00:23:36,400 --> 00:23:42,100
+解释器找到这些库之后，就加载它们
+and after the interpreter finds these libraries  it'll load them
+
+393
+00:23:42,166 --> 00:23:44,500
+但库可能依赖其它库
+and the libraries might depend on other libraries
+
+394
+00:23:44,500 --> 00:23:46,400
+所以这个过程也可以递归
+again this process can also be recursive
+
+395
+00:23:47,500 --> 00:23:53,100
+最后，库加载完后，还有一个重定位的步骤
+and finally there's something called relocations after a library is loaded
+
+396
+00:23:53,300 --> 00:23:56,500
+它可能会用一个微妙的方式修改内存
+it might need to be fixed up in subtle ways
+
+397
+00:23:56,500 --> 00:23:59,300
+取决于还加载了什么，以及加载到了哪里
+depending on what else was loaded and where the library was loaded
+
+398
+00:23:59,366 --> 00:24:02,066
+重定位很复杂
+these relocations can be very complicated
+
+399
+00:24:02,300 --> 00:24:08,066
+但基本上在某些情况下你可以理解为
+but we basically in certain scenarios you might imagine that
+
+400
+00:24:08,233 --> 00:24:14,399
+库包含指向某些资源的指针
+a library contains a pointer to some resource
+
+401
+00:24:14,700 --> 00:24:17,200
+如果库加载到了不同的位置
+and if the library is loaded at a different location
+
+402
+00:24:17,266 --> 00:24:18,966
+不管库加载到了哪里
+at whatever location libraries loaded
+
+403
+00:24:19,033 --> 00:24:20,933
+这个指针需要更新
+that pointer has to be updated
+
+404
+00:24:21,133 --> 00:24:23,866
+这样它才能指向正确的位置
+so that it points to the correct location
+
+405
+00:24:23,866 --> 00:24:25,299
+这大概就是重定位
+these are relocations 
+
+406
+00:24:25,500 --> 00:24:32,200
+默认情况下，库中有一堆要重定向的
+and libraries have tons of them by default 
+
+407
+00:24:33,900 --> 00:24:40,800
+我们再在终端上仔细的看一下加载过程
+so let's look at the loading process in a little more detail on the terminal here
+
+408
+00:24:41,100 --> 00:24:43,633
+这里有cat
+so here here we have again cat 
+
+409
+00:24:43,633 --> 00:24:45,133
+可以cat输出cat.c
+we can cat out
+
+410
+00:24:45,333 --> 00:24:46,333
+cat哪里去了
+where did cat go
+
+411
+00:24:46,333 --> 00:24:47,133
+哦
+oh
+
+412
+00:24:48,600 --> 00:24:49,966
+我改了解释器
+I mess with the interpreter
+
+413
+00:24:50,800 --> 00:24:53,066
+所以cat被搞坏了
+so cat is screwed
+
+414
+00:24:53,266 --> 00:24:55,766
+好的，我们重新编译cat
+all right let's recompile cat
+
+415
+00:24:56,800 --> 00:24:58,700
+好的，又有cat了
+all right here we have cat
+
+416
+00:25:00,933 --> 00:25:04,933
+很好
+Boom cat.c nice and simple program
+
+417
+00:25:05,300 --> 00:25:07,466
+我要用一个叫strace的工具
+I'm gonna use a utility called strace
+
+418
+00:25:07,466 --> 00:25:09,966
+strace是一个很酷的工具
+strace is a very cool utility that
+
+419
+00:25:11,133 --> 00:25:20,599
+它能遍历并打印出程序用的所有系统调用
+goes through and prints out all of the system calls the OS functionality used by a program 
+
+420
+00:25:20,733 --> 00:25:26,633
+我们将在进程生命周期的下一讲讨论系统调用
+and we'll talk about system calls unfortunately at next lecture on the process lifetime 
+
+421
+00:25:26,766 --> 00:25:29,733
+如果我strace ./cat cat.c
+so if I strace cat.c
+
+422
+00:25:30,566 --> 00:25:32,533
+能看到它做了很多事
+you can see it does a lot of stuff
+
+423
+00:25:32,633 --> 00:25:34,500
+这是开头的execve系统调用
+here's that execve call in the beginning
+
+424
+00:25:34,500 --> 00:25:40,966
+所以strace实际上是从bash的子进程中开始的
+so strace actually starts up in that child process of bash
+
+425
+00:25:41,600 --> 00:25:48,166
+然后有一堆
+then there is a various 
+
+426
+00:25:48,600 --> 00:25:50,900
+我们这里不会深入brk
+so the BRK we won't go into this right now 
+
+427
+00:25:51,066 --> 00:25:54,933
+有很多其他的东西
+there's various other stuff for setting up things
+
+428
+00:25:55,100 --> 00:25:59,533
+然后在这里我们加载了ld.so.cache
+and then here we load this ld.so.cache
+
+429
+00:25:59,533 --> 00:26:02,599
+它实际上是ld.so.conf编译后的版本
+which is actually a compiled version of this ld.so.conf
+
+430
+00:26:03,500 --> 00:26:04,733
+不用管他
+again don't worry about it 
+
+431
+00:26:04,800 --> 00:26:09,700
+基本上它会查看这里列出的每一条路径
+basically it looks at every path listed here 
+
+432
+00:26:09,966 --> 00:26:12,099
+先试了这个
+tries this first
+
+433
+00:26:13,333 --> 00:26:14,600
+它成功了
+it succeeds
+
+434
+00:26:14,900 --> 00:26:16,566
+然后你可以看到
+and then here you can see
+
+435
+00:26:16,666 --> 00:26:24,966
+它读出了这个库，查看了其中的各种属性
+it's reading out this library to see various properties in it
+
+436
+00:26:25,166 --> 00:26:28,766
+这里是，这个是八进制的0x7F
+and here is that this is 7f in Octal
+
+437
+00:26:29,166 --> 00:26:30,699
+ELF
+elf cool 
+
+438
+00:26:30,766 --> 00:26:34,899
+它找到了libc，然后运行它
+so it finds libc and then it runs it 
+
+439
+00:26:35,000 --> 00:26:36,033
+帅
+awesome
+
+440
+00:26:36,166 --> 00:26:37,799
+我们来谈谈LD_PRELOAD
+let's talk about LD_PRELOAD 
+
+441
+00:26:37,866 --> 00:26:39,966
+通过LD_PRELOAD，你可以
+so with LD_PRELOAD you can actually 
+
+442
+00:26:40,133 --> 00:26:48,499
+给一个库中的函数，覆盖后面加载的库中函数
+set a library to run and override functions of future loaded libraries
+
+443
+00:26:49,333 --> 00:26:51,600
+我写了一个preloader
+I wrote an preloader
+
+444
+00:26:52,100 --> 00:26:54,300
+它替换了read函数
+that replaces read with a function
+
+445
+00:26:54,500 --> 00:27:01,100
+它将pwned写入缓冲区并返回所写入的大小
+that writes pwned into the buffer and returns the size that it wrote
+
+446
+00:27:01,333 --> 00:27:03,300
+所以无法再用read读入其它东西了
+so you won't be reading anything anymore
+
+447
+00:27:03,300 --> 00:27:04,900
+只能读入pwned
+we'll just read in pwned
+
+448
+00:27:04,966 --> 00:27:06,933
+我们 LD_PRELOAD
+so let's do LD_PRELOAD
+
+449
+00:27:08,800 --> 00:27:10,300
+先编译它
+let's compile it first
+
+450
+00:27:11,800 --> 00:27:14,266
+把它编译成一个so库
+so we compile it as a shared library
+
+451
+00:27:20,100 --> 00:27:22,666
+现在我们可以执行它了
+okay and now we can execute it
+
+452
+00:27:26,266 --> 00:27:27,300
+带上路径
+with a path
+
+453
+00:27:28,566 --> 00:27:30,833
+它至少需要一些路径
+it needs at least some path 
+
+454
+00:27:31,033 --> 00:27:33,133
+否则它会在常规的
+otherwise it'll search for it in a normal
+
+455
+00:27:33,700 --> 00:27:36,000
+我记得它会在常规的库路径查找
+I think it'll search for it in the normal library path
+
+456
+00:27:36,000 --> 00:27:37,100
+但不确定
+but don't quote me on that
+
+457
+00:27:37,800 --> 00:27:39,866
+然后执行 ./cat cat.c
+and then let's call cat cat.c
+
+458
+00:27:39,866 --> 00:27:40,866
+没输出cat.c的内容
+and instead of cat.c
+
+459
+00:27:40,866 --> 00:27:42,400
+只看到了一遍遍地输出pwned
+we just see pwned over and over and over
+
+460
+00:27:42,400 --> 00:27:44,300
+因为read一直返回6，不返回EOF
+because of course it just keeps returning
+
+461
+00:27:44,366 --> 00:27:45,499
+所以cat会一直输出
+so cat keeps printing it
+
+462
+00:27:45,966 --> 00:27:47,333
+酷
+very cool stuff
+
+463
+00:27:50,533 --> 00:27:55,566
+如果我们要strace它
+if we strace this instead
+
+464
+00:27:55,666 --> 00:27:57,699
+strace有一个-E 参数
+and strace has a dash capital E 
+
+465
+00:27:57,700 --> 00:28:01,600
+它会在执行程序之前，设置环境变量
+where it'll set the environment variable before executing the program
+
+466
+00:28:01,733 --> 00:28:05,199
+如果我们这样做
+if we do this here like this
+
+467
+00:28:05,366 --> 00:28:07,699
+那么就成了设置strace的LD_PRELOAD库了
+then we'll LD_PRELOAD strace itself
+
+468
+00:28:07,766 --> 00:28:08,700
+这不是我们想要的
+and that's not what we want
+
+469
+00:28:08,700 --> 00:28:10,100
+这会搞砸一切
+because that'll mess everything up
+
+470
+00:28:10,533 --> 00:28:12,966
+所以我们执行 strace -E
+so we do this strace dash capital E
+
+471
+00:28:13,366 --> 00:28:15,100
+我们运行它
+we run that and
+
+472
+00:28:15,700 --> 00:28:19,500
+我们重定向一下
+let's redirect this
+
+473
+00:28:23,000 --> 00:28:27,400
+就看看头几个系统调用
+look at just the first bunch of syscalls
+
+474
+00:28:28,200 --> 00:28:29,400
+这个是execve
+here's that execve
+
+475
+00:28:29,533 --> 00:28:30,566
+一切都很好
+everything is great
+
+476
+00:28:31,666 --> 00:28:32,966
+有一点要知道的
+actually one thing to know
+
+477
+00:28:33,033 --> 00:28:37,366
+这里说有57个环境变量被传入
+this says 57 environment variables that are being passed 
+
+478
+00:28:37,500 --> 00:28:39,600
+因为这是一个环境变量
+because this is an environment variable of course
+
+479
+00:28:40,133 --> 00:28:43,366
+如果我们直接strace ./cat cat.c
+if we just do strace cat.c
+
+480
+00:28:48,433 --> 00:28:50,366
+56个环境变量
+we'll see 56 environment variables
+
+481
+00:28:50,400 --> 00:28:54,500
+所以正如我们预计的，它是一个额外的环境变量
+right so that's an extra environment variable past as expected
+
+482
+00:28:54,866 --> 00:28:56,800
+这里输出了一堆pwned
+here's a bunch of pwned being written out
+
+483
+00:28:56,933 --> 00:28:58,200
+这里有一件有趣的事情
+here's an interesting thing
+
+484
+00:28:58,366 --> 00:29:00,866
+它在这里打开的preload.so
+here's where it opens this preload.so
+
+485
+00:29:01,400 --> 00:29:10,700
+加载它，之后再加载libc
+loads it and then later on it goes on to load libc
+
+486
+00:29:11,566 --> 00:29:12,600
+很酷
+pretty cool stuff
+
+487
+00:29:12,666 --> 00:29:13,466
+好吧
+okay
+
+488
+00:29:15,100 --> 00:29:21,800
+现在看看LD_LIBRARY_PATH
+now LD_LIBRARY_PATH 
+
+489
+00:29:21,899 --> 00:29:24,199
+这是另一个可以利用的
+it's another thing you can do
+
+490
+00:29:24,333 --> 00:29:27,533
+我们就粗略地看一下
+and we're just gonna do a cursory look 
+
+491
+00:29:27,933 --> 00:29:29,766
+我们去掉LD_PRELOAD
+so let's take LD_PRELOAD out 
+
+492
+00:29:35,866 --> 00:29:37,333
+你可以在这里设置一个路径
+you can set a path here
+
+493
+00:29:38,100 --> 00:29:40,733
+现在cat所依赖的每一个库
+and now every library that cat depends on
+
+494
+00:29:41,866 --> 00:29:46,499
+我们都将先从/some/library/path中找
+we will first try to load it from this /some/library/path 
+
+495
+00:29:46,666 --> 00:29:50,999
+它试着很有创意
+and it tries to be fairly creative with
+
+496
+00:29:54,600 --> 00:29:58,300
+它尝试了很多它需要的东西的变体
+where it tries a lot a bunch of variants of what it needs and
+
+497
+00:29:58,800 --> 00:30:02,100
+这里/some/library/path/libc.so.6
+and then here /some/library/path/libc.so.6
+
+498
+00:30:02,200 --> 00:30:05,000
+当然所有的这些文件或目录都不存在
+of course all of these there's no such file or directory
+
+499
+00:30:05,000 --> 00:30:07,400
+我没有创建过/some/library/path
+I didn't create /some/library/path/blah 
+
+500
+00:30:07,566 --> 00:30:09,133
+然后它继续查找默认目录
+so then it goes on to the default
+
+501
+00:30:09,500 --> 00:30:12,800
+顺便提一下ld.so.preload
+cool also mention by the way ld.so.preload
+
+502
+00:30:13,400 --> 00:30:14,433
+如果它存在
+if this exists 
+
+503
+00:30:14,566 --> 00:30:20,099
+就可以为整个系统指定LD_PRELOAD库
+you can list LD_PRELOAD libraries for the whole system
+
+504
+00:30:20,300 --> 00:30:23,500
+这要非常小心，这是一个很容易搞坏一切的操作
+be very careful this is a very easy way to break everything
+
+505
+00:30:23,500 --> 00:30:27,300
+因为如果你用了破坏正常功能的库
+because if you put some library that screws functionality
+
+506
+00:30:28,300 --> 00:30:31,600
+并放在了ld.so.preload中
+as listed into ld.so.preload
+
+507
+00:30:31,766 --> 00:30:35,833
+你将无法执行任何程序
+you can very quickly cease to be able to run anything 
+
+508
+00:30:35,966 --> 00:30:39,133
+比如VI之类的，来撤销你的操作
+like VI or whatever to undo it
+
+509
+00:30:39,533 --> 00:30:40,333
+酷
+cool
+
+510
+00:30:40,800 --> 00:30:41,600
+好的
+all right
+
+511
+00:30:44,066 --> 00:30:46,266
+还有一件事要看
+one thing left to look at
+
+512
+00:30:47,133 --> 00:30:49,733
+runpath和rpath
+run path and rpath 
+
+513
+00:30:49,733 --> 00:30:51,133
+我们只看run path
+we are just look at run path there
+
+514
+00:30:51,300 --> 00:30:53,566
+这里一个是另一个的新的版本
+one is a new version of the other essentially
+
+515
+00:30:53,900 --> 00:30:57,900
+你可以用patchelf设置rpath
+you can use the patchelf utility to set rpath
+
+516
+00:30:57,966 --> 00:30:59,366
+这实际上是设置run path
+this actually sets the run path
+
+517
+00:30:59,366 --> 00:31:01,066
+如果你加上 --force-rpath
+if you do force rpath
+
+518
+00:31:01,066 --> 00:31:02,500
+它才会设置rpath
+it'll actually set rpath
+
+519
+00:31:03,400 --> 00:31:05,666
+你可以把它设为任意值
+and you can also set this to wherever
+
+520
+00:31:08,333 --> 00:31:11,399
+它会在这里找库
+where to look for libraries
+
+521
+00:31:12,100 --> 00:31:13,466
+然后./cat
+and you do cat
+
+522
+00:31:14,300 --> 00:31:15,100
+好的
+okay
+
+523
+00:31:15,133 --> 00:31:16,699
+我们再运行一次
+now we'll run the same thing 
+
+524
+00:31:16,900 --> 00:31:21,200
+看看区别
+and just to see the the differences here
+
+525
+00:31:22,200 --> 00:31:29,666
+尝试在我们的LD_LIBRARY_PATH找了libc
+that's our LD_LIBRARY_PATH that is being used to try to search for libc
+
+526
+00:31:29,766 --> 00:31:31,166
+没找到
+ it doesn't find libc
+
+527
+00:31:31,166 --> 00:31:34,233
+然后它尝试在run path中找libc
+then it searches for this run path for libc
+
+528
+00:31:34,333 --> 00:31:35,933
+也没找到
+doesn't find it there
+
+529
+00:31:36,966 --> 00:31:38,500
+没这个目录
+no such directory
+
+530
+00:31:38,566 --> 00:31:41,966
+然后看了ld.so.cache
+and then it looks at ld.so.cache
+
+531
+00:31:42,166 --> 00:31:47,033
+并在第一个配置的位置找到了它
+and finds it in the first configured place
+
+532
+00:31:47,400 --> 00:31:48,466
+很酷
+very cool stuff
+
+533
+00:31:55,866 --> 00:31:59,366
+粗略地说，这是库的加载顺序
+roughly speaking this is the library loading order
+
+534
+00:31:59,800 --> 00:32:03,200
+我们看一下都用上会怎样
+let's see what happens when we have everything
+
+535
+00:32:03,200 --> 00:32:06,600
+包括rpath、LD_LIBRARY_PATH和LD_PRELOAD
+the rpath the LD_LIBRARY_PATH and LD_PRELOAD
+
+536
+00:32:07,500 --> 00:32:09,933
+我们加个没有的
+let's just do something that's not there 
+
+537
+00:32:10,233 --> 00:32:12,699
+这样不影响执行
+so that it doesn't mess with our execution
+
+538
+00:32:17,300 --> 00:32:21,800
+当然，首先它会尝试加载LD_PRELOAD
+so of course first it tries to load our LD_PRELOAD
+
+539
+00:32:23,333 --> 00:32:25,133
+我们没指定路径
+and we didn't set a path 
+
+540
+00:32:25,300 --> 00:32:29,433
+所以它尝试从别的地方加载
+so tries to load it from everywhere 
+
+541
+00:32:29,533 --> 00:32:32,866
+包括LD_LIBRARY_PATH和run path
+including the LD_LIBRARY_PATH and the run path
+
+542
+00:32:33,800 --> 00:32:36,500
+然后它尝试加载libc
+and then it tries to load libc
+
+543
+00:32:36,933 --> 00:32:38,266
+不对，这个是haha.so
+nope that's little haha
+
+544
+00:32:38,766 --> 00:32:41,499
+哇，它尝试了很多地方
+wow it's trying to load a lot from everywhere 
+
+545
+00:32:41,500 --> 00:32:43,366
+还有/lib/x86_64
+from here /lib/x86_64 
+
+546
+00:32:43,600 --> 00:32:45,633
+这就是最坏的情况了
+so it's just the whole worst scenario
+
+547
+00:32:45,800 --> 00:32:49,900
+抱歉，我不是故意让大家陷入这种境地的
+sorry I didn't mean to send us down this path rabbit hole 
+
+548
+00:32:50,166 --> 00:32:51,633
+但还是到了
+but we went
+
+549
+00:32:52,066 --> 00:32:56,966
+然后查看了LD_PRELOAD
+and then it looks at LD_PRELOAD
+
+550
+00:32:58,300 --> 00:33:01,066
+然后就找到了libc，都没看
+then it finds libc without looking at
+
+551
+00:33:03,700 --> 00:33:04,500
+有趣
+interesting
+
+552
+00:33:05,266 --> 00:33:07,000
+似乎覆盖了
+seems that overwrites
+
+553
+00:33:09,900 --> 00:33:13,900
+要是我们改成./preload.so呢
+what if we actually have ./preload.so
+
+554
+00:33:19,266 --> 00:33:20,266
+好吧
+okay yeah
+
+555
+00:33:20,266 --> 00:33:22,366
+很有趣，很有趣
+interesting that was an interesting
+
+556
+00:33:26,500 --> 00:33:27,266
+好吧
+all right
+
+557
+00:33:27,266 --> 00:33:28,166
+不知道怎么回事
+I don't know what happened there 
+
+558
+00:33:28,300 --> 00:33:32,100
+但能看到preload被加载了
+but you can see preload gets loaded
+
+559
+00:33:32,266 --> 00:33:33,866
+先处理的LD_PRELOAD
+the LD_PRELOAD runs first 
+
+560
+00:33:34,100 --> 00:33:37,466
+然后查找并加载库
+and then all the rest of the library resolution and loading
+
+561
+00:33:37,700 --> 00:33:40,400
+先从LD_LIBRARY_PATH的内容开始
+starting with things in the LD_LIBRARY_PATH
+
+562
+00:33:40,433 --> 00:33:41,799
+再看run path中的
+then in the run path
+
+563
+00:33:41,866 --> 00:33:43,566
+然后看系统范围的配置
+then in the system wide configuration
+
+564
+00:33:44,000 --> 00:33:45,300
+很酷，好吧
+very cool all right
+
+565
+00:33:46,766 --> 00:33:49,133
+这些库被加载好了
+so these libraries get loaded
+
+566
+00:33:49,500 --> 00:33:53,800
+这可能也加载了别的东西
+potentially this causes other stuff to get loaded as well
+
+567
+00:33:54,100 --> 00:33:57,800
+然后我们有一个问题
+and then we have the question of
+
+568
+00:33:57,900 --> 00:34:00,600
+这些都加载到哪里去了
+where does it all get loaded into
+
+569
+00:34:01,000 --> 00:34:02,566
+这是一个有趣的问题
+this is an interesting question
+
+570
+00:34:03,766 --> 00:34:06,766
+我前面提到过，进程的虚拟内存空间
+I mentioned earlier the processes' virtual memory space
+
+571
+00:34:06,766 --> 00:34:09,999
+系统上有大量的进程
+of course you have tons of process on your system as mentioned 
+
+572
+00:34:10,100 --> 00:34:15,400
+所有的东西都有自己的进程之类的
+everything can be its own process and so forth
+
+573
+00:34:16,900 --> 00:34:19,466
+所有这些进程都需要隔离
+all of these processes need to be isolated
+
+574
+00:34:19,900 --> 00:34:21,466
+否则就没有安全保障
+otherwise there's no security
+
+575
+00:34:21,666 --> 00:34:26,899
+如果你的电子游戏能扰乱你的
+if your video games can start messing with your
+
+576
+00:34:28,166 --> 00:34:28,966
+啥呢
+I don't know whatever
+
+577
+00:34:28,966 --> 00:34:30,333
+没想到好的例子
+I'm not gonna come up with the scenario 
+
+578
+00:34:30,366 --> 00:34:33,933
+但默认情况下，进程不应该干扰彼此的内存
+but processes shouldn't be able to mess with each other's memory by default
+
+579
+00:34:34,100 --> 00:34:38,700
+除非配置了capabilities之类的
+without additional capabilities or additional actions and so forth
+
+580
+00:34:39,300 --> 00:34:43,900
+所以每个进程都有自己的虚拟内存空间
+so every process has its own virtual memory space
+
+581
+00:34:44,400 --> 00:34:50,300
+这里说的是现代多进程操作系统
+this is the case in more or less all modern multi process operating systems
+
+582
+00:34:50,666 --> 00:34:54,333
+进程的这个空间里装着二进制文件
+and this space for a process will contain the binary
+
+583
+00:34:55,400 --> 00:34:57,466
+比如cat /bin/cat之类的
+such as cat /bin/cat or whatever 
+
+584
+00:34:57,666 --> 00:34:58,699
+它的库
+its libraries 
+
+585
+00:34:58,899 --> 00:35:01,466
+还有用于malloc的堆
+and it has the heap for dynamic alloced memory
+
+586
+00:35:01,633 --> 00:35:06,566
+用于存放局部变量、返回地址和控制数据等的栈
+a stack for local function variables and return addresses and control data and so forth
+
+587
+00:35:07,466 --> 00:35:11,600
+程序的其它辅助内存映射区
+any other memory map by the program helper regions
+
+588
+00:35:11,600 --> 00:35:21,300
+在每个虚拟内存空间的上半部分
+and in the top half of every virtual memory space
+
+589
+00:35:21,600 --> 00:35:27,600
+是内核内存，不同进程内核区数据可能不同
+kernel memory potentially specialized for that process
+
+590
+00:35:28,700 --> 00:35:34,900
+这些虚拟内存实际存储在精心挑选的物理内存页
+all of this virtual memory resides in physical memory in carefully mapped locations
+
+591
+00:35:34,900 --> 00:35:39,700
+因此，你机器上运行的多个进程的虚拟内存
+so every process running at the same time actively running on your machine
+
+592
+00:35:39,700 --> 00:35:43,600
+都在物理内存空间中
+has some virtual memory in your physical memory space
+
+593
+00:35:44,400 --> 00:35:48,600
+但显然不是按虚拟内存地址挑选的（映射的）
+but it's obviously not mapped according to its virtual addresses
+
+594
+00:35:48,900 --> 00:35:59,800
+一个进程可能在虚拟内存中用了0x80,000
+a process could reserve 0x80,000 in its virtual memory space
+
+595
+00:35:59,900 --> 00:36:04,200
+另一个进程也可能在自己的虚拟内存中用它
+the other process might reserve that in the other process's memory space
+
+596
+00:36:04,300 --> 00:36:07,300
+但它们实际上位于物理内存的不同地址
+but they'll actually be located in different places in physical memory
+
+597
+00:36:07,333 --> 00:36:10,000
+它由内核
+with some mapping that the kernel keeps track of
+
+598
+00:36:11,300 --> 00:36:15,600
+或者说内存管理子系统记录
+or the memory management subsystem keeps track of 
+
+599
+00:36:15,700 --> 00:36:20,800
+并解决如何从虚拟内存转换到物理内存
+to figure out how to direct virtual memory access to physical memory
+
+600
+00:36:21,100 --> 00:36:28,900
+你可以通过查看/proc/self/maps来查看进程虚拟内存空间
+point is you can see a process's memory space by looking in /proc/self/maps
+
+601
+00:36:29,300 --> 00:36:30,400
+我们来看一看
+let's take a look
+
+602
+00:36:30,733 --> 00:36:35,399
+我们可以cat /proc/self/maps
+so we can do cat /proc/self/maps
+
+603
+00:36:35,400 --> 00:36:38,166
+这是cat的虚拟内存空间
+and this is the memory space of cat
+
+604
+00:36:38,300 --> 00:36:44,800
+它把我的cat放到了这里的几个内存页
+so it loads my cat binary into a couple of different pages here at 
+
+605
+00:36:44,800 --> 00:36:47,900
+内核把它加载在0x555...
+the kernel load it here at 555
+
+606
+00:36:48,500 --> 00:36:54,366
+这是一个随机生成的内核地址(口误)
+this is a randomly generated kernel address 
+
+607
+00:36:54,400 --> 00:36:55,333
+如果我再运行一次
+if I run it again
+
+608
+00:36:55,566 --> 00:36:56,433
+不是内核地址
+not kernel address
+
+609
+00:36:56,700 --> 00:36:58,900
+是一个随机生成的虚拟地址
+a randomly generated virtual address 
+
+610
+00:37:00,100 --> 00:37:04,400
+内核把二进制文件放在这里
+that the kernel chose to place my binary at
+
+611
+00:37:05,100 --> 00:37:12,100
+内核也用mmap选择一个地址
+kernel also chose a address from using mmap
+
+612
+00:37:12,133 --> 00:37:15,533
+来放解释器
+to place my loader at
+
+613
+00:37:15,633 --> 00:37:20,199
+之后的库加载在这地址之前
+and then future libraries are loaded right before that address
+
+614
+00:37:21,300 --> 00:37:23,900
+要是依赖更多的库的话
+you know if I had more and more binaries that is depended on
+
+615
+00:37:24,066 --> 00:37:25,733
+我们看一下实际的cat
+let's look at the real cat
+
+616
+00:37:26,933 --> 00:37:27,333
+我不清楚
+I don't know
+
+617
+00:37:27,333 --> 00:37:29,533
+它可能依赖同样数量的库
+it probably depends on the same number of libraries
+
+618
+00:37:30,500 --> 00:37:33,333
+它多出来一个locale库
+but it has an additional locale information 
+
+619
+00:37:33,433 --> 00:37:35,433
+我猜是用于帮助功能
+I guess for the help functionality 
+
+620
+00:37:35,433 --> 00:37:37,933
+它在libc的地址之前加载，等等
+that it loads before libc and so forth
+
+621
+00:37:38,100 --> 00:37:43,000
+之后的内存映射会继续选在7f地址区处
+future mappings will keep filling in the 7F area
+
+622
+00:37:43,500 --> 00:37:48,100
+进程在随机地址处还有一个栈
+then a process also has a stack at a random location
+
+623
+00:37:49,000 --> 00:37:53,066
+这个程序没用任何malloc之类的函数
+and this doesn't use any allocation
+
+624
+00:37:53,166 --> 00:37:56,333
+所以没有创建堆区
+so the heap space didn't get created
+
+625
+00:37:56,900 --> 00:38:01,400
+用了动态内存分配的进程，会有堆
+but something that uses dynamic memory allocation will have a heap
+
+626
+00:38:02,366 --> 00:38:03,900
+还有一些其他的东西
+and there's some other stuff
+
+627
+00:38:05,000 --> 00:38:08,700
+内核映射的辅助的虚拟的库
+helper libraries virtual libraries mapped in by the kernel
+
+628
+00:38:10,200 --> 00:38:12,733
+不在本课的讨论范围
+which we won't talk about in this lecture
+
+629
+00:38:12,733 --> 00:38:15,000
+只要知道有这么个东西就行
+but just be aware that they are there
+
+630
+00:38:15,566 --> 00:38:18,133
+这就是虚拟内存空间
+so that is a kernel's virtual memory space
+
+631
+00:38:21,700 --> 00:38:29,600
+如果你感兴趣，你可以去这里进一步阅读
+if you're interested you can go to this resource here and read further
+
+632
+00:38:30,100 --> 00:38:30,900
+好的
+alright
+
+633
+00:38:31,966 --> 00:38:35,133
+我一直提到libc这个，libc那个
+I keep mentioning libc this libc that 
+
+634
+00:38:35,266 --> 00:38:41,499
+我们在刚刚的内存映射中看到了libc
+and we saw libc a bunch of times in for example the memory mappings right here
+
+635
+00:38:41,700 --> 00:38:43,733
+libc是什么东西
+what the hell is libc
+
+636
+00:38:44,500 --> 00:38:47,500
+Libc是一个充满辅助函数的库
+libc is a library full of helper functions 
+
+637
+00:38:47,600 --> 00:38:51,000
+几乎每个程序都用它
+that is used by almost every program
+
+638
+00:38:51,133 --> 00:38:52,466
+几乎每个程序都链接了它
+or linked by almost every program
+
+639
+00:38:52,466 --> 00:38:55,499
+说的有点不太准确
+I have almost every process on the size that's inaccurate
+
+640
+00:38:55,500 --> 00:39:00,300
+它被加载后，几乎每个程序都把它链接到几乎每个进程
+it gets loaded as a result of being linked by almost every program into almost every process
+
+641
+00:39:00,533 --> 00:39:02,599
+里面有很多你认为理所当然的功能
+and there's a bunch of functionality that you take for granted
+
+642
+00:39:02,600 --> 00:39:05,400
+如果你用过c，你肯定用过printf
+if you've used c you've used printf
+
+643
+00:39:05,400 --> 00:39:06,366
+它就在libc中
+that's in libc
+
+644
+00:39:06,366 --> 00:39:07,500
+还有scanf
+scanf 
+
+645
+00:39:07,700 --> 00:39:08,733
+malloc和free
+malloc and free 
+
+646
+00:39:08,900 --> 00:39:12,000
+整个动态分配库都是libc的一个子功能
+that whole allocator library is a sub component of libc
+
+647
+00:39:12,066 --> 00:39:15,466
+还有很多你很可能没听过的东西
+a lot of crazy stuff that you you likely haven't seen
+
+648
+00:39:15,700 --> 00:39:21,200
+libc有很多东西
+libc has a lot of things
+
+649
+00:39:24,000 --> 00:39:24,966
+哦，好的
+oops all right
+
+650
+00:39:27,800 --> 00:39:31,666
+它是最常见的库
+it's again the most common library seen in these
+
+651
+00:39:34,766 --> 00:39:36,300
+至少在Linux上
+on Linux at least
+
+652
+00:39:41,200 --> 00:39:44,800
+静态链接的加载过程要简单得多
+statically link binaries have a much simpler loading process
+
+653
+00:39:44,800 --> 00:39:46,000
+直接加载就行
+they just get loaded
+
+654
+00:39:46,200 --> 00:39:52,600
+我们看一下静态链接版本的cat
+right so let's take a look at a statically link version of cat
+
+655
+00:40:01,500 --> 00:40:03,766
+这个cat-static
+so here is cat-static
+
+656
+00:40:04,366 --> 00:40:06,366
+你可以用它输出./cat的源码
+you can of course cat out the source code
+
+657
+00:40:06,866 --> 00:40:07,666
+我们还可以
+we can
+
+658
+00:40:08,266 --> 00:40:10,933
+它的功能完全一样，不同之处在于
+it works exactly the same the difference is
+
+659
+00:40:10,933 --> 00:40:14,699
+你看一下cat-static和cat占用的字节大小
+if you look at how many bytes cat-static versus cat takeup
+
+660
+00:40:14,866 --> 00:40:15,999
+差别很大
+ it is huge
+
+661
+00:40:16,000 --> 00:40:18,500
+cat的大小是22KB
+cat is 22 kilobytes compiled
+
+662
+00:40:18,566 --> 00:40:21,733
+cat-static几乎要1MB
+cat-static is almost a megabyte
+
+663
+00:40:22,100 --> 00:40:24,400
+我还真没想到./cat这么小
+and I'm actually shocked at that small 
+
+664
+00:40:25,466 --> 00:40:29,100
+如果你用cat-static看一下/proc/self/maps
+but cat-static if you look at /proc/self/maps
+
+665
+00:40:30,066 --> 00:40:30,899
+简单多了
+much much simpler 
+
+666
+00:40:31,166 --> 00:40:33,166
+没映射库
+there are no libraries mapped in
+
+667
+00:40:33,466 --> 00:40:34,866
+分配了堆
+heap is allocated
+
+668
+00:40:35,400 --> 00:40:37,333
+我想这就是发生了
+I guess this is something that happens
+
+669
+00:40:38,566 --> 00:40:40,900
+我不知道为什么这里用了堆
+I'm not sure why heap is allocated here
+
+670
+00:40:40,900 --> 00:40:42,866
+但在非静态链接的版本中没用
+but not in the non static version
+
+671
+00:40:43,100 --> 00:40:47,200
+我猜可能是初始化的过程不太一样
+I'm guessing there's just a different set of initialization routines that run
+
+672
+00:40:47,200 --> 00:40:48,533
+我们接下来会讲到这些
+we'll get to those next
+
+673
+00:40:50,500 --> 00:40:51,966
+反正它更简单
+but it's simpler
+
+674
+00:40:51,966 --> 00:40:53,100
+没有库
+there are no libraries
+
+675
+00:40:53,100 --> 00:40:54,866
+因为是静态链接的
+because statically linked binary
+
+676
+00:40:55,166 --> 00:40:59,333
+为什么我们不出于简单的目的全都用静态链接
+why don't we ship everything statically linked for simplicity 
+
+677
+00:40:59,533 --> 00:41:05,099
+我的意思是，文件大小的区别重要吗
+I mean what is this difference in file size （matter）
+
+678
+00:41:05,266 --> 00:41:07,499
+你可能会说，这在今天已经无关紧要了
+you might argue it's not really relevant nowadays 
+
+679
+00:41:07,700 --> 00:41:20,100
+用共享库可以实现很多技巧，进程间共用内存等等
+but there are various tricks that can be done with sharing library memory across processes and so forth
+
+680
+00:41:21,300 --> 00:41:27,700
+但在如今这个拥有大量内存的时代，这一点越来越不重要了
+but that is less and less critical nowadays in the age of a lot of memory
+
+681
+00:41:29,600 --> 00:41:30,666
+有很多空内存
+and a lot of dry space
+
+682
+00:41:30,866 --> 00:41:33,166
+事实上，像rust这样的语言
+and in fact languages such as rust
+
+683
+00:41:35,400 --> 00:41:39,666
+大部分支持静态链接
+mostly support static linking 
+
+684
+00:41:39,900 --> 00:41:45,600
+rust、要使用C库，你，抱歉
+rust to use C libraries you sorry
+
+685
+00:41:45,766 --> 00:41:47,700
+你可以在rust中使用C库
+you can use C libraries and use them in rust
+
+686
+00:41:47,700 --> 00:41:50,200
+但rust的库是静态链接的
+but rust libraries are linked statically
+
+687
+00:41:53,066 --> 00:41:55,566
+所以也许我们会更向这边靠拢
+so maybe we'll move more in that direction
+
+688
+00:41:55,800 --> 00:41:56,433
+我不知道
+I don't know 
+
+689
+00:41:56,633 --> 00:41:58,033
+两种情况都存在
+both cases exist 
+
+690
+00:41:58,200 --> 00:42:03,300
+目前不用静态链接库的一个原因是
+one reason until recently not to use static libraries was 
+
+691
+00:42:04,000 --> 00:42:09,400
+静态链接的二进制文件安全性更低
+less or statically linked binaries was less security opportunities
+
+692
+00:42:09,500 --> 00:42:11,966
+这么说不是很正确，但大体没问题
+I mean this is slightly less true but still true
+
+693
+00:42:11,966 --> 00:42:13,933
+如果你看动态链接的情况
+if you look at the dynamic case
+
+694
+00:42:14,600 --> 00:42:21,700
+cat被加载到这个地址
+you have cat which is loaded into this crazy address
+
+695
+00:42:21,800 --> 00:42:24,700
+库加载在这里
+and you have the libraries which are loaded into this crazy address
+
+696
+00:42:24,733 --> 00:42:25,966
+两者在了不同的地址区域
+there are different addresses
+
+697
+00:42:26,133 --> 00:42:27,333
+你不能
+you can't actually 
+
+698
+00:42:27,400 --> 00:42:31,400
+知道cat的加载地址，无法推出库的地址
+by knowing where cat is loaded you can't know where the libraries are loaded
+
+699
+00:42:31,633 --> 00:42:34,999
+除非你在写你的程序中记录了库的地址
+unless your cat knows where its libraries are
+
+700
+00:42:36,133 --> 00:42:38,166
+但通常，甚至在进程运行时
+but oftentimes even during execution
+
+701
+00:42:38,200 --> 00:42:41,333
+你可能知道库加载在哪里
+you might know where the libraries are loaded
+
+702
+00:42:41,333 --> 00:42:42,866
+但不知道cat在哪里
+but not where cat is loaded
+
+703
+00:42:43,500 --> 00:42:48,500
+现在，这里的库是挨着加载的
+right now the way things are the libraries are loaded right up against each other
+
+704
+00:42:49,100 --> 00:42:53,800
+所以当你知道了ld的地址，可以推出libc的地址，反之亦然
+so you can know knowing ld you can know where libc is and vice versa
+
+705
+00:42:54,000 --> 00:42:56,200
+但这不是一定的
+but there's no reason that has to be the case
+
+706
+00:42:56,200 --> 00:43:00,000
+你也可以把它们加载到完全随机化的偏移地址
+you could load them at completely randomized offsets as well
+
+707
+00:43:01,500 --> 00:43:04,800
+对于静态链接的二进制文件，就不行
+for a static link binary of course you can't do that
+
+708
+00:43:04,800 --> 00:43:08,866
+能看到它加载在这个地址
+you'll notice it's loaded at this address 
+
+709
+00:43:08,900 --> 00:43:12,566
+这个地址在每次执行的时候不会发生变化
+and this address does not change over executions
+
+710
+00:43:12,566 --> 00:43:14,866
+栈和堆会变
+I mean the stack and heap still change
+
+711
+00:43:15,000 --> 00:43:18,500
+但cat一直加载在0x40000
+but cat is loaded at 40000
+
+712
+00:43:21,466 --> 00:43:23,566
+最近我们不打算
+recently we're not gonna try
+
+713
+00:43:23,800 --> 00:43:24,600
+为什么不呢
+why not 
+
+714
+00:43:24,600 --> 00:43:25,200
+我们来试试
+let's try it
+
+715
+00:43:25,366 --> 00:43:27,066
+有一个-static-pie参数
+there is a static pie 
+
+716
+00:43:27,066 --> 00:43:28,100
+我不知道这能不能成
+I have no idea this will work
+
+717
+00:43:28,100 --> 00:43:29,500
+以前没用过
+I've never done this before
+
+718
+00:43:31,466 --> 00:43:32,333
+天呐。
+holy shit
+
+719
+00:43:34,700 --> 00:43:35,400
+最近
+recently
+
+720
+00:43:35,400 --> 00:43:37,566
+PIE代表位置无关代码
+ PIE stands for Position Independent Code
+
+721
+00:43:37,566 --> 00:43:45,600
+引入这个技术是为了让静态链接库支持位置无关特性
+this was introduced to allow statically linked libraries to be position independent
+
+722
+00:43:45,666 --> 00:43:46,900
+这很酷
+so that's pretty cool
+
+723
+00:43:52,366 --> 00:43:53,933
+不记得我有没有提过
+I don't remember if I actually mentioned why
+
+724
+00:43:54,200 --> 00:43:58,500
+静态链接是什么
+what makes a statically linked binary statically linked
+
+725
+00:43:58,500 --> 00:44:04,800
+它表示把所有的库，如libc，都打包进一个程序
+it is that all of the libraries like libc are included inside this same binary
+
+726
+00:44:05,266 --> 00:44:06,499
+这就是为什么它这么大
+that's what makes it big
+
+727
+00:44:06,500 --> 00:44:10,100
+但这也意味着，知道了程序加载地址
+but it also means that knowing the position of this binary
+
+728
+00:44:10,100 --> 00:44:13,100
+同时你就知道了libc的地址和其它库的地址
+you also know the position of libc and all the other libraries
+
+729
+00:44:13,200 --> 00:44:20,200
+这是静态链接和动态链接库之间的安全差距
+that's a security gap between statically and dynamic linked libraries
+
+730
+00:44:20,266 --> 00:44:21,066
+另一方面
+on the other hand
+
+731
+00:44:21,400 --> 00:44:27,700
+动态链接的程序也有很多可以被利用的安全问题
+there are various security problems with dynamically linked binaries that can be taken advantage of
+
+732
+00:44:29,500 --> 00:44:31,066
+所以这是一种取舍
+so it's a trade off
+
+733
+00:44:31,333 --> 00:44:32,399
+无论好坏
+for better or worse 
+
+734
+00:44:32,700 --> 00:44:39,200
+标准Linux发行版中的大多数程序
+the majority of the programs in a standard linux distribution
+
+735
+00:44:39,500 --> 00:44:41,066
+都是动态链接的
+are going to be dynamically linked
+
+736
+00:44:42,166 --> 00:44:44,733
+好的，接下来看什么
+all right let's see what we got next
+
+737
+00:44:45,700 --> 00:44:46,933
+初始化
+initialization
+
+738
+00:44:46,933 --> 00:44:51,066
+这是我们今天要讲的最后一个
+so this is the last step that we'll talk about today
+
+739
+00:44:51,700 --> 00:44:54,133
+在所有东西都加载到内存之后
+after everything is loaded into memory and so forth
+
+740
+00:44:54,133 --> 00:44:55,733
+就该初始化了
+it is initialize
+
+741
+00:44:56,900 --> 00:45:02,300
+每个elf，二进制文件和库，都可以指定构造函数
+every elf binary and library can specify constructors
+
+742
+00:45:02,366 --> 00:45:04,833
+这是代码结构，不对
+this is code constructure sorry
+
+743
+00:45:04,933 --> 00:45:08,299
+可以指定在程序实际启动之前运行的代码
+this is code that runs before the program is actually launched
+
+744
+00:45:08,300 --> 00:45:15,300
+因此，有的版本的libc会初始化堆的内存
+so depending on the version, libc can initialize memory regions for dynamic allocations
+
+745
+00:45:15,400 --> 00:45:19,800
+所以之前在静态链接的例子中，看到了堆内存
+so we saw a heap show up here in the statically linked case
+
+746
+00:45:22,066 --> 00:45:23,933
+哦，我忘记切换到幻灯片了，抱歉
+oops I forgot switch the slides sorry about that
+
+747
+00:45:26,300 --> 00:45:30,900
+我到底搞砸了多少
+so how much did I screwed that up
+
+748
+00:45:31,000 --> 00:45:32,800
+我们回来
+let's come back okay 
+
+749
+00:45:32,966 --> 00:45:35,699
+我们之前看到这里
+you saw this yeah yeah we saw this
+
+750
+00:45:35,733 --> 00:45:36,666
+这很重要
+this is important
+
+751
+00:45:36,866 --> 00:45:38,299
+好的，初始化
+all right initialization
+
+752
+00:45:43,100 --> 00:45:49,033
+构造函数在程序开始执行之前运行
+constructors run before the program execution start
+
+753
+00:45:49,033 --> 00:45:50,533
+执行在main之前
+before main is executed
+
+754
+00:45:50,533 --> 00:45:52,800
+你可以指定自己的构造函数
+and you can specify your own constructors
+
+755
+00:45:52,900 --> 00:45:55,800
+好的，我们可以编辑cat.c
+right so we can edit cat.c
+
+756
+00:45:56,366 --> 00:45:58,966
+现在我们要看这个画面
+and again now we want this
+
+757
+00:45:59,133 --> 00:46:00,433
+我们可以编辑cat.c
+we can edit cat.c 
+
+758
+00:46:00,666 --> 00:46:03,799
+可以这样写
+and we can say attribute constructor
+
+759
+00:46:10,400 --> 00:46:12,466
+好的，它会输出haha
+alright and it'll just print haha
+
+760
+00:46:12,700 --> 00:46:15,666
+编译它，不管是不是静态链接
+and if you compile this statically or not
+
+761
+00:46:18,100 --> 00:46:18,933
+然后执行它
+and execute it 
+
+762
+00:46:18,933 --> 00:46:22,866
+我们将在main执行前看到haha
+we'll see haha before main is executed
+
+763
+00:46:23,100 --> 00:46:26,833
+这对LD_PRELOAD特别有用
+this is especially useful for LD_PRELOAD
+
+764
+00:46:27,000 --> 00:46:30,466
+我们来看看preload.c
+ so let's look at our preload.c
+
+765
+00:46:30,733 --> 00:46:32,133
+这是我们的pwned
+this is our pwned
+
+766
+00:46:32,533 --> 00:46:34,966
+现在我们放入这个构造函数
+now we put in this constructor
+
+767
+00:46:36,766 --> 00:46:37,800
+我们编译
+we compile
+
+768
+00:46:40,966 --> 00:46:41,900
+然后运行
+and then we run
+
+769
+00:46:44,333 --> 00:46:45,666
+带上 LD_PRELOAD
+with an LD_PRELOAD
+
+770
+00:46:55,000 --> 00:46:57,166
+我们只看头几个
+let's just get the first okay
+
+771
+00:46:58,866 --> 00:47:01,066
+我们没重编译preload.c
+we didn't compile the preload.c
+
+772
+00:47:09,933 --> 00:47:10,733
+什么情况
+what happened
+
+773
+00:47:23,166 --> 00:47:24,966
+好的
+okay preload
+
+774
+00:47:32,100 --> 00:47:33,333
+编译成功了
+that works
+
+775
+00:47:35,100 --> 00:47:36,166
+用了preload
+gets preload
+
+776
+00:47:42,933 --> 00:47:44,300
+就是没输出haha
+that did not get printed
+
+777
+00:47:51,300 --> 00:47:52,733
+我暂停一下录音
+let me pause the recording
+
+778
+00:47:52,733 --> 00:47:54,266
+弄清楚后再给你们答复
+figure this out and get back to you
+
+779
+00:47:57,700 --> 00:47:58,933
+我回来了
+and we are back
+
+780
+00:47:58,933 --> 00:48:00,733
+很抱歉
+sorry about that
+
+781
+00:48:00,733 --> 00:48:01,866
+我明白了
+I figured it out
+
+782
+00:48:02,700 --> 00:48:03,900
+在原来的版本中
+in the original version
+
+783
+00:48:03,900 --> 00:48:05,766
+在我的幻灯片上
+in what I have on the slides
+
+784
+00:48:05,766 --> 00:48:07,333
+我们看一下幻灯片
+let me show you the slides
+
+785
+00:48:07,333 --> 00:48:09,133
+我们用的puts
+we have puts been used
+
+786
+00:48:09,400 --> 00:48:18,433
+puts中有缓存问题
+there was some sort of crazy caching problem in puts 
+
+787
+00:48:18,600 --> 00:48:21,333
+准确地说，是在这个libc版本中
+or in libc with this
+
+788
+00:48:21,766 --> 00:48:23,400
+可以用fflush解决这个问题
+so flushing works
+
+789
+00:48:23,400 --> 00:48:25,000
+但我直接换了另一种方法
+but I replaced it with a different solution
+
+790
+00:48:25,000 --> 00:48:25,800
+我马上展示给你们
+I will show you
+
+791
+00:48:26,533 --> 00:48:28,066
+我提到过
+I mentioned that
+
+792
+00:48:30,666 --> 00:48:31,933
+好吧，我没提过
+well I didn't mention
+
+793
+00:48:32,100 --> 00:48:34,366
+有一个很棒的计算机科学笑话
+there's an awesome computer science joke 
+
+794
+00:48:34,466 --> 00:48:40,566
+在计算机科学中有两个尚未解决的问题
+that there are two unsolved problems in computer science naming
+
+795
+00:48:44,500 --> 00:48:47,500
+抱歉今天上太多课了
+shit sorry too much lecturing today
+
+796
+00:48:48,300 --> 00:48:51,600
+命名、[缓存doge]以及off-by-1问题
+naming caching and off by 1 errors
+
+797
+00:48:52,266 --> 00:48:53,066
+好吧
+all right
+
+798
+00:48:53,733 --> 00:48:54,533
+我们继续
+let's move on
+
+799
+00:48:54,533 --> 00:48:56,599
+我指给你们哪里出错了
+so let me show you what went wrong 
+
+800
+00:48:56,800 --> 00:48:58,733
+以及我是如何修复它的
+and how I fixed it
+
+801
+00:48:58,933 --> 00:49:03,000
+这是修改后的preload.c
+here is the new fixed preload.c
+
+802
+00:49:03,400 --> 00:49:04,866
+在haha函数中
+so in the haha func
+
+803
+00:49:05,900 --> 00:49:08,666
+好吧，你能看到在我调试的过程中
+well you can see in my debugging process 
+
+804
+00:49:08,833 --> 00:49:10,866
+我还检查了是不是函数名的问题
+I also checked if the name was a problem
+
+805
+00:49:11,000 --> 00:49:14,200
+构造函数现在叫wtf
+so the constructor now called wtf
+
+806
+00:49:16,133 --> 00:49:16,933
+以前用的puts
+used to have puts
+
+807
+00:49:17,066 --> 00:49:20,766
+现在改成了write，直接绕过了
+I just changed it to use write directly to bypass all of this
+
+808
+00:49:20,866 --> 00:49:22,766
+缓存失效
+this cache invalidation
+
+809
+00:49:23,300 --> 00:49:26,666
+计算机科学中的两个未解问题，缓存
+two unsolved problems in computer science caching
+
+810
+00:49:27,500 --> 00:49:28,366
+该死的，又没讲顺
+god damn it
+
+811
+00:49:29,100 --> 00:49:31,300
+命名[缓存失效]和off-by-1错误
+naming [cache invalidation] and off-by-1 errors 
+
+812
+00:49:31,500 --> 00:49:32,166
+不管怎样
+anyways 
+
+813
+00:49:35,966 --> 00:49:40,566
+使用write直接绕过libc的puts问题
+if you use write directly bypass libc funny business with puts
+
+814
+00:49:40,800 --> 00:49:41,533
+就行
+it works 
+
+815
+00:49:41,833 --> 00:49:43,266
+编译一下
+so let's compile
+
+816
+00:49:47,166 --> 00:49:52,166
+然后我们用这个执行LD_PRELOAD
+okay and then we do the LD_PRELOAD with this
+
+817
+00:49:52,233 --> 00:49:53,266
+我们可以看到
+ and we see that 
+
+818
+00:49:53,366 --> 00:49:57,833
+输出pwned前，先输出了haha
+there is a haha gets printed before all the pwned
+
+819
+00:49:57,933 --> 00:49:59,699
+这很好
+so this this is neat here 
+
+820
+00:49:59,800 --> 00:50:02,800
+当你有机会
+but every once in a while you have the opportunity
+
+821
+00:50:02,800 --> 00:50:05,366
+向进程中注入库
+to inject the library into a process
+
+822
+00:50:05,400 --> 00:50:12,400
+例如，使用某个不小心暴露的功能
+using uncarefully exposed functionality for example
+
+823
+00:50:12,800 --> 00:50:19,166
+在这种情况，能在库加载时先运行代码
+it is super useful in those cases to be able to run code on  library load 
+
+824
+00:50:19,266 --> 00:50:23,533
+而不必一直等库函数被调用，是非常有用的
+without having to wait until functions of your library invoked
+
+825
+00:50:24,000 --> 00:50:24,800
+好吧
+all right
+
+826
+00:50:25,500 --> 00:50:26,233
+就是这些
+that is it 
+
+827
+00:50:26,366 --> 00:50:31,399
+这就是我们今天要讨论的关于进程生命周期的全部
+that's all of the process lifetime that we're gonna talk about today
+
+828
+00:50:33,800 --> 00:50:36,800
+这堂课的时间远超我的预期
+this lecture we ran way longer than I intended
+
+829
+00:50:36,966 --> 00:50:38,866
+我的很多课都是这样
+this is the case for a lot of my lectures
+
+830
+00:50:38,866 --> 00:50:40,133
+我很抱歉
+I apologize 
+
+831
+00:50:40,233 --> 00:50:43,999
+希望现在你对进程的加载有了更深刻的理解
+hopefully you now have a very good understanding of how process is loaded 
+
+832
+00:50:44,200 --> 00:50:47,266
+理解了程序是如何变成进程的
+or how program becomes a process 
+
+833
+00:50:47,400 --> 00:50:52,066
+它自己先被加载、依赖库被加载、然后初始化
+essentially it's loaded the libraries are loaded and it's initialized
+
+834
+00:50:52,333 --> 00:50:53,266
+好的
+all right 
+
+835
+00:50:53,466 --> 00:51:00,499
+在进程生命周期余下部分——它的执行过程中再见
+I will see you next time on the rest of this process runtime on how it actually executes
+
+836
+00:51:01,200 --> 00:51:02,000
+多谢观看
+thank you
+

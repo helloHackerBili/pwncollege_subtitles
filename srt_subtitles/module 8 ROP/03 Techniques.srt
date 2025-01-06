@@ -1,0 +1,2210 @@
+1
+00:00:00,700 --> 00:00:01,800
+你好黑客
+hello hackers
+
+2
+00:00:01,800 --> 00:00:08,400
+欢迎来到PWN学院面向返回编程模块的第三个视频
+welcome to the 3rd video in the return oriented programming module of pwn college
+
+3
+00:00:08,866 --> 00:00:14,733
+我是Yan，我将和大家谈谈ROP技术
+I'm Yan and I will be talking to you about ROP techniques
+
+4
+00:00:15,000 --> 00:00:17,300
+这将是一场盛宴
+ this is going to be a smorgass board of 
+
+5
+00:00:18,000 --> 00:00:23,500
+涵盖理论、技巧和建立ROP链的建议
+concepts techniques and hints for successfully creating ROP chains
+
+6
+00:00:24,700 --> 00:00:32,500
+我们将从一个大家都很好奇的问题开始
+and we will start with a not a proplem but a common thing that people wonder
+
+7
+00:00:32,800 --> 00:00:36,700
+创建shellcode时在哪里存储数据
+ where do I store data when you create shellcode
+
+8
+00:00:37,400 --> 00:00:40,900
+你的shellcode需要打开/flag文件
+you and your shellcode needs to open the slash flag file
+
+9
+00:00:41,000 --> 00:00:47,900
+通常将/flag字符串放在shellcode的末尾
+you often put the slash flag string at the end of your shellcode
+
+10
+00:00:48,300 --> 00:00:53,000
+你可以使用rip相关指令，比如LEA
+ and you use a rip relative instruction such as load effective address
+
+11
+00:00:53,000 --> 00:00:59,400
+RIP加偏移来将寄存器指向flag
+rip plus whatever to point a register at that flag
+
+12
+00:00:59,533 --> 00:01:01,266
+这在shellcode中是常见的
+ was the common in the shellcode
+
+13
+00:01:01,366 --> 00:01:03,366
+ROP和这其实很相似
+it's actually something very similar right
+
+14
+00:01:03,366 --> 00:01:06,200
+当你触发shellcode
+when you're triggering shellcode
+
+15
+00:01:06,400 --> 00:01:07,600
+或者用ROP
+or in a ropchain
+
+16
+00:01:07,600 --> 00:01:08,900
+不好意思，当你触发ROP链时
+sorry when you're triggering a ropchain
+
+17
+00:01:08,900 --> 00:01:10,133
+覆盖了栈
+you overwrite the stack
+
+18
+00:01:10,166 --> 00:01:12,100
+你可以将数据写入栈
+you can write data onto that stack
+
+19
+00:01:12,800 --> 00:01:16,466
+诀窍是如果你把数据写入栈
+the trick is if you write data onto the stack
+
+20
+00:01:16,733 --> 00:01:19,066
+你得小心别返回
+ you have to be careful not to return
+
+21
+00:01:19,400 --> 00:01:23,100
+不要将该数据视为ROP返回地址链的一部分
+not to treat that data as a return address as part of your ropchain
+
+22
+00:01:25,066 --> 00:01:28,466
+这是一个潜在的ROP链
+so here's a potential ropchain
+
+23
+00:01:30,300 --> 00:01:36,600
+你入栈一个gadget的地址
+that you push the the address of a gadget 
+
+24
+00:01:38,733 --> 00:01:41,300
+假设它会pop RDI
+that will let's say pop RDI so
+
+25
+00:01:41,900 --> 00:01:43,533
+或者pop RSI之类的
+or pop RSI or something
+
+26
+00:01:43,533 --> 00:01:46,200
+这是/flag
+so this is you know slash flag
+
+27
+00:01:47,100 --> 00:01:48,966
+它将弹出/flag的地址
+it will pop the address of slash flag
+
+28
+00:01:48,966 --> 00:01:49,966
+问题是
+the proplem is
+
+29
+00:01:51,700 --> 00:01:54,133
+地址指向它右边第2个gadget
+the address was actually as 2 gadgets to the right
+
+30
+00:01:54,133 --> 00:02:00,100
+gadget 1 可能返回到实际上第二个gadget（图上标的3）
+your 1st gadget might return into what is actually your 2nd gadget 
+
+31
+00:02:01,900 --> 00:02:06,833
+这个gadget是专门放在那里
+which is a gadget that you will exclusively keep there 
+
+32
+00:02:07,100 --> 00:02:11,200
+用来跳过这个gadget来到gadget4
+to jump over this gadget to return to gadget 4
+
+33
+00:02:11,766 --> 00:02:14,100
+这样你就不会不小心跳入这里
+so that you don't accidentally return to
+
+34
+00:02:14,900 --> 00:02:18,966
+将flag视为返回地址
+treat flag as a return address 
+
+35
+00:02:19,300 --> 00:02:27,300
+并尝试跳转到内存地址，小端序的, galf/
+and try to jump to memory that is in little Endian g a l f forward slash
+
+36
+00:02:27,333 --> 00:02:30,266
+这个地址可能没有映射，程序就会崩溃
+which likely isn't mapped and your program will crash
+
+37
+00:02:30,400 --> 00:02:34,500
+这里的/bin/cat也是一样的道理
+and is the same idea for bin cat as well
+
+38
+00:02:37,500 --> 00:02:41,600
+怎么跳过去?
+how do you do this sort of jumping over
+
+39
+00:02:41,666 --> 00:02:43,600
+我们将使用我称之为
+we'll use what I call
+
+40
+00:02:43,600 --> 00:02:44,866
+它们没有标准的名称
+there's no standard name for them
+
+41
+00:02:44,866 --> 00:02:46,766
+我称之为清洁gadget
+but what I call janitorial gadgets
+
+42
+00:02:47,300 --> 00:02:52,700
+这些gadget可以修复你的ROP链
+a lot of gadgets are there to fix up your ROP chain
+
+43
+00:02:52,933 --> 00:02:55,366
+如果你在选项（从程序中找的gadgets）中夹杂数据
+if you have data interspersed into your option
+
+44
+00:02:55,400 --> 00:02:58,600
+或者你对程序的溢出操作
+or if the program that you are overflowing
+
+45
+00:02:58,600 --> 00:03:00,133
+破坏了部分选项
+actually corrupt part of your option
+
+46
+00:03:00,100 --> 00:03:03,100
+你可能得跳过损坏的部分
+you might have to jump over corrupted parts
+
+47
+00:03:03,766 --> 00:03:05,566
+有很多rop链可以做到这一点
+there are plenty of ropchains that will do that
+
+48
+00:03:05,566 --> 00:03:07,700
+如果有你不关心的寄存器
+if there are registers that you don't care about
+
+49
+00:03:07,900 --> 00:03:10,833
+不在意
+that you don't mind collaboring with 
+
+50
+00:03:11,200 --> 00:03:15,566
+之前在栈上写入了什么数据
+whatever data you have  on this stack that you have written to the stack
+
+51
+00:03:15,566 --> 00:03:17,000
+你只需触发这些
+you just trigger these
+
+52
+00:03:17,700 --> 00:03:24,000
+将栈上数据pop到寄存器的ROP gadget
+something like a rop gadget that pops data to those registers
+
+53
+00:03:25,900 --> 00:03:33,300
+在上个视频我们演示的简单rop-example中
+in the simple rop-example that we ran through last video
+
+54
+00:03:35,400 --> 00:03:37,900
+我们在
+we had in the
+
+55
+00:03:38,800 --> 00:03:40,100
+在反汇编中
+in the disassembly
+
+56
+00:03:40,500 --> 00:03:45,866
+在foo函数中打开了/flag
+in the foo function where we triggeret the open slash flag
+
+57
+00:03:46,033 --> 00:03:47,700
+之后，它pop了RBP
+ afterwards it popped RBP
+
+58
+00:03:48,300 --> 00:03:49,700
+那时我们在payload中放的垃圾
+and we put garbage there
+
+59
+00:03:49,700 --> 00:03:52,466
+但是我们可以把数据放在那里
+but we could have put data there 
+
+60
+00:03:54,100 --> 00:03:56,200
+在4011C2的这个gadget
+that this gadget at 401 1C2 
+
+61
+00:03:56,333 --> 00:03:59,466
+如果我们跳到那里，它会弹出RBP，然后返回
+if we jump there it will pop RBP and ret
+
+62
+00:03:59,466 --> 00:04:01,333
+我们不需要执行这些打开等等发送
+we don't have to do the open et cetera send er
+
+63
+00:04:01,333 --> 00:04:04,500
+我们可以把它用作栈清理工具
+we can just use this as a stack clean up gadget
+
+64
+00:04:04,600 --> 00:04:09,000
+用来跳过栈上8字节的垃圾
+to just jump over 8 bytes of garbage on the stack
+
+65
+00:04:09,966 --> 00:04:12,333
+这很酷
+which is super cool
+
+66
+00:04:12,600 --> 00:04:17,800
+类似地，有很多gadget可以清理栈帧
+ similarly there's a lot of gadgets that will clean up a stack frame
+
+67
+00:04:17,800 --> 00:04:21,266
+释放栈帧的一部分
+deallocate a part of a stack frame
+
+68
+00:04:21,533 --> 00:04:24,166
+如果你分配了40字节
+so if you had allocated 40 bytes
+
+69
+00:04:25,400 --> 00:04:27,600
+十六进制40个字节到栈帧上
+or hex 40 bytes onto a stack frame
+
+70
+00:04:27,600 --> 00:04:32,700
+可能有一个gadget会在返回时释放40字节
+there's likely a gadget that will subtract 40 byte from ret
+
+71
+00:04:33,100 --> 00:04:35,800
+也是超级酷的
+ which is super cool as well
+
+72
+00:04:38,266 --> 00:04:38,700
+抱歉
+or sorry
+
+73
+00:04:38,700 --> 00:04:42,400
+减去40字节，再加上re
+subtract 40 bytes add re
+
+74
+00:04:43,600 --> 00:04:46,066
+让我重新开始
+let me start that over 
+
+75
+00:04:46,466 --> 00:04:49,066
+如果你找到一个函数
+if there's a function that you find 
+
+76
+00:04:49,100 --> 00:04:51,500
+它的栈帧有40字节
+that has a stack frame of 40 bytes in the beginning of the function
+
+77
+00:04:51,500 --> 00:04:55,100
+在函数开头会将rsp减去0x40
+and likely subtracts hex 40 from RSP
+
+78
+00:04:55,333 --> 00:04:57,766
+在函数结束的时候，它会把它加回去
+and at the end of the function it will add that back on
+
+79
+00:04:57,766 --> 00:05:05,400
+你可以重用它作为跳过垃圾的gadget
+and you can reuse that as a you know skip over garbage gadget
+
+80
+00:05:06,900 --> 00:05:08,833
+另一个ROP概念
+another rop concept 
+
+81
+00:05:09,100 --> 00:05:13,600
+如何将值存储到寄存器中
+how do you store values into your registers
+
+82
+00:05:14,000 --> 00:05:18,300
+你可以使用 pop值到寄存器的 gadget
+well you can use register popping gadgets
+
+83
+00:05:18,333 --> 00:05:21,133
+如果你想让RAX指向/flag
+so if you want to point rax to slash flag
+
+84
+00:05:22,066 --> 00:05:26,133
+你可以找到一个gadget，它会执行pop rax然后ret
+you find a gadget that says that does pop rax ret
+
+85
+00:05:26,500 --> 00:05:28,500
+它们确实存在，但不是很常见
+these exist they're not super common
+
+86
+00:05:28,500 --> 00:05:30,600
+通常它们也有其他副作用
+usually they have other side effects as well
+
+87
+00:05:30,900 --> 00:05:33,366
+然后放上那个gadget
+and then you put that gadget
+
+88
+00:05:33,366 --> 00:05:34,600
+那个gadget的地址
+that address of that gadget
+
+89
+00:05:34,600 --> 00:05:38,400
+然后是想要弹出到RAX中的值
+then the desire value you want to get popped into RAX
+
+90
+00:05:38,400 --> 00:05:40,166
+当你回到这个gadget
+when you return to this gadget
+
+91
+00:05:40,100 --> 00:05:42,800
+你会用这个gadget覆盖返回地址
+you'll of course overwrite the return address with this gadget and
+
+92
+00:05:43,566 --> 00:05:46,766
+Pop rax会执行。它会弹出这个，执行ret
+pop rax will run. it'll pop this ret will run
+
+93
+00:05:46,866 --> 00:05:48,666
+然后跳转到gadget2
+and jump to gadget 2
+
+94
+00:05:48,600 --> 00:05:54,300
+它会清除栈中的/flag
+in this case it'll presumably clean up slash flag off the stack
+
+95
+00:05:55,100 --> 00:05:56,566
+很好，嗯
+cool alright um
+
+96
+00:05:56,800 --> 00:05:58,133
+另一个概念
+another concept
+
+97
+00:05:58,266 --> 00:06:03,066
+有些gadget比其他的更常见
+some gadgets are more common than others
+
+98
+00:06:05,166 --> 00:06:07,900
+最常见的gadget是ret
+the most common gadget is ret 
+
+99
+00:06:07,900 --> 00:06:09,800
+它在每个函数的末尾都有
+it's at the end of every function
+
+100
+00:06:10,766 --> 00:06:13,800
+实际上有一个gadget
+and actually has a gadget on its own
+
+101
+00:06:13,800 --> 00:06:15,300
+它很有用
+it is useful
+
+102
+00:06:16,300 --> 00:06:20,000
+你可能还记得shellcode中nop雪橇的概念
+you might recall the concept of a nop sled in shellcode
+
+103
+00:06:20,000 --> 00:06:23,600
+在ROP链中有一种东西叫做ret雪橇
+well in ropchains there's something called a ret sled
+
+104
+00:06:23,600 --> 00:06:24,600
+他俩非常非常相似
+very very similar
+
+105
+00:06:24,600 --> 00:06:28,300
+如果你放一堆ret gadget来溢出栈
+if you just put a bunch of ret gadgets to overflow the stack
+
+106
+00:06:28,500 --> 00:06:30,900
+只要其中一个溢出了返回地址
+ as long as one of them overflows the return address
+
+107
+00:06:30,900 --> 00:06:32,566
+都会ret，ret，ret
+you will then ret ret ret ret ret ret ret
+
+108
+00:06:32,566 --> 00:06:36,100
+一直ret到你真正的ROP
+ret ret ret all the way to your actual ropchain
+
+109
+00:06:36,900 --> 00:06:39,066
+类似于nop雪橇
+similar to a nop sled
+
+110
+00:06:39,466 --> 00:06:43,100
+嗯，leave ret也是一个很常见的gadget
+um leave ret is a very common gadget as well
+
+111
+00:06:43,100 --> 00:06:44,733
+在许多函数的末尾都有
+at the end of many functions
+
+112
+00:06:44,866 --> 00:06:47,400
+如果你破坏了RBP，你必须小心
+you have to be careful if you have corrupted RBP
+
+113
+00:06:48,200 --> 00:06:49,333
+因为当执行leave时
+and you do leave
+
+114
+00:06:49,766 --> 00:06:51,466
+也会破坏RSP
+you will corrupt RSP as well
+
+115
+00:06:51,466 --> 00:06:54,600
+leave指令实际执行了mov rsp rbp 和 pop rbp
+leave does move RSP RBP; pop RBP
+
+116
+00:06:54,800 --> 00:07:02,200
+所以你要确保RBP指向一个有意义的地址
+so you want to make sure that RBP is pointing to an address that makes sense
+
+117
+00:07:05,000 --> 00:07:09,300
+另一个常见的gadget是
+another relatively common very common gadget is
+
+118
+00:07:09,966 --> 00:07:12,000
+pop寄存器，然后ret
+pop some register and then ret
+
+119
+00:07:12,000 --> 00:07:16,600
+这在返回前恢复被调用者保存的寄存器时尤其明显
+this is especially seen when restoring callee saved registers before returning
+
+120
+00:07:17,000 --> 00:07:18,766
+这非常频繁
+it is very frequent
+
+121
+00:07:21,700 --> 00:07:26,100
+它可能修改很多寄存器
+and it's it's seen for a wide variety of registers
+
+122
+00:07:26,366 --> 00:07:29,733
+甚至可以看到它修改RAX
+sometimes you even see it for RAX where you
+
+123
+00:07:30,600 --> 00:07:34,000
+也许没有pop RAX，但有给RAX赋值
+maybe you don't pop RAX but you move something to RAX
+
+124
+00:07:34,166 --> 00:07:35,366
+然后返回
+and then return
+
+125
+00:07:35,366 --> 00:07:37,866
+这就是在设置函数的返回值
+that is setting a return value of a function
+
+126
+00:07:40,933 --> 00:07:42,433
+有些gadget很常见
+some gadgets are common 
+
+127
+00:07:42,633 --> 00:07:46,166
+因为这些功能在程序中很常见
+because  the functionality is pretty common in a binary
+
+128
+00:07:46,166 --> 00:07:50,133
+比如leave ret或者pop某些寄存器，然后ret
+like leave ret or pop some certain registers and ret
+
+129
+00:07:51,500 --> 00:07:55,000
+但是你可以跳到指令中间
+but you can jump again into the middle of an instruction
+
+130
+00:07:55,066 --> 00:07:57,700
+这意味着,某些gadget是常见的
+this means that certain gadgets are common
+
+131
+00:07:58,266 --> 00:08:00,666
+是因为其他gadget是常见的
+because there are other common gadgets
+
+132
+00:08:00,866 --> 00:08:07,700
+后者的字节码包含了前者
+that contain the bytes that encode those instructions right on
+
+133
+00:08:07,866 --> 00:08:09,333
+一个简单的例子
+a trivial example
+
+134
+00:08:09,500 --> 00:08:11,700
+让我把相机藏起来，这样你就能看到了
+let me disappear my camera so you can see
+
+135
+00:08:12,266 --> 00:08:17,566
+例子是：每个add rsp, 8; ret指令
+the trivial example is that every gadget of add RSP 8 ret 
+
+136
+00:08:17,966 --> 00:08:20,533
+这是一个相对的
+which is a relatively
+
+137
+00:08:21,866 --> 00:08:23,666
+我的意思是很常见的gadget
+I mean conceptually common
+
+138
+00:08:23,666 --> 00:08:28,200
+毕竟这类释放栈帧的操作很常见
+this sort of deallocation of the stack frame
+
+139
+00:08:29,000 --> 00:08:33,833
+都包含了一个add ESP,8; ret gadget
+also contains an add ESP 8 ret gadget
+
+140
+00:08:34,000 --> 00:08:37,500
+如果你跳过H前缀
+ if you jump past that H prefix again
+
+141
+00:08:37,500 --> 00:08:40,333
+这个H前缀你现在可能已经知道了
+that H prefix you are propably by now
+
+142
+00:08:40,400 --> 00:08:47,266
+非常痛苦地意识到就是它决定了是对ESP、EAX等的操作
+very painfully aware is what changes operations on ESP and EAX and so forth 
+
+143
+00:08:47,400 --> 00:08:51,166
+还是对 RSP、RAX等的操作
+to RSP rax and so forth 
+
+144
+00:08:51,300 --> 00:08:57,466
+一般来说，指令的字节数越长
+in general the longer the instruction in bytes
+
+145
+00:08:57,600 --> 00:09:00,200
+它在二进制中出现的次数越少
+the more rare it will randomly appear in a binary
+
+146
+00:09:00,400 --> 00:09:02,766
+但是某些很长的指令
+but certain instructions even long ones
+
+147
+00:09:02,766 --> 00:09:06,000
+会因为频繁使用而频繁出现
+will appear frequently because they are frequently used
+
+148
+00:09:08,500 --> 00:09:09,300
+好吧
+all right
+
+149
+00:09:10,466 --> 00:09:11,300
+另一个概念
+another concept
+
+150
+00:09:11,300 --> 00:09:13,566
+如何将地址存储到寄存器中
+how do you store addresses into registers
+
+151
+00:09:13,566 --> 00:09:16,733
+这些地址你可能......
+addresses you might not otherwise have 
+
+152
+00:09:18,300 --> 00:09:22,300
+我提到过
+I known I mentioned that
+
+153
+00:09:22,566 --> 00:09:25,066
+长指令不太可能随机出现
+long instructions are less likely to randomly appear
+
+154
+00:09:25,000 --> 00:09:28,500
+LEA就是这样一条指令
+load effective address is one such instruction
+
+155
+00:09:28,600 --> 00:09:30,500
+这条指令很长
+that instruction is very long
+
+156
+00:09:32,200 --> 00:09:38,100
+你很少看到它出现在ROP gadget中
+so it's rare that you will see that instruction as part of a rop gadget
+
+157
+00:09:38,600 --> 00:09:40,633
+但它可能出现在二进制程序中
+it might be in the binary 
+
+158
+00:09:40,833 --> 00:09:44,800
+LEA指令通常在函数的开头
+but the load effects address instructions are usually at the beginning of a function
+
+159
+00:09:44,800 --> 00:09:48,200
+但你通常期望的都在函数末尾
+and you typically want things at the end of functions
+
+160
+00:09:48,300 --> 00:09:50,766
+要把这些gadget链起来
+to chain these gadgets
+
+161
+00:09:53,300 --> 00:09:59,200
+你要做的是
+what you might instead do is
+
+162
+00:10:00,000 --> 00:10:06,200
+通常很怪的gadget，由跳到指令中间产生的
+gadgets usually really weird gadgets resulting from jumping part way into an instruction
+
+163
+00:10:06,700 --> 00:10:12,400
+会push rsp，pop Rax，然后返回
+that does stuff push the stack pointer pop Rax and then return
+
+164
+00:10:12,400 --> 00:10:17,100
+这将把rsp赋值给rax
+so this will move RSB rax essentially 
+
+165
+00:10:17,800 --> 00:10:19,866
+还有更危险的
+there are more dangerous ones
+
+166
+00:10:23,800 --> 00:10:24,800
+等等，等等
+wait wait wait
+
+167
+00:10:24,900 --> 00:10:27,666
+等一下，我刚刚改了没生效，马上回来
+hold on I made a type on the slide I'll be right back
+
+168
+00:10:30,966 --> 00:10:32,666
+我们回来了，很抱歉
+and we're back sorry about that
+
+169
+00:10:33,166 --> 00:10:34,600
+得把这个幻灯片修好
+had to fix up this slide
+
+170
+00:10:34,600 --> 00:10:36,133
+好了,那么
+alright so
+
+171
+00:10:36,466 --> 00:10:38,966
+LEA不好，它很长
+load effective address is not good it's very long
+
+172
+00:10:38,966 --> 00:10:41,333
+它相较函数不常见
+it's not often found than the functions
+
+173
+00:10:41,333 --> 00:10:44,700
+你通常需要一个更好的选择
+you typically need a better alternative
+
+174
+00:10:44,700 --> 00:10:46,700
+有几种不同的方法
+there are a couple of different ways
+
+175
+00:10:46,733 --> 00:10:48,166
+这些方法是非常看情况的
+these things are very situational
+
+176
+00:10:48,166 --> 00:10:49,900
+取决于你能使用的gadget
+depends on the gadgets available to you
+
+177
+00:10:49,900 --> 00:10:50,933
+替补1
+alternative one
+
+178
+00:10:51,366 --> 00:10:54,700
+它将push RSP;pop RAX并返回
+something that will push RSP pop RAX and return
+
+179
+00:10:54,700 --> 00:10:57,800
+这将把rsp赋值给rax
+this will move RSP into RAX
+
+180
+00:10:58,066 --> 00:11:01,166
+你能通过它拿到栈。当然，RSP仍然完好无损
+you get the stack at it. of course RSP remains intact
+
+181
+00:11:01,500 --> 00:11:04,600
+替补2是add RAX, RSP
+another alternative is to add RAX, RSP
+
+182
+00:11:04,600 --> 00:11:11,500
+如果你以某些方式pop 0到RAX中
+this will if you pop 0 into RAX in some other way
+
+183
+00:11:12,500 --> 00:11:17,300
+这将把RSP赋值给RAX
+then this will move RSP into RAX
+
+184
+00:11:17,466 --> 00:11:21,400
+否则RAX会是一个相对RSP旧RAX偏移的地址
+otherwise it could offset RAX by RSP
+
+185
+00:11:22,100 --> 00:11:27,700
+但从概念上讲，它也算将RSP的值传给了RAX
+but conceptually it still gets the value of RSP somehow into RAX
+
+186
+00:11:27,700 --> 00:11:31,700
+一条疯狂的路线是一条叫做交换的指令
+a crazy route is an instruction called exchange 
+
+187
+00:11:31,800 --> 00:11:38,500
+它在二进制中作为gadget经常出现，
+that actually shows up in binaries relatively frequently as a rop gadget
+
+188
+00:11:38,500 --> 00:11:42,300
+它将交换寄存器rax和RSB的值，然后返回
+that will swap registers rax and RSB and then return
+
+189
+00:11:42,366 --> 00:11:43,866
+这是非常危险的
+this is insanely dangerous
+
+190
+00:11:43,866 --> 00:11:46,766
+我将在下一行解释为什么
+I'll go into why that is on the next line 
+
+191
+00:11:47,100 --> 00:11:53,300
+但基本思路是，如果你可以在程序中用gadget
+but the basic idea is if you can use gadgets in the program
+
+192
+00:11:57,100 --> 00:12:02,300
+获取地址，计算地址等等
+ to get addresses and compute addresses and so forth 
+
+193
+00:12:02,600 --> 00:12:07,900
+你需要的数据泄露漏洞会更少
+you might need fewer leaks of fewer data disclosure of vulnerabilities
+
+194
+00:12:08,100 --> 00:12:14,000
+否则你可能需要执行完整端到端攻击（否则更麻烦）
+then you otherwise might need to actually perform end to end attack
+
+195
+00:12:16,733 --> 00:12:17,533
+所以
+so
+
+196
+00:12:19,300 --> 00:12:23,333
+我提到了xchg RAX RSP是危险的
+I mentioned exchange RAX RSP is dangerous right
+
+197
+00:12:25,733 --> 00:12:27,900
+如果你不喜欢你的栈
+if you don't like your stack
+
+198
+00:12:27,900 --> 00:12:30,600
+有很多原因导致你不喜欢你的栈
+and there are many reasons why you might not like your stack
+
+199
+00:12:30,900 --> 00:12:32,933
+例如，你的栈可能过于受限
+for example your stack might be too limiting
+
+200
+00:12:32,900 --> 00:12:36,900
+你可能无法读取足够的数据来溢出
+you might not be able to read enough data to actually overflow
+
+201
+00:12:38,900 --> 00:12:41,533
+或者你可能无法溢出足够的数据
+or you might not be able to overflow enough data 
+
+202
+00:12:41,700 --> 00:12:44,200
+来获得一个足够长的ROP链
+to have a long ROP chain a long enough ROP chain
+
+203
+00:12:44,500 --> 00:12:47,400
+你可以试试stack pivot
+um you can try a stack pivot
+
+204
+00:12:47,400 --> 00:12:50,500
+这个xchg rax,RSP会交换rax和RSP的值
+so this exchange rax RSP will swap rax and RSP
+
+205
+00:12:50,500 --> 00:12:52,166
+当下一次返回时
+when the next ret happens
+
+206
+00:12:53,500 --> 00:12:56,933
+这个将被弹出的返回地址是
+this a return address will be popped off
+
+207
+00:12:57,066 --> 00:12:58,333
+你的新栈
+ of what is now your new stack
+
+208
+00:12:58,566 --> 00:13:00,366
+也就是以前RAX指向的地址
+which is where rax used to point
+
+209
+00:13:00,400 --> 00:13:04,266
+当你做这个交换时，你最好确定
+you better make sure when you do this exchange rax RSP
+
+210
+00:13:04,700 --> 00:13:07,600
+RAX指向了一个合法的地址
+that rax is pointing to something reasonable
+
+211
+00:13:07,600 --> 00:13:10,100
+还有一些相对更常见的gadget
+there are also gadgets that show up relatively frequently
+
+212
+00:13:10,166 --> 00:13:11,900
+它们会pop RSP
+that do pop RSP
+
+213
+00:13:12,866 --> 00:13:14,266
+概念上有点相似
+kind of conceptually similar
+
+214
+00:13:14,266 --> 00:13:17,900
+通常情况下，他们是某些指令的一部分
+usually it's they are misaligned into a part of an instruction
+
+215
+00:13:17,900 --> 00:13:21,100
+这个是pop RSP，然后是一些其他的东西，然后是ret
+so it's pop RSP and then some other stuff and then a ret
+
+216
+00:13:21,533 --> 00:13:22,333
+好吧
+all right
+
+217
+00:13:23,333 --> 00:13:24,566
+注意stack pivot
+be careful about stack pivot
+
+218
+00:13:24,566 --> 00:13:27,433
+但如果你走投无路，它会是一个强大的工具
+but it can be a powerful tool  if your back is against the wall
+
+219
+00:13:27,566 --> 00:13:28,100
+否则
+otherwise
+
+220
+00:13:28,733 --> 00:13:32,533
+另一个重要的概念是如何传输数据
+um another rop concept how do you transfer data
+
+221
+00:13:32,666 --> 00:13:36,933
+像传入传出内存
+like to memory and from memory
+
+222
+00:13:37,133 --> 00:13:37,933
+嗯
+um
+
+223
+00:13:38,500 --> 00:13:42,200
+这些gadget出奇地普通
+a gadget that is weirdly common are these
+
+224
+00:13:42,733 --> 00:13:45,333
+或者说是一组gadget
+or a group of gadgets is 
+
+225
+00:13:45,766 --> 00:13:48,500
+向al添加一个字节的内存
+add a byte of memory to al
+
+226
+00:13:48,600 --> 00:13:50,333
+pop RBP ret
+pop RBP ret
+
+227
+00:13:50,333 --> 00:13:50,933
+我猜
+I'm guessing
+
+228
+00:13:51,066 --> 00:13:57,466
+这是某指令序列中的部分
+this is some sort of a misaligned part of an instruction sequence
+
+229
+00:13:57,466 --> 00:13:59,333
+这在函数末尾很常见
+that is common at the end of functions
+
+230
+00:13:59,700 --> 00:14:01,500
+其实我并没有仔细研究过
+I hadn't actually looked into it
+
+231
+00:14:02,100 --> 00:14:05,800
+一个缺点是，这通常需要
+one downside is this typically requires
+
+232
+00:14:05,900 --> 00:14:10,300
+这的确需要一个gadget来设置我们的RCX和al
+or this does require a gadget to set our RCX  and to set al
+
+233
+00:14:11,400 --> 00:14:15,200
+设置RCX的gadget非常罕见
+gadgets to set RCX for whatever reason are surprisingly rare
+
+234
+00:14:16,500 --> 00:14:19,133
+这可能不是最优的，但是
+so this might not be optimal but
+
+235
+00:14:19,200 --> 00:14:22,300
+你可以搜索类似的gadget来存储内存
+you can search for similar gadgets to store memory
+
+236
+00:14:22,366 --> 00:14:25,700
+重点是有gadget可以储存内存
+the point is there are gadgets that will store memory
+
+237
+00:14:27,100 --> 00:14:37,300
+如今，在ROP中构建复杂存储结构的情况已经不常见了
+nowadays it's much less common in a ropchain to need to build complex memory structures
+
+238
+00:14:40,900 --> 00:14:44,733
+因为我们不再在栈上传递参数等等
+because we no longer pass arguments on the stack and so forth
+
+239
+00:14:44,900 --> 00:14:46,700
+但有时确实会发生
+ but it does happen sometimes
+
+240
+00:14:46,833 --> 00:14:50,900
+有时候你一开始可以使用的ROP链非常有限
+sometimes you are very limited by the ropchains you can use initially 
+
+241
+00:14:51,000 --> 00:14:54,000
+然后你必须建立一个副ROP链存储器
+and then you have to build a secondary ropchain memory
+
+242
+00:14:54,733 --> 00:14:55,866
+使用类似这样的工具
+using something like this
+
+243
+00:14:55,866 --> 00:14:58,700
+但这是一种少见的情况
+but but it's kind of an exotic thing 
+
+244
+00:14:58,900 --> 00:15:02,433
+你可能不会做太多的数据存储
+you likely won't do much data storage 
+
+245
+00:15:02,800 --> 00:15:05,800
+然后再在你的ROP链中读取内存
+and and retrieval in memory in your ropchain
+
+246
+00:15:06,266 --> 00:15:07,066
+好吧
+alright
+
+247
+00:15:07,766 --> 00:15:09,500
+另一个ROP概念
+another rop concept
+
+248
+00:15:10,500 --> 00:15:11,933
+系统调用指令
+the syscall instruction
+
+249
+00:15:11,933 --> 00:15:13,933
+这在shellcode中非常常见
+which you are very used to in shellcode
+
+250
+00:15:13,933 --> 00:15:15,966
+在ROP中很少见
+is actually very rare in rop
+
+251
+00:15:16,100 --> 00:15:18,900
+通常需要调用库函数
+typically you will need to call library functions
+
+252
+00:15:18,900 --> 00:15:19,933
+如果你注意到
+if you notice
+
+253
+00:15:20,200 --> 00:15:22,466
+在我们的例子中
+in our example
+
+254
+00:15:25,266 --> 00:15:26,300
+我们有
+we had
+
+255
+00:15:28,133 --> 00:15:30,933
+我们调用foo的一部分，它调用了一个open
+we called part of foo which did an open
+
+256
+00:15:30,933 --> 00:15:32,333
+这是一个库函数
+this is a library function
+
+257
+00:15:32,933 --> 00:15:35,566
+我们执行了bar的一部分
+we did part of bar
+
+258
+00:15:36,066 --> 00:15:38,000
+这
+which did a
+
+259
+00:15:38,666 --> 00:15:39,600
+我弄丢了
+I lost it
+
+260
+00:15:41,300 --> 00:15:42,566
+这执行了sendfile
+which did sendfile
+
+261
+00:15:42,666 --> 00:15:44,000
+也是一个库函数
+also library function
+
+262
+00:15:44,100 --> 00:15:50,900
+库函数是通过二进制文件中的一个特殊部分调用的
+library functions are called through a special part of the binary 
+
+263
+00:15:51,033 --> 00:15:54,300
+称为过程链接表plt
+called the procedure linkage table
+
+264
+00:15:54,366 --> 00:15:57,400
+所以如果你看401070
+so if you look at 401070
+
+265
+00:15:59,166 --> 00:16:00,166
+在这里
+up here
+
+266
+00:16:00,866 --> 00:16:02,900
+在PLT
+in the PLT
+
+267
+00:16:03,533 --> 00:16:05,300
+这里是401070
+here is 401070
+
+268
+00:16:05,866 --> 00:16:07,400
+是sendfile
+it's send file 
+
+269
+00:16:07,566 --> 00:16:11,500
+它做了很多复杂的事情
+and it does a bunch of complex stuff 
+
+270
+00:16:11,733 --> 00:16:19,800
+在libc中查找sendfile的地址并跳转到那里
+to look up the address of sendfile in libc and jump there
+
+271
+00:16:20,800 --> 00:16:26,300
+这可能是另一个视频或问答的主题
+this will likely be the subject of another later video or extended Q&A
+
+272
+00:16:27,933 --> 00:16:30,733
+但是为了使用库函数
+but in order to use library functions 
+
+273
+00:16:31,000 --> 00:16:32,666
+你得知道他们在哪
+you need to know where they are
+
+274
+00:16:32,666 --> 00:16:34,900
+这样你才能把它们的返回地址写到栈上
+so you can write their return address onto the stack
+
+275
+00:16:34,900 --> 00:16:36,966
+或者用其他方式跳过去
+or jump there in some other way
+
+276
+00:16:39,100 --> 00:16:40,500
+否则你最好希望
+otherwise you better hope
+
+277
+00:16:40,700 --> 00:16:46,500
+二进制文件中就有一个系统调用指令
+that there's a syscall instruction inside the binary 
+
+278
+00:16:47,100 --> 00:16:50,933
+或者在二进制文件中有你要用函数所需的PLT条目
+or a PLT entry inside the binary for the function you need
+
+279
+00:16:51,166 --> 00:16:52,100
+这有点棘手
+it's a little tricky
+
+280
+00:16:52,100 --> 00:16:53,766
+我的建议是保持简单
+my advice keep it simple
+
+281
+00:16:54,900 --> 00:17:00,600
+获得flag的最短路径是最简单的
+the shortest path to your flag is easiest in this case
+
+282
+00:17:00,600 --> 00:17:05,100
+在我们的示例中，就是重用二进制文件中的open和sendfile
+it was reusing open and sendfile in the binary in our example case
+
+283
+00:17:05,600 --> 00:17:08,500
+但如果你只有chown，也能成功
+ but if all you have is chown you can make that work
+
+284
+00:17:10,566 --> 00:17:13,266
+在前面的模块中
+in the previous module 
+
+285
+00:17:13,300 --> 00:17:16,866
+您已经使用单个系统调用执行了一个shellcode
+you've carried out a shellcode with a single syscall
+
+286
+00:17:17,766 --> 00:17:18,666
+好吧
+all right
+
+287
+00:17:19,666 --> 00:17:20,866
+另一个ROP概念
+another rop concept
+
+288
+00:17:20,866 --> 00:17:22,900
+了解你的环境
+know your environment right
+
+289
+00:17:22,900 --> 00:17:25,700
+你的ROP链不会在真空中开始执行
+your ropchain doesn't just start executing in a vacuum
+
+290
+00:17:25,866 --> 00:17:27,900
+当你的ROP链启动
+when your ropchain starts
+
+291
+00:17:27,900 --> 00:17:31,700
+它的状态有各种各样有用的信息
+there's all sorts of useful information in the state
+
+292
+00:17:32,200 --> 00:17:33,700
+在shellcoding模块中
+in the shellcoding module
+
+293
+00:17:33,800 --> 00:17:36,233
+我们有几个关卡
+we had several levels where 
+
+294
+00:17:36,333 --> 00:17:40,700
+你必须使用寄存器中已经为0的部分状态
+you had to use part of the state that register that were already 0
+
+295
+00:17:40,733 --> 00:17:42,533
+这样你不需要把它们清零，等等
+so you didn't have to 0 them out etc
+
+296
+00:17:42,933 --> 00:17:45,066
+这里也有类似的东西
+there's similar things here
+
+297
+00:17:45,066 --> 00:17:51,700
+有地址指向代码、栈、堆和libc
+there are addresses  that are pointing to code to the stack to the heap to libc
+
+298
+00:17:51,866 --> 00:17:53,000
+这些地址到处都是
+all over the place
+
+299
+00:17:53,800 --> 00:17:55,666
+如果你需要这些地址
+if you need one of those addresses 
+
+300
+00:17:55,866 --> 00:17:59,933
+然后你可以在你的ROP链中检索和用它
+then you can retrieve and reason about it in your ropchain
+
+301
+00:17:59,933 --> 00:18:03,200
+你不需要从头开始
+you don't have to get it somehow from scratch
+
+302
+00:18:04,000 --> 00:18:06,733
+使用这些地址
+use these addresses right
+
+303
+00:18:10,800 --> 00:18:15,500
+不要丢弃程序状态中的丰富信息
+don't discard all of the rich information  that's in the program state
+
+304
+00:18:15,600 --> 00:18:17,100
+当你劫持了控制流程后
+when you hijack control flow
+
+305
+00:18:17,666 --> 00:18:19,366
+我以前做过，每个人都做过
+I've done that in the past everyone does
+
+306
+00:18:19,366 --> 00:18:21,766
+用了大量的时间
+it waste an enormous amount of time
+
+307
+00:18:23,566 --> 00:18:25,266
+对自己好一点
+do yourself a favor and
+
+308
+00:18:25,500 --> 00:18:28,700
+当你劫持控制流时，
+when you hijack execution to begin with
+
+309
+00:18:29,300 --> 00:18:31,133
+先看看所有寄存器的值
+look at the values of all the registers
+
+310
+00:18:31,133 --> 00:18:33,133
+看看栈的值
+look at the value of the stack 
+
+311
+00:18:33,266 --> 00:18:35,600
+看看里面有什么有用的
+and see you know what in there you can use
+
+312
+00:18:36,300 --> 00:18:36,866
+好了终于
+alright finally
+
+313
+00:18:36,866 --> 00:18:38,333
+我一直在说
+I keep saying
+
+314
+00:18:38,333 --> 00:18:39,666
+你最好祈祷
+you know you better hope 
+
+315
+00:18:39,666 --> 00:18:41,300
+这个gadget是存在的。那个gadget是存在的
+this rop gadget exists. that rop gadget is exist
+
+316
+00:18:41,300 --> 00:18:42,933
+怎么找gadget呢？
+how do you find rop gadgets
+
+317
+00:18:43,100 --> 00:18:45,900
+当我刚开始的时候，这是一个纯手工活
+when I 1st started out it was a manual process
+
+318
+00:18:45,900 --> 00:18:47,300
+当时有一种工具
+believe it or not there was one tool
+
+319
+00:18:47,300 --> 00:18:48,600
+它是为Windows设计的
+it was for windows
+
+320
+00:18:49,066 --> 00:18:50,600
+我记得它是收费的
+and I don't think it was free
+
+321
+00:18:51,366 --> 00:18:52,733
+这是个坏消息
+and it was just bad news
+
+322
+00:18:53,800 --> 00:18:58,800
+但是现在有非常多的工具
+but now there are tools all over the place
+
+323
+00:18:58,933 --> 00:19:02,066
+我维护了一堆CTF工具的安装程序
+I maintain a bunch of installers for CTF tools
+
+324
+00:19:02,000 --> 00:19:06,800
+仅仅这个仓库就有3个不同工具的安装程序
+and just that repository has installers for 3 different tools
+
+325
+00:19:07,266 --> 00:19:09,933
+用来找rop gadget的工具
+that people have written to find rop gadget
+
+326
+00:19:09,933 --> 00:19:12,266
+我将向你展示一个这样的工具
+I'll show you one such tool 
+
+327
+00:19:12,500 --> 00:19:14,966
+它叫做RP + +
+it is called RP plus plus
+
+328
+00:19:16,366 --> 00:19:19,000
+用起来很简单，只要执行RP + +
+very easy you do RP plus plus
+
+329
+00:19:19,666 --> 00:19:21,033
+默认情况下，它将打印出来
+by default it'll print out 
+
+330
+00:19:21,133 --> 00:19:23,666
+在程序的不同位置的可能重复的gadget
+a bunch of duplicate gadgets at different positions in the program
+
+331
+00:19:23,666 --> 00:19:25,533
+这可能对你有用
+this might be useful to you 
+
+332
+00:19:25,633 --> 00:19:28,533
+如果你的输入有限制，但这种情况很少
+in case there's constraints on your input but propably not
+
+333
+00:19:28,700 --> 00:19:33,333
+告诉它这个gadget应该有多深
+tell it how deep the gadget should be
+
+334
+00:19:33,433 --> 00:19:35,366
+指令有多长
+how many instructions long
+
+335
+00:19:35,766 --> 00:19:38,466
+2是个好数字，你可以要求更多，但是
+2 is a good number you can do more than 2 but
+
+336
+00:19:39,700 --> 00:19:46,100
+它增加了gadget产生一些疯狂效果的可能
+there it increases the chance that your gadget will have some crazy effects
+
+337
+00:19:46,200 --> 00:19:48,366
+而且可能无法修复
+that you might not be able to compensate for
+
+338
+00:19:48,866 --> 00:19:50,533
+这可能会使你的程序崩溃
+that might make your program crash
+
+339
+00:19:51,300 --> 00:19:52,500
+然后给它一个文件
+and then you give it a file
+
+340
+00:19:52,566 --> 00:19:55,333
+我们给它rop_example
+and so let's give our rop example
+
+341
+00:19:56,400 --> 00:20:00,366
+这些是rop_example中的gadget
+these are the gadgets in our rop example file
+
+342
+00:20:02,433 --> 00:20:04,333
+50个独特的gadget。并不多
+ 50 unique gadgets not a lot
+
+343
+00:20:04,866 --> 00:20:06,666
+好了，我们有两个
+alright we have 2 of these
+
+344
+00:20:07,533 --> 00:20:08,800
+add RSP 8; ret 
+add RSP 8; ret 
+
+345
+00:20:09,133 --> 00:20:11,866
+这是栈清理和返回
+so this is some stack cleanup and a return
+
+346
+00:20:11,800 --> 00:20:16,800
+我提到过，每个add RSP指令去掉首字节就是add ESP指令
+I mentioned that at every add RSP one byte into it is an add ESP
+
+347
+00:20:16,866 --> 00:20:20,133
+所以在401016有一个add rsp
+so there's an add RSP at 401016
+
+348
+00:20:20,500 --> 00:20:22,666
+就有一个add ESP 在 401017
+and an add ESP at 401017
+
+349
+00:20:22,900 --> 00:20:25,500
+为什么，因为它正好跨越了那个H
+why because it jumps right past that H
+
+350
+00:20:25,766 --> 00:20:28,866
+H把add ESP变成add RSP
+and the H turns it from add ESP to add RSP
+
+351
+00:20:29,133 --> 00:20:30,766
+还有一些疯狂的gadget
+there's some crazy other gadget
+
+352
+00:20:30,766 --> 00:20:33,333
+这是我们之前讲过的那个leave ret
+well here's that leave ret that we talked about
+
+353
+00:20:33,700 --> 00:20:36,133
+有很多ret,找到了14个
+there's a lot of just ret 14 of them
+
+354
+00:20:36,133 --> 00:20:38,066
+到目前为止最常见的gadget
+the most common gadget by far
+
+355
+00:20:39,200 --> 00:20:41,600
+有很多pop RDI
+a lot of pop RDI
+
+356
+00:20:41,866 --> 00:20:43,733
+pop RSI pop R15
+pop RSI and R15
+
+357
+00:20:44,466 --> 00:20:46,233
+RDI和RSI是函数前两个参数
+so RDI and RSI those are the 1st 2 arguments 
+
+358
+00:20:46,600 --> 00:20:47,933
+这已经很不错了
+already that's pretty good
+
+359
+00:20:47,933 --> 00:20:51,133
+如果我们能找到清零RDX的方法
+if we can figure out a way to zero out RDX
+
+360
+00:20:52,366 --> 00:20:53,166
+然后
+then
+
+361
+00:20:54,800 --> 00:20:57,600
+基本上就可以
+if you're basically good to go to
+
+362
+00:20:57,666 --> 00:21:00,400
+就可以调用系统调用了
+and and figure out a way to trigger system calls
+
+363
+00:21:00,400 --> 00:21:00,966
+我们就准备好了
+and we're good to go
+
+364
+00:21:00,966 --> 00:21:03,800
+当然在这个程序中有很多
+but of course in this program there're quite
+
+365
+00:21:04,200 --> 00:21:08,400
+有些之前用过的好用的大的gadget
+there're very nice big gadgets that we used earlier
+
+366
+00:21:08,500 --> 00:21:13,400
+你会注意到我们用来打开和发送文件的gadget
+so you'll notice that the gadgets that we used to open and send files
+
+367
+00:21:13,833 --> 00:21:15,299
+在这里并没有
+ don't show up here
+
+368
+00:21:15,300 --> 00:21:18,500
+对于rp++来说它们太大太复杂了
+they're way too big way too complex for rp plus plus reason about
+
+369
+00:21:18,700 --> 00:21:24,500
+所以依赖这些自动工具并不总是值得的
+so it doesn't always pay to depend on these automatic tools
+
+370
+00:21:25,100 --> 00:21:28,400
+如果你试一下更大的二进制文件，比如bin bash
+if you do a bigger binary something like bin bash
+
+371
+00:21:28,933 --> 00:21:31,600
+这里什么都有
+there's everything in here right
+
+372
+00:21:32,300 --> 00:21:36,300
+成堆成堆成堆成堆成堆的gadget
+tons and tons and tons and tons and tons of gadgets
+
+373
+00:21:37,200 --> 00:21:40,166
+同样，这些是错位的指令
+and again these are misaligned instructions
+
+374
+00:21:40,166 --> 00:21:41,100
+他们就像
+they're like
+
+375
+00:21:42,200 --> 00:21:43,500
+可能是各种各样的东西
+it could be all sorts of stuff
+
+376
+00:21:43,500 --> 00:21:47,300
+实际上可能没有这样的东西
+there might not actually be something like this
+
+377
+00:21:47,300 --> 00:21:50,000
+二进制中不太可能有这样的东西
+it's unlikely that there's something like this in the binary
+
+378
+00:21:50,000 --> 00:21:52,166
+估计是跳转到指令中的部分
+we propably jump part away through an instruction
+
+379
+00:21:58,566 --> 00:22:00,666
+或者可能有，但是不管怎样
+or there there could be actually but anyways
+
+380
+00:22:01,966 --> 00:22:03,133
+但是这里有很多东西
+but there's a lot of stuff 
+
+381
+00:22:03,266 --> 00:22:06,566
+我想提一件事，然后展示给你们看
+and I wanted to mention one thing and then show it to you
+
+382
+00:22:06,933 --> 00:22:10,700
+实际上，当你有了这个gadget列表
+realistically once you have that list of gadgets
+
+383
+00:22:12,100 --> 00:22:18,300
+某些人会尝试这样做
+certain gadget chain searchers can try to
+
+384
+00:22:18,600 --> 00:22:21,200
+某些gadget的发现者也可以尝试
+or certain gadget finders can also try to 
+
+385
+00:22:21,200 --> 00:22:23,066
+用这些gadget构建ROP链
+build chains out of your gadgets
+
+386
+00:22:26,100 --> 00:22:30,900
+用类似于pwntools自动生成shellcode的方法
+doing that is similar to generating shellcode automatically pwntools
+
+387
+00:22:31,000 --> 00:22:32,333
+这在某些情况下是可行的
+it'll work for some cases
+
+388
+00:22:32,333 --> 00:22:34,333
+但是当它不起作用的时候
+but when it doesn't work
+
+389
+00:22:34,400 --> 00:22:35,900
+这会浪费你大量的时间
+ it'll waste enormous amounts of your life
+
+390
+00:22:36,800 --> 00:22:39,600
+你应该能
+you should be competent in
+
+391
+00:22:39,700 --> 00:22:43,500
+使用正则表达式在输出中搜索目标gadget
+searching through the output for your gadgets using regular expressions
+
+392
+00:22:45,566 --> 00:22:47,166
+如果你想
+so let's say if you wanted to
+
+393
+00:22:48,266 --> 00:22:51,900
+找到一个可以设置RDX的gadget
+find a gadget that will set RDX 
+
+394
+00:22:52,533 --> 00:22:54,566
+所以你可以grep -P
+so you can grep dash capital P
+
+395
+00:22:54,566 --> 00:22:57,733
+启用所有perl正则表达式扩展(pcre)
+enables all the perl regular expression extensions
+
+396
+00:22:57,866 --> 00:22:59,333
+我们可以找一下
+and we can say okay let's find something 
+
+397
+00:22:59,433 --> 00:23:06,299
+mov,add,sub或pop RDX
+either move or add or sub or pop RDX
+
+398
+00:23:08,466 --> 00:23:10,300
+这少的有点离谱
+there's shockingly little
+
+399
+00:23:12,766 --> 00:23:14,500
+RDX是一个棘手的问题
+RDX is a tricky one
+
+400
+00:23:14,933 --> 00:23:16,600
+这是一个很好
+so here this is a good one
+
+401
+00:23:16,900 --> 00:23:18,566
+这是 pop RDX
+so this pops RDX
+
+402
+00:23:19,000 --> 00:23:21,933
+当然这是在bin bash中，而不是在我们的小程序里
+this is of course in bin bash not in our tiny program
+
+403
+00:23:22,066 --> 00:23:25,700
+pop RDX; or EAX, 数字
+pops RDX or EAX with some large numbers
+
+404
+00:23:25,700 --> 00:23:27,700
+所以我们必须恢复EAX
+so we'll have to restore EAX
+
+405
+00:23:28,066 --> 00:23:30,466
+我们必须时刻注意副作用
+we have to constantly fight against side effect
+
+406
+00:23:30,933 --> 00:23:33,333
+然后返回，这很好
+and return so that's great
+
+407
+00:23:34,066 --> 00:23:36,500
+另一个是add RDX RCX
+another one is this add RDX RCX
+
+408
+00:23:36,500 --> 00:23:38,666
+之后会直接跳转到RDX
+but then we have to jump right to RDX
+
+409
+00:23:38,666 --> 00:23:39,766
+这可能不太好
+that's propably not good
+
+410
+00:23:42,466 --> 00:23:43,966
+是的，这些是
+yeah so these are
+
+411
+00:23:44,333 --> 00:23:46,200
+这个可能是对我们最好的
+this one is propably the best for us
+
+412
+00:23:48,900 --> 00:23:54,900
+同样，如果你想找一个可以写内存的gadget
+likewise if you want to find a gadget that you can write to memory with
+
+413
+00:23:55,300 --> 00:23:56,900
+你可以这样做
+you can do something like this
+
+414
+00:23:57,400 --> 00:24:02,666
+用英特尔汇编风格写入内存
+writing to memory in proper Intel assembly
+
+415
+00:24:03,500 --> 00:24:07,700
+你执行你需要操作然后是要用的内存大小
+ you do your operation and your memory size
+
+416
+00:24:09,933 --> 00:24:11,900
+所以我们可以
+and so we can say okay
+
+417
+00:24:11,800 --> 00:24:15,666
+有一个mov，然后是一个单词，然后是一个左括号
+there's a move then a word and then an open bracket 
+
+418
+00:24:15,800 --> 00:24:20,700
+这里是我们可以用来影响内存的各种方式
+and here all of the various ways we can influence memory
+
+419
+00:24:21,933 --> 00:24:23,800
+这是一个很好的例子
+and so here's a good one
+
+420
+00:24:24,600 --> 00:24:30,700
+将4B从DX移至RSI指向的内存
+move 4B to RSI from DX
+
+421
+00:24:33,900 --> 00:24:35,933
+是的，所以这可能是一个很好的例子
+yeah so this is propably a good one 
+
+422
+00:24:36,066 --> 00:24:39,066
+因为我刚找到了设置RDX的方法
+because I just found how to set RDX
+
+423
+00:24:39,466 --> 00:24:41,900
+如果你找到如何设置RSI
+now if you find how to set RSI
+
+424
+00:24:43,566 --> 00:24:45,133
+对于RSI，我也是这么做的
+I do the same for RSI
+
+425
+00:24:45,133 --> 00:24:46,566
+RSI很容易设置
+RSI is easy to set
+
+426
+00:24:46,700 --> 00:24:47,466
+这个
+there's right
+
+427
+00:24:53,666 --> 00:24:56,366
+RSI在这里很难设置
+RSI is shockingly difficult to set here
+
+428
+00:25:00,300 --> 00:25:01,333
+我是不是说错了
+am I full of crap
+
+429
+00:25:05,400 --> 00:25:06,500
+我说错了
+I am full of crap
+
+430
+00:25:06,966 --> 00:25:08,100
+嗯，是的
+um yeah so
+
+431
+00:25:09,000 --> 00:25:11,800
+在这种情况下，RSI实际上不容易设置
+in this case RSI is actually not easy to set
+
+432
+00:25:11,800 --> 00:25:13,333
+我们该如何设置RSI
+how would we set RSI
+
+433
+00:25:15,733 --> 00:25:17,700
+我们得用像这样的东西
+we would have to use something like this
+
+434
+00:25:17,866 --> 00:25:20,000
+但我们必须挺过这个对R13的调用
+but then we have to survive this call R13
+
+435
+00:25:20,000 --> 00:25:21,766
+所以现在我们要设置R13
+so then we have to set R13
+
+436
+00:25:22,166 --> 00:25:24,933
+现在你知道可以有多绕了
+now you can see how deep that rabbit hole can go
+
+437
+00:25:25,733 --> 00:25:26,533
+好吧
+all right
+
+438
+00:25:27,333 --> 00:25:28,133
+就是这样
+and that's it
+
+439
+00:25:28,100 --> 00:25:34,300
+这就是我们对这些更高级的rop概念的介绍
+that is the end of our run through these more advanced rop concepts
+
+440
+00:25:34,300 --> 00:25:37,500
+你们将在整个模块中练习它们
+you'll practice them of course throughout the module
+
+441
+00:25:40,000 --> 00:25:41,900
+在下个视频中
+and in the next video
+
+442
+00:25:42,200 --> 00:25:45,900
+我们会讨论更多的复杂情况
+we'll talk about complications even more complications
+

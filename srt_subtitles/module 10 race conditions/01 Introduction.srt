@@ -1,0 +1,1410 @@
+1
+00:00:01,700 --> 00:00:02,900
+你好,学生
+hello students
+
+2
+00:00:02,900 --> 00:00:05,700
+欢迎来到PWN学院的另一个模块
+and welcome to another module of pwn college
+
+3
+00:00:05,966 --> 00:00:08,733
+今天我们将讨论竞争条件
+today we're going to be talking about race conditions
+
+4
+00:00:09,300 --> 00:00:14,000
+竞争条件与时间息息相关
+race conditions are deeply grounded in the concept of time
+
+5
+00:00:14,100 --> 00:00:16,366
+所以我们先聊一下时间
+so first let's talk about time
+
+6
+00:00:16,366 --> 00:00:19,766
+正如阿尔伯特·爱因斯坦所说
+as Albert Einstein put it
+
+7
+00:00:19,966 --> 00:00:22,399
+时间是一个维度
+time is basically a dimension
+
+8
+00:00:22,400 --> 00:00:26,800
+我们可以在该维度间隔布置事件
+across which we can lay out events to separate them temporarily
+
+9
+00:00:27,066 --> 00:00:32,099
+结合个人经历来说
+right if you think about time in terms of your own personal experience
+
+10
+00:00:33,100 --> 00:00:34,466
+以这门课为例
+taking this class for example 
+
+11
+00:00:34,700 --> 00:00:35,500
+睡醒
+you might wake up. 
+
+12
+00:00:35,500 --> 00:00:37,033
+吃饭
+you might eat
+
+13
+00:00:37,200 --> 00:00:38,733
+学习pwn学院的课程
+work on pwn college
+
+14
+00:00:38,733 --> 00:00:42,333
+吃饭。学习。吃饭。学习。睡觉
+eat. work on pwn college. eat. work on pwn college. sleep
+
+15
+00:00:43,066 --> 00:00:48,599
+他们相邻分布在时间轴上
+and this is separated along the axis of time right
+
+16
+00:00:49,500 --> 00:00:51,600
+这是我们人类的经历
+so that's your human experience
+
+17
+00:00:51,600 --> 00:00:54,133
+进程也有类似的经历
+a process has a similar experience
+
+18
+00:00:54,333 --> 00:00:58,533
+进程执行操作
+a process executes operations
+
+19
+00:00:58,533 --> 00:01:00,733
+按顺序执行操作
+performs operations in order
+
+20
+00:01:00,800 --> 00:01:02,200
+它会初始化
+it'll initialize
+
+21
+00:01:02,366 --> 00:01:05,099
+检查用户输入
+then it might look at the input it's received
+
+22
+00:01:05,133 --> 00:01:07,533
+处理用户输入
+it might carry out some action on it
+
+23
+00:01:07,733 --> 00:01:10,066
+检查接下来的输入
+look at the next amount of input 
+
+24
+00:01:10,266 --> 00:01:12,899
+执行更多的操作等等
+carry out more actions and so forth
+
+25
+00:01:14,500 --> 00:01:16,133
+到这里还没问题
+this all makes sense
+
+26
+00:01:16,166 --> 00:01:18,066
+如果有2个进程呢
+now what about two processes
+
+27
+00:01:18,066 --> 00:01:20,666
+假设这个程序启动两次
+let's say you launch this program twice
+
+28
+00:01:21,100 --> 00:01:27,400
+初始化。检查输入。处理。检查输入。处理。等等......
+that initializes. checks input. does stuff. checks input. does stuff. and so on
+
+29
+00:01:28,466 --> 00:01:32,099
+在单个进程内部，都是有序的
+to each process they're internally ordered 
+
+30
+00:01:32,466 --> 00:01:34,933
+这没问题，
+and this makes sense but in reality
+
+31
+00:01:35,933 --> 00:01:42,833
+但实际上2个进程运行在一个时间轴
+these two processes they execute in a single timeline 
+
+32
+00:01:43,133 --> 00:01:48,799
+在现实世界中，它们必然是交错的
+right in the real world and so they are necessarily interleave
+
+33
+00:01:48,933 --> 00:01:50,399
+他们都会初始化
+they get initialized
+
+34
+00:01:50,566 --> 00:01:52,366
+不在同一个时间
+not at exactly the same time
+
+35
+00:01:52,366 --> 00:01:54,866
+一个肯定会在另一个之前初始化
+but one of them will get initialized before the other
+
+36
+00:01:56,700 --> 00:02:01,700
+一个可能会在另一个进程前检查输入
+one of them might check the environment input before the other and so on
+
+37
+00:02:01,733 --> 00:02:04,099
+它们不会同步执行
+they don't all execute exactly simultaneously
+
+38
+00:02:04,100 --> 00:02:06,000
+即使你同时启动它们
+even if you launch them at the same time
+
+39
+00:02:06,533 --> 00:02:07,299
+为什么会这样?
+why is this 
+
+40
+00:02:07,633 --> 00:02:11,599
+这是因为过去的cpu只有1核
+in the old days this is because computers had a single CPU
+
+41
+00:02:11,900 --> 00:02:17,500
+一次只能做一件事
+right so you would have one processor that could do one thing at a time
+
+42
+00:02:17,566 --> 00:02:19,533
+即使在多进程系统中
+even on the multi process system
+
+43
+00:02:20,200 --> 00:02:24,700
+处理器执行一个进程的操作后
+that processor would basically carry out the actions of one process
+
+44
+00:02:24,733 --> 00:02:27,399
+会切换到另一个进程，以此类推
+then it would switch to another and so on
+
+45
+00:02:27,466 --> 00:02:29,566
+现在我们有多核心，
+nowadays we have multiple cores but this
+
+46
+00:02:29,700 --> 00:02:31,500
+某种程度上缓解了问题
+kind of alleviates the issue
+
+47
+00:02:31,666 --> 00:02:33,999
+它提高了一定的并发性
+ it helps things run more concurrently
+
+48
+00:02:34,200 --> 00:02:36,933
+但还是有这个问题，例如
+but we still have for example
+
+49
+00:02:36,933 --> 00:02:43,233
+运行的进程比核还多
+more processes running on our machines than cores that can execute instructions 
+
+50
+00:02:43,733 --> 00:02:46,333
+这时内核还是要决定
+right so the kernel will still decide
+
+51
+00:02:46,400 --> 00:02:48,166
+安排什么时间执行什么进程
+what to schedule at what points
+
+52
+00:02:49,733 --> 00:02:53,499
+运行的进程还是会被打断交错在一起
+your processes as they run will still get interleave
+
+53
+00:02:54,766 --> 00:02:58,099
+除了cpu之外
+aside from CPUs 
+
+54
+00:02:58,400 --> 00:03:01,666
+其它硬件
+the other parts of the hardware architecture 
+
+55
+00:03:01,766 --> 00:03:05,066
+也限制了程序的运行
+on which your program's run are also limited
+
+56
+00:03:05,166 --> 00:03:08,899
+内存控制器，取决于内存类型，
+memory controllers depending on the type of memory etc
+
+57
+00:03:09,700 --> 00:03:13,633
+可以实现一些并发写
+can maybe handle several concurrent writes
+
+58
+00:03:13,900 --> 00:03:15,166
+但不是很多
+ but not very many
+
+59
+00:03:15,166 --> 00:03:17,066
+也许在高端机器上能达到 4 
+maybe in a high end workstation 4
+
+60
+00:03:18,166 --> 00:03:19,999
+硬盘也限制了并发性
+your storage media is limited
+
+61
+00:03:20,000 --> 00:03:25,500
+SSD可以处理一定数量的伪并发写
+an SSD can handle some amount of kind of pseudo concurrent writes
+
+62
+00:03:25,766 --> 00:03:27,166
+但是也不是很多
+but again not many
+
+63
+00:03:27,700 --> 00:03:28,800
+网络
+networks you know
+
+64
+00:03:29,100 --> 00:03:33,100
+在网络连接中，数据包是按顺序发送的
+on a network connection packets are sent in order
+
+65
+00:03:34,266 --> 00:03:35,799
+这是无法回避的
+and there's just no getting around that
+
+66
+00:03:36,200 --> 00:03:40,100
+电缆中，一个时刻只有一个数据
+it's a cable that has one packet going cross at a time
+
+67
+00:03:40,166 --> 00:03:41,899
+或者Wi - Fi信号
+or a Wi Fi signal that's
+
+68
+00:03:43,000 --> 00:03:44,166
+基本相同
+basically the same
+
+69
+00:03:44,900 --> 00:03:47,233
+所以原则上
+so the bottom line is that 
+
+70
+00:03:47,433 --> 00:03:55,466
+瓶颈在于底层计算架构
+ bottlenecks in the architecture underpinning our computing frameworks
+
+71
+00:03:55,566 --> 00:03:57,533
+我们的底层计算机制
+our computing substrate
+
+72
+00:03:57,700 --> 00:04:03,700
+只能实现部分并发
+basically requires these concurrent events to at least be partially serialized
+
+73
+00:04:03,800 --> 00:04:04,600
+好的
+right
+
+74
+00:04:05,000 --> 00:04:08,133
+让我们来看看这意味着什么
+so let's take a look at the implications of this
+
+75
+00:04:08,166 --> 00:04:10,999
+这是很可拍的
+the implication of this are kind of dire right
+
+76
+00:04:11,166 --> 00:04:13,899
+因为它基本上意味着除非你的程序
+because it basically means that unless your program
+
+77
+00:04:15,300 --> 00:04:17,333
+或两个或更多程序
+or two programs or whatever
+
+78
+00:04:17,599 --> 00:04:23,399
+声明了有对执行顺序的强制要求
+have explicit dependencies on order of operation that they enforce
+
+79
+00:04:24,700 --> 00:04:29,800
+那么，执行顺序只能在单个进程中得到保证
+then that execution order can will only be guaranteed within a single process
+
+80
+00:04:29,866 --> 00:04:32,399
+实际上是在单个线程中
+in reality actually this is within a single thread
+
+81
+00:04:32,400 --> 00:04:35,733
+在要讨论的现实中
+and in reality reality as we'll discuss
+
+82
+00:04:36,133 --> 00:04:40,066
+即使在线程中，也有棘手的极端情况
+even within a thread there are corner cases that are pretty tricky 
+
+83
+00:04:40,100 --> 00:04:43,700
+并且会导致很多bug
+and can lead to a lot of bugs 
+
+84
+00:04:44,966 --> 00:04:45,633
+比如
+so for example 
+
+85
+00:04:45,700 --> 00:04:48,366
+我们看一下
+let's look at some possible execution orders  for
+
+86
+00:04:48,400 --> 00:04:51,900
+同时启动2个进程，它们可能的执行顺序
+simultaneous launches of the two processes we've been talking about
+
+87
+00:04:53,700 --> 00:04:56,700
+1是完美的交错在一起
+one order is this perfect interleaving
+
+88
+00:04:56,700 --> 00:04:58,766
+可能发生，但概率不大
+it could happen. it likely won't happen
+
+89
+00:04:58,766 --> 00:05:00,899
+一般会比这个乱
+likely there would be some messy interleaving
+
+90
+00:05:01,600 --> 00:05:02,766
+但是你可以看到
+but you can see
+
+91
+00:05:02,966 --> 00:05:04,866
+每个进程的单个动作
+the individual actions of every process
+
+92
+00:05:04,866 --> 00:05:06,533
+在进程中是有序的
+within that process are ordered
+
+93
+00:05:07,166 --> 00:05:09,899
+在进程间是没有保证的
+ between the processes there's no guarantee
+
+94
+00:05:09,966 --> 00:05:11,899
+可能你启动P1和P2后
+so you might launch P1 and P2
+
+95
+00:05:11,900 --> 00:05:13,733
+它们的动作完美的交织在一起
+and have their actions interleave perfectly
+
+96
+00:05:13,733 --> 00:05:15,099
+也可能启动后
+you might launch them 
+
+97
+00:05:15,133 --> 00:05:19,399
+内核让P1先执行完
+and have P1 get scheduled by the kernel run all the way through
+
+98
+00:05:19,400 --> 00:05:22,400
+然后内核再让P2执行完
+and then P2 get scheduled by the kernel run all the way through
+
+99
+00:05:24,100 --> 00:05:26,000
+也可能先执行了部分P1
+you might have part of P1 run 
+
+100
+00:05:26,033 --> 00:05:27,966
+然后P2执行完，最后执行剩下的P1
+then all of P2 then the rest of P1
+
+101
+00:05:28,333 --> 00:05:31,466
+还可能P1执行一部分，P2执行一部分
+you might have part of P1 part of P2
+
+102
+00:05:31,866 --> 00:05:35,266
+然后P1执行完，P2再执行完，等等
+then the rest of P1 then the rest of P2 and so on right
+
+103
+00:05:37,866 --> 00:05:40,433
+为什么这是一个问题
+why is this a problem 
+
+104
+00:05:40,700 --> 00:05:43,133
+这是个问题，因为
+well this is a problem because
+
+105
+00:05:44,100 --> 00:05:49,000
+有些交错的执行顺序可能会导致bug
+certain execution interleavings can be buggy
+
+106
+00:05:49,066 --> 00:05:51,733
+在这种情况下想象一下
+in this case imagine 
+
+107
+00:05:52,066 --> 00:05:58,299
+假如 P1 在 check_input 里检查了关键信息
+if P1 make some assumptions or check some critical information in the check input function
+
+108
+00:05:59,000 --> 00:06:04,300
+然后 P2 也检查了这个关键信息
+then P2 does the same thing on an unchanged environment
+
+109
+00:06:04,366 --> 00:06:07,799
+所以P1和P2检查了相同的环境
+so P1 and P2 checked the same environment 
+
+110
+00:06:07,800 --> 00:06:11,100
+检查的可能是文件所属用户之类的
+they might look at ownership of files etc etc
+
+111
+00:06:11,566 --> 00:06:13,866
+然后P1进行一些操作
+and then P1 carries out some action
+
+112
+00:06:14,166 --> 00:06:16,099
+现在环境变了
+the environment has now changed
+
+113
+00:06:16,300 --> 00:06:18,900
+到P2执行操作了
+but P2 is carrying out an action 
+
+114
+00:06:18,900 --> 00:06:25,000
+但它的判断是基于环境改动前做的
+based on the environment that it checked before P1 changed that environment 
+
+115
+00:06:25,133 --> 00:06:29,733
+这被称为校验时间和使用时间不一致错误
+this is called a time of check time of use bug
+
+116
+00:06:29,933 --> 00:06:30,733
+好的
+right
+
+117
+00:06:31,166 --> 00:06:33,199
+P2执行的操作
+this action that P2 is taken
+
+118
+00:06:33,366 --> 00:06:34,933
+可能不再合法
+might no longer be valid
+
+119
+00:06:34,933 --> 00:06:36,333
+不再安全了
+might no longer be safe
+
+120
+00:06:36,466 --> 00:06:41,199
+因为P1对程序状态进行了更改
+because of changes that P1 carried out to the program state
+
+121
+00:06:41,300 --> 00:06:43,366
+我们等一下看一个例子
+we're going to look at an example in just a second
+
+122
+00:06:43,600 --> 00:06:45,700
+当然，如果不交叉在一起
+of course if you don't interleave them
+
+123
+00:06:45,700 --> 00:06:47,900
+正好是P1执行完再执行P2
+they happen to get scheduled one after the other
+
+124
+00:06:48,400 --> 00:06:50,266
+在这种情况下，不会发生错误
+in this case no bug occurs
+
+125
+00:06:50,600 --> 00:06:54,100
+其他交错类型有其他问题
+other interleaving types have other issues
+
+126
+00:06:54,200 --> 00:06:54,800
+这个
+this one
+
+127
+00:06:56,100 --> 00:07:03,400
+P1和P2完成检查，P2执行多次操作后，P1再do_action
+p1's do_action gets run after P2 does the check and action multiple times
+
+128
+00:07:03,800 --> 00:07:07,166
+P2可能会大量改动环境
+this could be massive changes to the environment potentially
+
+129
+00:07:07,266 --> 00:07:09,899
+但和执行1次操作同理
+ but conceptually the same as one action
+
+130
+00:07:11,400 --> 00:07:15,800
+幻灯片最右边，有个有趣的例子
+here's an interesting one all the way to the right of the slide 
+
+131
+00:07:16,666 --> 00:07:19,066
+这里有两个问题
+here we have two problems 
+
+132
+00:07:19,333 --> 00:07:23,566
+一是P1的do_action在P2之后运行，呃
+one is that P1's do_action gets run after P2's
+
+133
+00:07:24,900 --> 00:07:26,566
+P1先检查输入
+P1 checks its input
+
+134
+00:07:27,300 --> 00:07:30,400
+然后P2改变了环境
+then the environment gets changed by P2
+
+135
+00:07:30,766 --> 00:07:33,199
+然后P1再do_action
+and then P1 does its action
+
+136
+00:07:33,200 --> 00:07:35,300
+但对P2来说也同样有问题
+but the opposite is also true 
+
+137
+00:07:35,399 --> 00:07:38,799
+P2第二次检查它的输入
+P2 checks its input the second time around
+
+138
+00:07:38,800 --> 00:07:41,100
+就在P1第一次do_action之前
+right before P1 does its first action
+
+139
+00:07:41,466 --> 00:07:45,133
+这可能会撤销P2之前执行的操作
+which might undo actions carried out by P2 previously
+
+140
+00:07:45,133 --> 00:07:47,733
+然后P2 do_action
+and then P2 does its action
+
+141
+00:07:51,466 --> 00:07:53,333
+取决于程序逻辑
+depending on the program logic
+
+142
+00:07:54,066 --> 00:07:55,266
+这里什么都有可能发生
+anything could happen here
+
+143
+00:07:55,300 --> 00:07:59,700
+我们来看一个例子
+so let's take a look at one example
+
+144
+00:08:00,600 --> 00:08:06,300
+我创建了一个漏洞程序
+all right I created a vulnerable application for you
+
+145
+00:08:08,666 --> 00:08:09,899
+这个漏洞程序
+and this vulnerable application
+
+146
+00:08:09,900 --> 00:08:12,533
+有check_input函数和do_action函数
+has a check_input function and a do_action function
+
+147
+00:08:12,700 --> 00:08:17,000
+check_input函数读取命令行参数指定的文件
+the check input function reads a provided file name on the command line
+
+148
+00:08:17,000 --> 00:08:20,066
+确保文件里的值为0
+and make sure that the value in that file name is 0
+
+149
+00:08:20,866 --> 00:08:23,366
+do_action会读入那个值
+and the do_action will read in that value
+
+150
+00:08:23,466 --> 00:08:25,899
+然后加1，保存到文件
+increment it and write it back out
+
+151
+00:08:26,300 --> 00:08:27,000
+好的
+right
+
+152
+00:08:27,000 --> 00:08:32,333
+如果我问往文件写入0
+so if we put in 0 to this file
+
+153
+00:08:32,833 --> 00:08:33,933
+然后
+ and then
+
+154
+00:08:38,933 --> 00:08:40,999
+用该文件执行漏洞程序
+we run this on the file
+
+155
+00:08:41,666 --> 00:08:44,766
+程序告诉我们写入了1，确实写入了1
+tells us it wrote a 1 and it indeed wrote a 1
+
+156
+00:08:45,800 --> 00:08:47,166
+如果再次运行
+and then if we run it again
+
+157
+00:08:47,300 --> 00:08:50,466
+断言失败，并且不会增加
+this assertion fails and it won't incremented
+
+158
+00:08:51,266 --> 00:08:51,566
+好吧
+all right
+
+159
+00:08:51,566 --> 00:08:55,499
+这可以用来表示认证标识，或者权限等级
+you can imagine an authenticated or a privilege level
+
+160
+00:08:56,300 --> 00:09:00,300
+保存的一个递增数字
+a number being incremented and stored
+
+161
+00:09:00,733 --> 00:09:01,533
+好吧
+alright
+
+162
+00:09:02,333 --> 00:09:04,599
+目前看起来很正常
+so this seems pretty good right 
+
+163
+00:09:04,833 --> 00:09:06,366
+有趣的是
+well interestingly
+
+164
+00:09:08,200 --> 00:09:14,000
+如果我们重复运行这个
+if we run this on repeat let's say
+
+165
+00:09:20,966 --> 00:09:25,099
+这是一个shell脚本，它将持续执行这个程序
+this is a shell script that'll just keep running this
+
+166
+00:09:26,700 --> 00:09:27,533
+好的
+all right
+
+167
+00:09:30,666 --> 00:09:32,799
+我们把错误告警去掉
+let's get rid of the errors
+
+168
+00:09:32,933 --> 00:09:36,266
+现在我们在重复执行这个漏洞程序
+ so now we're running this on repeat
+
+169
+00:09:36,500 --> 00:09:40,400
+在另一个窗口中，如果我们输出num文件
+ so here in a different window if we cat out the num file
+
+170
+00:09:40,633 --> 00:09:41,266
+是1
+ it's 1
+
+171
+00:09:41,266 --> 00:09:44,966
+如果我们写入0，然后输出
+if we write 0 to it and we cat it out again
+
+172
+00:09:45,366 --> 00:09:46,566
+还是1
+ it's 1 as well
+
+173
+00:09:46,700 --> 00:09:47,500
+好的
+alright
+
+174
+00:09:47,666 --> 00:09:49,499
+它告诉我们写入了1
+so it tells us it wrote to one
+
+175
+00:09:51,966 --> 00:09:52,766
+现在
+now
+
+176
+00:09:53,966 --> 00:09:55,599
+会出什么问题?
+what could go wrong 
+
+177
+00:09:55,733 --> 00:10:00,199
+会出问题的是
+obviously what could go wrong is
+
+178
+00:10:02,133 --> 00:10:04,133
+如果check_input执行时
+if this check input runs 
+
+179
+00:10:04,600 --> 00:10:09,966
+文件中是0
+the file has a zero in it 
+
+180
+00:10:10,166 --> 00:10:14,266
+然后在check input和do_action之间
+and between check input and do_action
+
+181
+00:10:15,100 --> 00:10:21,500
+我们在另一个进程中往文件写入1
+we open that file and we write a 1 right in a different process
+
+182
+00:10:22,900 --> 00:10:24,200
+让我们试一试
+let's give that a try
+
+183
+00:10:24,900 --> 00:10:27,500
+我们在这里执行一个循环
+so we're gonna do another loop here
+
+184
+00:10:29,766 --> 00:10:31,933
+持续写入0
+we're gonna write 0 here
+
+185
+00:10:32,533 --> 00:10:35,733
+现在漏洞程序一直在执行并写入1
+so this guy is now constantly running and writing ones
+
+186
+00:10:36,100 --> 00:10:42,700
+它打开文件、读入0，然后写入1
+okay so it'll open that file read into 0 and write the 1
+
+187
+00:10:42,866 --> 00:10:44,766
+在另一个进程中
+and then in another process
+
+188
+00:10:45,366 --> 00:10:49,333
+在另一个窗口中，我们持续往文件中写入1
+in another window we're gonna loop and write a 1 to it
+
+189
+00:10:49,600 --> 00:10:51,166
+为什么我们要往文件里写入1
+why are we writing a 1 here
+
+190
+00:10:51,300 --> 00:10:53,566
+因为我们希望触发
+because what we're hoping to trigger
+
+191
+00:10:57,000 --> 00:11:02,600
+0写入循环写入0
+is the loop that's writing a zero will write the zero
+
+192
+00:11:02,900 --> 00:11:04,500
+然后check_input
+then check_input will run
+
+193
+00:11:04,566 --> 00:11:06,099
+因为这都是多进程运行的
+because this is all running multi-process
+
+194
+00:11:06,100 --> 00:11:08,766
+所以内核会让他们交叉执行
+so it can be interleaved by the kernel
+
+195
+00:11:09,100 --> 00:11:09,933
+然而
+ however
+
+196
+00:11:13,700 --> 00:11:17,300
+内核会根据进程优先级来排列
+the kernel wants to interleave it based on its internal priorities
+
+197
+00:11:17,300 --> 00:11:18,766
+不管怎样，写入了一个0
+so anyways we write a 0 
+
+198
+00:11:18,766 --> 00:11:20,199
+然后运行check_input
+then check_input gets run 
+
+199
+00:11:20,400 --> 00:11:23,300
+检查通过，然后我们又写入了一个1
+this check passes and then we write a 1
+
+200
+00:11:23,300 --> 00:11:24,433
+再执行do_action
+and do_action gets run 
+
+201
+00:11:24,566 --> 00:11:27,433
+它读入文件并加1
+and it reads in the file and increments it 
+
+202
+00:11:27,566 --> 00:11:29,299
+最后写入了一个2
+and ends up writing a 2
+
+203
+00:11:29,366 --> 00:11:31,999
+0写入循环在执行
+so we have our 0 loop is running
+
+204
+00:11:32,300 --> 00:11:33,566
+1写入循环也在执行
+ our 1 loop is running
+
+205
+00:11:33,900 --> 00:11:39,700
+能时不时看到 wrote 2!
+and you can see wrote 2 is blinking by
+
+206
+00:11:40,233 --> 00:11:41,099
+如果现在关闭漏洞程序
+ if you just kill it
+
+207
+00:11:41,533 --> 00:11:44,199
+已经写入了几次2了
+several times we wrote a 2
+
+208
+00:11:44,966 --> 00:11:45,766
+好的
+alright
+
+209
+00:11:47,300 --> 00:11:48,400
+有趣的是
+interestingly
+
+210
+00:11:49,200 --> 00:11:53,500
+这显然违反了程序的初衷
+so this is obviously a violation of the intent of the program
+
+211
+00:11:53,600 --> 00:12:01,800
+很明显，程序的目的只是写入1
+the program is very clearly written with the intent of only writing a 1
+
+212
+00:12:02,300 --> 00:12:05,600
+因为这个检查确保里面的文件是0
+because this check make sure that the file in there was a 0
+
+213
+00:12:05,666 --> 00:12:09,166
+这是一个有趣的例子，
+alright this is an interesting example also because 
+
+214
+00:12:09,233 --> 00:12:13,699
+还因为它能和自己竞争条件
+it has a race condition to against itself
+
+215
+00:12:13,733 --> 00:12:16,333
+如果在两个循环中执行这个程序
+so if you run two of these in a loop
+
+216
+00:12:17,100 --> 00:12:18,100
+最终
+then eventually
+
+217
+00:12:19,333 --> 00:12:20,966
+我们会遇到这样的情况
+we'll get a situation where
+
+218
+00:12:21,100 --> 00:12:22,900
+它们都执行了check_input
+they'll each do a check_input
+
+219
+00:12:23,100 --> 00:12:25,600
+他们看到文件内是0
+they'll see that the file is 0
+
+220
+00:12:26,300 --> 00:12:30,700
+然后打开文件并增加它
+and then one will open the file and increment it
+
+221
+00:12:31,300 --> 00:12:32,300
+让它变成1
+making it 1 
+
+222
+00:12:32,433 --> 00:12:34,399
+然后另一个进程会打开这个文件
+and then the next one will open the file increment that
+
+223
+00:12:34,400 --> 00:12:35,166
+让它变成2
+making it 2 
+
+224
+00:12:35,300 --> 00:12:36,933
+让我们来看看这是如何工作的
+let's take a look at how this will work
+
+225
+00:12:37,466 --> 00:12:41,866
+我们在一个循环中执行它
+so we run this in one
+
+226
+00:12:42,766 --> 00:12:44,333
+先关闭其他循环。都关了
+let's kill the other loops. they're killed
+
+227
+00:12:44,333 --> 00:12:46,133
+好的，我们在一个循环中执行它
+okay we run this in a loop 
+
+228
+00:12:46,400 --> 00:12:49,100
+我们在另一个循环中执行它
+we run a second iteration of it in the loop
+
+229
+00:12:51,466 --> 00:12:52,266
+好的
+ok
+
+230
+00:12:54,166 --> 00:12:54,966
+boom
+boom
+
+231
+00:12:56,300 --> 00:12:57,100
+所以
+so
+
+232
+00:12:57,300 --> 00:12:58,733
+这个循环写入了1
+this guy wrote a 1
+
+233
+00:12:58,733 --> 00:13:01,133
+这个循环检测到1退出了，什么也没写
+and this guy errored out didn't write anything
+
+234
+00:13:01,600 --> 00:13:03,800
+我们在这个循环持续重置为0
+let's just keep resetting this in a loop
+
+235
+00:13:03,800 --> 00:13:06,400
+最终我们会看到写入2
+eventually we'll see someone writing a two
+
+236
+00:13:12,766 --> 00:13:14,766
+好的
+and I think yes
+
+237
+00:13:15,400 --> 00:13:17,800
+写入了2。很酷吧
+wrote two. pretty cool huh
+
+238
+00:13:18,900 --> 00:13:19,700
+好吧
+all right
+
+239
+00:13:20,400 --> 00:13:25,000
+这是在同一个程序的不同进程中的竞争条件
+so that's a race condition just between two iterations of the same program
+
+240
+00:13:25,300 --> 00:13:32,933
+所以有可能同一个漏洞程序的不同进程互相竞争
+so it can be two iterations of vulnerable program racing against each other 
+
+241
+00:13:33,000 --> 00:13:39,800
+通常是一个漏洞程序进程的不同线程之间竞争
+oftentimes it is going to be two iterations two different threads in a vulnerable program
+
+242
+00:13:39,900 --> 00:13:41,666
+我们马上会讲到这个
+we'll talk about that in a second
+
+243
+00:13:41,700 --> 00:13:44,700
+有时漏洞程序的竞争对象是
+sometimes it is one program racing against you
+
+244
+00:13:44,900 --> 00:13:48,100
+你在命令行启动的其它进程
+on the command line doing other stuff in a different process
+
+245
+00:13:48,900 --> 00:13:49,700
+好的
+all right
+
+246
+00:13:51,333 --> 00:13:55,966
+我们如何利用这个漏洞呢
+so how do we exploit this
+
+247
+00:13:56,033 --> 00:13:57,533
+一般情况下
+right the general case 
+
+248
+00:13:58,000 --> 00:14:01,666
+当发现这种危险并发
+you identify this unsafe concurrency
+
+249
+00:14:02,400 --> 00:14:07,900
+你要找出应该在哪里插入操作
+you figure out where you need to inject an action
+
+250
+00:14:08,900 --> 00:14:14,100
+要想办法让这个插入点尽可能大
+you figure out how to make this point as big as possible
+
+251
+00:14:14,700 --> 00:14:20,700
+增加修改中间状态的几率
+had to make increase your chances of changing the state between
+
+252
+00:14:20,800 --> 00:14:22,600
+就是在进程检查状态后
+the time where the program verifies it
+
+253
+00:14:22,600 --> 00:14:31,200
+和本应该执行的操作之前
+and the time where the program actually does whatever action it wants to do
+
+254
+00:14:31,533 --> 00:14:34,466
+修改进程状态
+and then you very carefully modify that state
+
+255
+00:14:34,700 --> 00:14:37,300
+让程序接下来的操作
+so that the action that the program is taking
+
+256
+00:14:38,400 --> 00:14:41,966
+对攻击者有利
+end up being in your benefit and the attacker's benefit
+
+257
+00:14:42,000 --> 00:14:43,200
+在本模块后续章节中
+through the rest of the module
+
+258
+00:14:43,200 --> 00:14:46,400
+我们会讨论你该怎么做
+we'll talk about how you'll do this and
+
+259
+00:14:46,700 --> 00:14:50,800
+并讨论如何保护
+talk about how you would protect software against these sort of problems
+
+260
+00:14:51,200 --> 00:14:55,300
+快速过一下竞争条件的历史
+all right real quick note about the history of race conditions
+
+261
+00:14:55,533 --> 00:14:57,999
+我喜欢加入一些历史
+I always try to include a little bit of history
+
+262
+00:14:58,200 --> 00:15:00,800
+加入一些问题的历史背景
+a little bit of historical context for all these problems
+
+263
+00:15:01,500 --> 00:15:06,200
+竞争条件是一个比较古老的概念
+race conditions were our pretty old concept
+
+264
+00:15:06,300 --> 00:15:10,000
+最初是在硬件背景中讨论这个问题
+originally they were discussed in a hardware context
+
+265
+00:15:10,166 --> 00:15:11,866
+有
+you have
+
+266
+00:15:15,700 --> 00:15:17,666
+通过导线连接的逻辑门
+logic gates connected by wires
+
+267
+00:15:17,666 --> 00:15:19,599
+它们之间有信号流动
+and there are signals flowing between them
+
+268
+00:15:19,666 --> 00:15:22,133
+这时的竞争条件是
+and the race condition was literally 
+
+269
+00:15:22,166 --> 00:15:30,299
+不同信号分别在不同导线上竞争
+a signal racing against another signal along two different wires
+
+270
+00:15:30,700 --> 00:15:34,400
+许多人探索过这个问题
+these were explored by a number of people 
+
+271
+00:15:34,500 --> 00:15:39,466
+包括大卫·霍夫曼，他最出名的作品是霍夫曼编码
+including David Huffman who is probably most famous for Huffman encoding
+
+272
+00:15:41,666 --> 00:15:44,699
+但除了霍夫曼编码
+but aside from Huffman encoding
+
+273
+00:15:45,933 --> 00:15:46,933
+他还
+he also
+
+274
+00:15:48,166 --> 00:15:50,166
+写了一篇完整的博士论文
+wrote an entire PhD thesis
+
+275
+00:15:50,300 --> 00:15:53,200
+包含了对竞争条件的大量研究
+that included a lot of work on race conditions
+
+276
+00:15:53,200 --> 00:15:58,700
+并讨论了安全相关或bug导致的竞争条件
+ and discussion of security critical  or buggy bug inducing race conditions
+
+277
+00:15:58,766 --> 00:16:00,666
+相对于安全的竞争条件(的差异)等
+versus safe race conditions etc
+
+278
+00:16:01,400 --> 00:16:04,300
+这是在1954年出的论文
+all the way back to 1954
+
+279
+00:16:04,300 --> 00:16:08,100
+这是一个非常古老的话题，有60多年的历史了
+so this is a very ancient topic over 60 years old
+
+280
+00:16:10,100 --> 00:16:11,933
+通过这个模块
+and through this module you're gonna get
+
+281
+00:16:12,400 --> 00:16:16,800
+你对它的熟悉程度将远远超过霍夫曼
+ way more familiar with it than Hoffman ever had a chance to
+
+282
+00:16:17,566 --> 00:16:18,366
+好运
+good luck
+

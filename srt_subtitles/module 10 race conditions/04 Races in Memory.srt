@@ -1,0 +1,1560 @@
+1
+00:00:00,900 --> 00:00:02,400
+你好黑客
+hello hackers
+
+2
+00:00:02,600 --> 00:00:04,466
+欢迎回到PWN学院
+welcome back to pwn college
+
+3
+00:00:04,500 --> 00:00:05,233
+我是Yan
+I'm Yan 
+
+4
+00:00:05,233 --> 00:00:08,599
+今天要讲的是内存中的竞争条件
+Today we're going to be talking about race in memories
+
+5
+00:00:08,700 --> 00:00:11,333
+它是PWN学院竞争条件模块的一部分
+part of the race condition module of pwn college
+
+6
+00:00:11,333 --> 00:00:15,366
+我们已经讨论过文件系统中的竞争条件
+we've previously covered races on the file system
+
+7
+00:00:16,500 --> 00:00:20,166
+那自然有一个问题
+and of course a natural question it would be
+
+8
+00:00:20,466 --> 00:00:23,799
+文件系统之外是否存在竞争条件
+can there be races outside of the file system 
+
+9
+00:00:23,800 --> 00:00:25,200
+在其他地方
+so in other places
+
+10
+00:00:25,200 --> 00:00:26,666
+答案是肯定的
+and of course the answer is yes
+
+11
+00:00:26,766 --> 00:00:32,099
+文件系统是出现竞争条件的常见位置
+the file system is a very common place to have race conditions
+
+12
+00:00:32,300 --> 00:00:34,900
+因为它是进程间的共享资源
+because it's a shared resource between processes
+
+13
+00:00:34,933 --> 00:00:37,866
+现在学过了线程
+but as we have now Learned about threads
+
+14
+00:00:38,900 --> 00:00:43,400
+我们知道了内存是线程间的共享资源
+we can realize that memory is a shared resource between threads
+
+15
+00:00:43,400 --> 00:00:47,066
+很明显，既然是共享资源
+and obviously since it's a shared resource 
+
+16
+00:00:47,333 --> 00:00:50,999
+多个线程可能会同时使用它
+that multiple different threads can use at the same time
+
+17
+00:00:51,366 --> 00:00:54,133
+如果不多加小心
+if extreme care is not taken
+
+18
+00:00:54,333 --> 00:00:58,199
+内存中就会发生竞争条件
+ race conditions will arise and do arise in memory
+
+19
+00:00:58,600 --> 00:00:59,933
+看看这个例子
+take a look at this example 
+
+20
+00:01:00,000 --> 00:01:03,466
+这是一个明显的竞态条件
+this is a very straightforward race condition
+
+21
+00:01:03,466 --> 00:01:05,899
+在这个进程中有两个线程
+we have two threads in this process
+
+22
+00:01:05,900 --> 00:01:08,300
+主线程和分配器线程
+the main thread and the allocator thread
+
+23
+00:01:09,000 --> 00:01:13,700
+主线程循环从标准输入读取size变量
+the main thread will loop read a size variable
+
+24
+00:01:14,100 --> 00:01:15,700
+读取1字节
+right just one byte
+
+25
+00:01:16,200 --> 00:01:22,200
+分配器线程循环调用read_data
+and the allocator thread will loop and call read_data
+
+26
+00:01:22,600 --> 00:01:25,800
+read_data会检查
+of course read_data will check if the size variable
+
+27
+00:01:26,000 --> 00:01:30,000
+主线程负责从标准输入读取的size变量
+that the main thread is responsible for reading
+
+28
+00:01:30,300 --> 00:01:32,700
+是否小于16
+if size is less than 16
+
+29
+00:01:32,766 --> 00:01:34,299
+如果size小于16
+if size is less than 16
+
+30
+00:01:35,200 --> 00:01:36,000
+那么
+then
+
+31
+00:01:36,900 --> 00:01:41,766
+就从标准输入读数据到一个16B大小的栈缓冲区
+we will read into a buffer on the stack of size 16
+
+32
+00:01:42,300 --> 00:01:47,500
+size代表要输入多少字节
+how many bytes are indicated by size
+
+33
+00:01:47,533 --> 00:01:48,333
+现在
+now
+
+34
+00:01:48,800 --> 00:01:51,600
+当然要是没漏洞，我就不展示它了
+I wouldn't be showing this example if it wasn't vulnerable
+
+35
+00:01:52,066 --> 00:01:53,899
+它肯定是有漏洞的
+so of course it is vulnerable
+
+36
+00:01:54,200 --> 00:01:58,933
+它存在TOCTOU漏洞
+this is in fact a time of check to time of use vulnerability 
+
+37
+00:01:59,133 --> 00:02:03,366
+与文件系统中讲的一样，只是这发生在内存中
+exactly in the style of a file system one just in memory
+
+38
+00:02:03,500 --> 00:02:08,166
+因为主线程可以修改size变量
+why because the main thread can update the size variable
+
+39
+00:02:08,366 --> 00:02:18,699
+而且就在分配器线程检查和使用之间
+ while between the time  that allocator thread checks it and uses it
+
+40
+00:02:18,866 --> 00:02:21,133
+TOCTOU 无疑
+time of check time of use boom
+
+41
+00:02:21,300 --> 00:02:26,700
+让我们看看这里发生了什么
+let's take a look at what happens here
+
+42
+00:02:27,933 --> 00:02:28,733
+好吧
+alright
+
+43
+00:02:30,866 --> 00:02:31,666
+所以
+so
+
+44
+00:02:33,100 --> 00:02:38,000
+我实现了这个pthread_race
+I implemented this of course  pthread_race
+
+45
+00:02:38,900 --> 00:02:40,000
+就是这个
+here it is 
+
+46
+00:02:40,200 --> 00:02:42,166
+和ppt上的相同
+exactly what's on the slide
+
+47
+00:02:43,366 --> 00:02:45,999
+编译它
+if we compile it 
+
+48
+00:02:46,666 --> 00:02:50,466
+pthread_race pthread_race.c
+pthread_race pthread_race.c
+
+49
+00:02:52,100 --> 00:02:53,866
+链接pthread库
+linking pthread boom
+
+50
+00:02:54,300 --> 00:02:56,200
+运行它
+alright and we run it
+
+51
+00:02:57,800 --> 00:02:59,766
+打错了
+oops wrong 1 apologies
+
+52
+00:03:00,800 --> 00:03:04,900
+当然最开始输出的size是42
+it of course starts out with that size of 42
+
+53
+00:03:06,000 --> 00:03:08,966
+看这里，初始值是42
+that's just in the initial size right there
+
+54
+00:03:09,766 --> 00:03:13,066
+按一下回车，会怎样？
+all right so let's see what happens if I hit enter
+
+55
+00:03:13,400 --> 00:03:17,300
+回车是十六进制0xa，即10
+that's enter of course is Hex 10
+
+56
+00:03:17,366 --> 00:03:21,966
+所以它要求我发送10个字节（的数据）
+and so now it's asking me to send 10 bytes
+
+57
+00:03:22,300 --> 00:03:24,400
+我发送10个字节
+I send 10 bytes 
+
+58
+00:03:24,566 --> 00:03:27,499
+然后它接着要10字节
+and then it keeps asking for 10 bytes 
+
+59
+00:03:27,633 --> 00:03:29,499
+我可以发送更多字节
+I can send more
+
+60
+00:03:29,566 --> 00:03:32,466
+然后报 size 49 无效
+then says invalid size 49
+
+61
+00:03:33,000 --> 00:03:34,366
+最后还问我要10个字节
+eventually ask me 10 bytes again
+
+62
+00:03:34,366 --> 00:03:35,566
+为什么它又问我要10个字节
+why did it ask me 10 bytes again
+
+63
+00:03:35,566 --> 00:03:37,399
+因为我按了回车
+because when I hit enter
+
+64
+00:03:37,500 --> 00:03:43,700
+在这一长串1后面跟了一个0xa
+after all of these ones I sent along another 0xa
+
+65
+00:03:43,833 --> 00:03:46,966
+即10，或者说是一个换行符
+another 10, a new line all right
+
+66
+00:03:47,300 --> 00:03:51,100
+所以这里有点奇怪
+so there's some weirdness going on here
+
+67
+00:03:51,200 --> 00:03:52,133
+一方面
+for one thing
+
+68
+00:03:52,400 --> 00:03:56,100
+它让我输入10个字节，但是
+it asked me to input 10 bytes but
+
+69
+00:03:56,566 --> 00:03:58,466
+但实际上我输入了一堆
+actually put a bunch
+
+70
+00:03:59,100 --> 00:04:00,533
+所以对于这些多的字节
+so for each one of these
+
+71
+00:04:00,633 --> 00:04:05,666
+每个字节都应该被读入，报错：非法size
+it should have read it in  and said oh this is an invalid size
+
+72
+00:04:05,666 --> 00:04:07,333
+但这里只报了一次错。为什么？
+but only said it once why
+
+73
+00:04:07,400 --> 00:04:12,733
+因为这些线程没有同步好
+because of course these threads are not synchronized in any way
+
+74
+00:04:12,966 --> 00:04:17,866
+所以估计是这样的
+so what probably happened or what certainly happened is
+
+75
+00:04:18,700 --> 00:04:24,800
+这里对size的检查或者读取发生了很多次
+this check or this read of the size variable happened many many many times
+
+76
+00:04:25,800 --> 00:04:28,300
+而 read_data 只执行了一次
+while this only happened to execute once
+
+77
+00:04:28,300 --> 00:04:31,300
+内核决定如何调度不同的线程
+it's up to the kernel how to schedule different threads
+
+78
+00:04:31,333 --> 00:04:33,299
+不由我们决定
+not up to us 
+
+79
+00:04:33,766 --> 00:04:35,166
+原理就是这么个原理
+so that is what happens
+
+80
+00:04:35,933 --> 00:04:38,599
+那我们该如何利用这一点呢
+all right so how do we exploit this well
+
+81
+00:04:38,933 --> 00:04:39,799
+很容易
+very easily 
+
+82
+00:04:39,900 --> 00:04:43,300
+基本上就是一直给它灌数据
+basically we shove data at it
+
+83
+00:04:43,733 --> 00:04:46,933
+直到触发TOCTOU
+until we trigger that time of check time of use
+
+84
+00:04:47,766 --> 00:04:48,499
+具体来说
+and
+
+85
+00:04:48,500 --> 00:04:49,966
+哦，出了点问题
+oops I don't know what happened there
+
+86
+00:04:51,900 --> 00:04:58,833
+直到在这里检查时size小于16
+until size is smaller than 16 here
+
+87
+00:04:59,100 --> 00:05:01,000
+但在这里使用时大于16
+ and bigger than 16 here
+
+88
+00:05:01,000 --> 00:05:03,700
+当然，会让它读入一个很大的数
+and then of course it will read some giant numer
+
+89
+00:05:03,933 --> 00:05:05,899
+一个简单的方法是
+an easy way to do this is
+
+90
+00:05:08,100 --> 00:05:22,000
+在循环中输出1和ff
+just in a loop echo a 1 byte  and then an FF byte 
+
+91
+00:05:22,000 --> 00:05:22,600
+持续输出
+just in a loop
+
+92
+00:05:22,600 --> 00:05:27,100
+这会输出大量数据
+okay this will just give us quite a lot of data random data
+
+93
+00:05:27,400 --> 00:05:32,500
+再通过管道传给pthread_race
+but if you pipe this in to our pthread_race
+
+94
+00:05:33,966 --> 00:05:34,766
+就成了
+boom
+
+95
+00:05:35,000 --> 00:05:36,066
+只循环了几次
+goes a couple of times 
+
+96
+00:05:36,133 --> 00:05:46,666
+它读入了0xff，报了非法大小
+it read the hex FF the invalid size
+
+97
+00:05:47,200 --> 00:05:49,000
+它首先读取1
+it first read the 1 
+
+98
+00:05:50,233 --> 00:05:52,266
+但是在它读取1
+but in between it reading the 1
+
+99
+00:05:52,400 --> 00:05:56,700
+和分配器线程实际检查size之间
+and the actual size check in the allocators thread actually happening
+
+100
+00:05:57,966 --> 00:06:01,866
+它已经读入FF了
+it already went on to read this FF right
+
+101
+00:06:01,866 --> 00:06:03,766
+持续了3次
+and then it went on until
+
+102
+00:06:06,800 --> 00:06:10,900
+终于1被读入到size
+the one got read into size
+
+103
+00:06:11,500 --> 00:06:12,700
+且通过了检查
+that passed the check
+
+104
+00:06:15,933 --> 00:06:17,499
+让我把代码调出来
+let me bring up
+
+105
+00:06:18,366 --> 00:06:20,299
+是这样子的
+all right so what happened here
+
+106
+00:06:21,933 --> 00:06:25,566
+显然这里读入的size是255（ff）
+obviously we read in a size of 255 here
+
+107
+00:06:26,200 --> 00:06:30,300
+然后这个线程可能运行了3次
+and then maybe this thread ran 3 times
+
+108
+00:06:30,400 --> 00:06:32,466
+然后这个线程运行了一次
+and the time it took this thread to run once
+
+109
+00:06:32,566 --> 00:06:35,199
+在它的循环中这是很有可能的
+that's very possible through its loop
+
+110
+00:06:37,100 --> 00:06:42,300
+这完全取决于内核调度的细节
+it all depends on the specifics of kernel scheduling
+
+111
+00:06:42,800 --> 00:06:45,933
+也可能主线程运行多次
+or maybe this thread kept running a lot
+
+112
+00:06:46,100 --> 00:06:57,800
+恰巧分配器线程运行了3次，且3次size都是ff
+and we just got chance that this thread ran while the size variable was 255 three times 
+
+113
+00:06:58,100 --> 00:06:59,466
+这也是可能的情形
+that's the likely scenario
+
+114
+00:06:59,566 --> 00:07:00,566
+最终
+then eventually
+
+115
+00:07:01,100 --> 00:07:05,700
+这里执行size检查时，它是1
+this thread looped through the size check when the size was 1
+
+116
+00:07:06,400 --> 00:07:09,700
+执行到这里时，大小仍然是1
+and by the time it got to here the size was still 1
+
+117
+00:07:10,166 --> 00:07:11,266
+也是很有可能的
+very possible
+
+118
+00:07:12,000 --> 00:07:14,133
+它只向buff中读入了1字节
+it only read one byte into the buffer
+
+119
+00:07:14,300 --> 00:07:18,500
+好的，最后得到了一个合法的size 1
+and then eventually we got a valid size of one byte
+
+120
+00:07:19,000 --> 00:07:21,700
+所以这里读入了1字节的size
+so this ran read size of one byte 
+
+121
+00:07:21,866 --> 00:07:23,499
+这里的检查也通过了
+then this check passed
+
+122
+00:07:23,500 --> 00:07:25,600
+输出没报错
+it printed great job
+
+123
+00:07:25,600 --> 00:07:30,466
+然后主线程读入255到size中
+then this ran and read in 255 in the main thread
+
+124
+00:07:30,466 --> 00:07:32,166
+又切回分配器线程
+and in the allocator thread
+
+125
+00:07:32,400 --> 00:07:39,000
+它原以为要读入1字节，但此时实际读入255字节
+this guy ran and read in 255 bytes where he thought it was reading in one byte
+
+126
+00:07:39,533 --> 00:07:41,799
+当然就破环了栈
+and of course we smashed the stack
+
+127
+00:07:42,100 --> 00:07:47,900
+这是一个典型的内存中的竞争条件
+alright there's a very typical data race in memory
+
+128
+00:07:50,400 --> 00:07:54,200
+导致了很多漏洞
+causes many many vulnerabilities
+
+129
+00:07:55,666 --> 00:07:57,799
+它实际上很难对付
+and it's actually very hard to deal with
+
+130
+00:07:57,800 --> 00:08:00,766
+它是一个厉害的漏洞
+right this is a real deal vulnerability
+
+131
+00:08:01,300 --> 00:08:03,533
+它特殊在
+a special case of this vulnerability is that 
+
+132
+00:08:03,700 --> 00:08:08,100
+它可能出现在用户态和内核态切换的过程中
+it can arise between the userland and the kernel
+
+133
+00:08:08,166 --> 00:08:14,333
+显然，这令他有很大的危害
+obviously this makes it much much more impactful right
+
+134
+00:08:15,200 --> 00:08:20,200
+还记得内核函数copy_from_user吗
+remember the kernel function copy_from_user from the kernel module
+
+135
+00:08:20,433 --> 00:08:23,599
+它从用户获取输入
+ it takes input from the user
+
+136
+00:08:25,266 --> 00:08:27,066
+从用户空间复制
+and it copies it from user space
+
+137
+00:08:27,066 --> 00:08:28,599
+复制到内核空间
+it copies it into kernel space
+
+138
+00:08:29,100 --> 00:08:33,566
+有时候开发者会犯
+sometimes developers make mistakes that are basically 
+
+139
+00:08:33,766 --> 00:08:38,199
+内核与用户空间之间的TOCTOU
+time of chuck time of use vulnerabilities between the kernel and the user space
+
+140
+00:08:38,266 --> 00:08:39,199
+看一下这个情况
+look at this situation 
+
+141
+00:08:39,333 --> 00:08:44,166
+有一个ioctl处理程序接收user_buffer
+you have an ioctl handler that takes a user_buffer 
+
+142
+00:08:44,566 --> 00:08:50,666
+它是一个用户空间地址的指针，用作ioctl的参数
+of a pointer to buffer in user space as the ioctl argument right
+
+143
+00:08:51,966 --> 00:08:54,733
+它调用check_safety检查user_buffer
+it calls check_safety on the user_buffer
+
+144
+00:08:55,533 --> 00:08:58,333
+检查一下，确保这个user_buffer
+and says hey check to make sure that this user_buffer
+
+145
+00:08:58,333 --> 00:09:01,866
+中的size小于16
+the size encoded in it is less than 16
+
+146
+00:09:02,500 --> 00:09:05,133
+为此，它从用户空间地址复制size
+to do that it copies the size from the user
+
+147
+00:09:06,300 --> 00:09:10,100
+然后将其与16进行比较
+and then it compares it against the maximum size
+
+148
+00:09:10,566 --> 00:09:12,333
+然后返回
+and returns that right
+
+149
+00:09:12,400 --> 00:09:13,200
+当然
+of course
+
+150
+00:09:13,866 --> 00:09:15,666
+我忘了写if语句了
+I forgot to put an if statement there 
+
+151
+00:09:15,733 --> 00:09:17,466
+稍等一下
+let me just one second
+
+152
+00:09:18,200 --> 00:09:19,800
+好了，看起来好多了
+all right that looks a little better
+
+153
+00:09:20,266 --> 00:09:23,166
+我们在这里做了安全校验
+so we do this safety check
+
+154
+00:09:23,933 --> 00:09:28,333
+但在这里我们又从用户空间中获取size
+but then we grab the size again from user space
+
+155
+00:09:29,300 --> 00:09:32,000
+这里是检查的时候
+right of course this is the time of check
+
+156
+00:09:33,766 --> 00:09:35,299
+这里使用的时候
+this is the time of use
+
+157
+00:09:35,600 --> 00:09:37,900
+就在检查和使用之间
+between the time of check and the time of use
+
+158
+00:09:39,300 --> 00:09:42,100
+用户空间中的值可以被修改
+the value in user space can be changed
+
+159
+00:09:43,000 --> 00:09:47,300
+当然不是调用ioctl的线程
+of course not by the thread that called ioctl
+
+160
+00:09:47,366 --> 00:09:48,799
+这是一个ioctl处理程序
+this is an ioctl handler
+
+161
+00:09:48,800 --> 00:09:51,133
+因此调用ioctl的线程已被挂起
+so the thread that called ioctl is suspended
+
+162
+00:09:51,500 --> 00:09:54,833
+但在同一进程中它可能有兄弟线程
+but it could have a sibling thread in that same process 
+
+163
+00:09:54,933 --> 00:10:00,133
+它可以访问用户空间中的内存
+that has access to this memory space in user space
+
+164
+00:10:00,266 --> 00:10:05,199
+并且可以在检查和使用之间改变这个值
+and could change that value between our time of check and our time of use
+
+165
+00:10:05,666 --> 00:10:07,399
+在第一次从用户空间取值
+between the first fetch from user space
+
+166
+00:10:07,400 --> 00:10:09,000
+和第二次从用户空间取值之间
+and the second fetch from user space
+
+167
+00:10:09,066 --> 00:10:11,399
+这被称为双重获取漏洞
+this is called a double fetch vulnerability
+
+168
+00:10:11,400 --> 00:10:14,133
+它在今天仍然猖獗
+it runs rampant even today
+
+169
+00:10:15,133 --> 00:10:16,366
+这是一个大问题
+and it is a big problem
+
+170
+00:10:17,000 --> 00:10:20,400
+因为，如果这个size突然增大
+because obviously if this size is suddenly increased
+
+171
+00:10:20,400 --> 00:10:23,200
+我们就可以在内核中溢出这个缓冲区
+we can overflow this buffer in the kernel
+
+172
+00:10:24,000 --> 00:10:29,100
+如果认为让攻击者控制用户态执行流够糟了
+and if you think that having an attacker control execution user space is bad
+
+173
+00:10:29,466 --> 00:10:31,933
+等以后看到它发生在内核态，你会体会到它的危害
+just wait until you see what happens in the kernel
+
+174
+00:10:32,700 --> 00:10:35,866
+这在之后的视频会讲
+and you will see what happens in the kernel in toddler 2 
+
+175
+00:10:36,066 --> 00:10:36,999
+好吧
+all right
+
+176
+00:10:38,100 --> 00:10:41,700
+其他数据竞争
+other data race concepts right
+
+177
+00:10:41,933 --> 00:10:45,133
+数据竞争可能会有非常奇怪的影响，即使
+data races can have really weird effects even if
+
+178
+00:10:46,466 --> 00:10:49,199
+不一定非得是TOCTOU
+they are not necessarily time of check time of use
+
+179
+00:10:49,200 --> 00:10:50,000
+好的
+right
+
+180
+00:10:50,700 --> 00:10:51,600
+看看这个例子
+look at this situation for example 
+
+181
+00:10:52,100 --> 00:10:54,966
+有两个线程
+we have two threads that
+
+182
+00:10:55,700 --> 00:10:58,700
+每次num都先自增再自减
+each increment and then decrement a numer
+
+183
+00:10:59,400 --> 00:11:00,833
+不出意外的话
+if the world made sense  
+
+184
+00:11:00,966 --> 00:11:07,333
+当执行到这里，num总是0
+you would expect this num to always be zero by the time this line comes around
+
+185
+00:11:07,333 --> 00:11:09,266
+因为先自增再自减
+because there's an increment a decrement
+
+186
+00:11:09,433 --> 00:11:12,899
+这里我们只在非零的情况下输出
+ and here we printed out only if it's non zero
+
+187
+00:11:12,933 --> 00:11:15,733
+按理说它永远不会打印出来
+you'd expect it never be printed out
+
+188
+00:11:16,000 --> 00:11:20,100
+好的，我们看看实际是怎样的
+right but let me show you what in reality happens
+
+189
+00:11:20,733 --> 00:11:23,666
+有一个pthread_clober
+so we have pthread_clobber
+
+190
+00:11:24,566 --> 00:11:26,466
+和ppt上的代码一样
+same code as you saw on the slide
+
+191
+00:11:27,266 --> 00:11:28,899
+Num + + Num - -
+num plus plus num minus minus
+
+192
+00:11:28,900 --> 00:11:31,366
+如果num不为零，就输出
+and if num is not zero it printed out
+
+193
+00:11:32,066 --> 00:11:34,166
+已经编译好了，运行它
+already compiled it so let's just run it
+
+194
+00:11:36,566 --> 00:11:38,299
+可以看到NUM是1
+and you can see NUM is one
+
+195
+00:11:38,800 --> 00:11:40,133
+这有点奇怪
+that's weird
+
+196
+00:11:40,133 --> 00:11:41,366
+但这也说得通
+right but it kind of makes sense
+
+197
+00:11:41,500 --> 00:11:44,900
+可能因为线程不同步的原因
+you might have a desync between those two threads
+
+198
+00:11:44,966 --> 00:11:46,466
+但它会继续增长
+but then it keeps going
+
+199
+00:11:46,600 --> 00:11:48,633
+怎么可能是5呢
+how can it possibly be 5 
+
+200
+00:11:48,633 --> 00:11:50,333
+即使他们不同步
+even if they desynced
+
+201
+00:11:51,366 --> 00:11:53,666
+一个线程自增了
+and one thread incremented 
+
+202
+00:11:53,766 --> 00:11:56,333
+同时另一个线程打印了它
+as the other thread was printing it out
+
+203
+00:11:57,000 --> 00:11:57,966
+也应该是1
+that should be a 1
+
+204
+00:11:57,966 --> 00:11:59,533
+然后它会再次自减
+and then it would be decremented again
+
+205
+00:11:59,533 --> 00:12:01,433
+但现在都到15了
+but now we're up to 15 over here
+
+206
+00:12:01,633 --> 00:12:03,033
+这太疯狂了
+ this is crazy 
+
+207
+00:12:03,933 --> 00:12:06,199
+这应该是不可能的，但确实发生了
+this shouldn't be possible but it is
+
+208
+00:12:06,300 --> 00:12:07,700
+这怎么可能?
+how is it possible
+
+209
+00:12:07,900 --> 00:12:14,166
+有可能执行了这个指令序列
+it is possible with this sample way of scheduling the instructions 
+
+210
+00:12:14,400 --> 00:12:18,533
+再次强调，线程调度顺序是不确定的
+and again threads are scheduled nondeterministically
+
+211
+00:12:18,533 --> 00:12:21,333
+除非你主动控制
+unless you explicitly take over their scheduling
+
+212
+00:12:21,333 --> 00:12:22,766
+我马上会讲到怎么做
+I'll talk about how in a second
+
+213
+00:12:23,000 --> 00:12:23,800
+但
+but
+
+214
+00:12:24,366 --> 00:12:29,566
+我们先看这个执行顺序
+if we trace through this scheduling
+
+215
+00:12:29,833 --> 00:12:33,999
+有2个线程自增了
+you have the two threads for the increment
+
+216
+00:12:34,100 --> 00:12:36,400
+T1执行完了自增操作
+first thread one runs all the way through the increment
+
+217
+00:12:36,466 --> 00:12:39,466
+读取并自增了num
+so reading the numer incrementing the numer
+
+218
+00:12:39,900 --> 00:12:43,500
+将num从内存读入寄存器
+reading the memory where numer resides into a register
+
+219
+00:12:43,566 --> 00:12:44,766
+寄存器自增
+incrementing the register
+
+220
+00:12:44,766 --> 00:12:46,699
+然后写回内存
+and writing it back out
+
+221
+00:12:47,766 --> 00:12:50,866
+最后得到num = 1
+we end up with num being equal to 1
+
+222
+00:12:51,166 --> 00:12:53,566
+T2也执行完了自增操作
+thread two runs increments it
+
+223
+00:12:54,366 --> 00:12:55,633
+Num=2
+num equal to 2 
+
+224
+00:12:55,833 --> 00:12:59,866
+但自减时2个线程是交错的
+and now the decrement part is interleaved
+
+225
+00:12:59,866 --> 00:13:02,666
+读入到寄存器的都是2
+and so they both read in two
+
+226
+00:13:03,533 --> 00:13:06,666
+都从2自减，最后都是1（线程有单独的寄存器上下文）
+they both decrement 2 so they both end up with 1
+
+227
+00:13:08,200 --> 00:13:12,066
+然后它们都写回1
+and then they both write back 1 instead of 2 
+
+228
+00:13:14,000 --> 00:13:20,600
+基本上线程2的写入抵消了线程1的写入
+because basically this write of thread 2 clobbers the fact of this write of thread 1
+
+229
+00:13:22,400 --> 00:13:23,900
+这是一个数据竞争
+this is a data race
+
+230
+00:13:23,900 --> 00:13:25,133
+这是一个普遍的数据竞争
+it's a general data race
+
+231
+00:13:25,133 --> 00:13:28,133
+导致num值与预期不符
+ending up in an incorrect value of numer
+
+232
+00:13:28,500 --> 00:13:31,033
+正确的做法是
+right the correct thing to do would be 
+
+233
+00:13:31,400 --> 00:13:38,600
+等T1写回计算结果后，再让T2读入
+to have thread 2 read this after thread 1 wrote the result of its calculation
+
+234
+00:13:39,666 --> 00:13:40,466
+好的
+alright
+
+235
+00:13:41,566 --> 00:13:43,999
+就像这里
+as what happens here
+
+236
+00:13:44,266 --> 00:13:45,066
+所以
+so
+
+237
+00:13:45,900 --> 00:13:48,533
+数据竞争是一个问题
+data races are a problem
+
+238
+00:13:48,800 --> 00:13:52,066
+我们该如何防范数据竞争
+how can we prevent the data race in that situation 
+
+239
+00:13:52,333 --> 00:13:54,799
+我们可以利用所谓的互斥体
+we can utilize what are called mutexes
+
+240
+00:13:55,066 --> 00:13:58,799
+它们是线程之间的锁
+they are locks between threads
+
+241
+00:13:58,933 --> 00:14:00,866
+它们是由操作系统提供
+and they're provided by the operating system
+
+242
+00:14:00,966 --> 00:14:03,533
+且 libpthread 提供了很好的接口
+with a nice interface by libpthread
+
+243
+00:14:03,800 --> 00:14:05,466
+还有信号量
+there're also semaphores
+
+244
+00:14:05,866 --> 00:14:07,766
+可以说是一种高级的互斥锁
+kind of an advanced type of mutex
+
+245
+00:14:08,200 --> 00:14:12,900
+这通常是操作系统课程中教授的内容
+this is all stuff that is typically taught in an operating system course
+
+246
+00:14:13,000 --> 00:14:17,400
+我们从安全的角度快速讲一下互斥体
+you're just going to very quickly touch on mutexes for the purpose of security
+
+247
+00:14:17,533 --> 00:14:20,699
+互斥锁基本上就是一个锁
+a mutex is basically a lock
+
+248
+00:14:24,000 --> 00:14:29,900
+并且一次只有一个线程可以锁定它
+and only a single thread can claim the lock at a time
+
+249
+00:14:30,066 --> 00:14:32,266
+当执行pthread_mutex_lock时
+so when you do pthread_mutex_lock
+
+250
+00:14:32,700 --> 00:14:36,566
+将锁传递给了libpthread
+you pass in that that lock to libpthread
+
+251
+00:14:36,766 --> 00:14:39,599
+问libpthread现在能锁它吗
+ and it says hey is this available
+
+252
+00:14:39,666 --> 00:14:41,433
+如果目前它没被锁
+if no one has currently locked it
+
+253
+00:14:41,433 --> 00:14:42,699
+它就是我的了
+ it's mine
+
+254
+00:14:42,700 --> 00:14:44,033
+然后继续执行
+and then I'll keep executing 
+
+255
+00:14:44,033 --> 00:14:45,233
+如果已经有人锁上了
+if someone has locked it
+
+256
+00:14:45,300 --> 00:14:47,800
+我就等它被解锁后
+I'm going to wait for it to become available
+
+257
+00:14:48,066 --> 00:14:49,699
+我再继续执行
+and then continue execution
+
+258
+00:14:49,700 --> 00:14:53,600
+在这段代码前后加上pthread_mutex_lock和pthread_mutex_unlock（ppt上打错了）
+what this does by putting pthread_mutex_lock between this code
+
+259
+00:14:53,800 --> 00:14:55,933
+起到什么作用？
+and pthread_mutex_lock after this code
+
+260
+00:14:56,400 --> 00:15:00,700
+这意味着一次只有一个线程在执行这些代码
+it means that only one thread will ever be executing this code at a time
+
+261
+00:15:00,800 --> 00:15:05,200
+尽管这两个线程都将此作为它们的线程主函数
+even though both threads have this as their thread main function 
+
+262
+00:15:07,133 --> 00:15:08,899
+这叫做临界区
+this is called a critical section
+
+263
+00:15:09,266 --> 00:15:12,199
+一段线程敏感代码
+a section of kind of thread sensitive
+
+264
+00:15:12,600 --> 00:15:17,133
+需要保护的线程不安全代码
+or otherwise thread unsafe code that needs to be protected 
+
+265
+00:15:17,300 --> 00:15:27,133
+通过使用互斥锁避免数据竞争或其他线程并发性问题
+from data races or other threading concurrency problems by using mutexes
+
+266
+00:15:27,466 --> 00:15:30,099
+看一下如何操作
+ let's see how it works in practice
+
+267
+00:15:35,533 --> 00:15:37,466
+我把它复制到这里了
+I of course copied that in here
+
+268
+00:15:37,466 --> 00:15:40,133
+这是我们的锁
+here's our lock 
+
+269
+00:15:41,966 --> 00:15:43,466
+那是锁本身
+that's the lock itself
+
+270
+00:15:43,466 --> 00:15:44,799
+这是对它加锁
+this is us locking it 
+
+271
+00:15:44,800 --> 00:15:46,400
+这是解锁
+this is us unlocking it
+
+272
+00:15:46,966 --> 00:15:49,566
+已经编译了，运行它
+and I compiled it and if we just run it
+
+273
+00:15:51,100 --> 00:15:52,700
+它什么也不打印
+it never prints anything
+
+274
+00:15:53,000 --> 00:15:56,133
+为什么？因为num总是0
+why because num is always zero
+
+275
+00:15:59,800 --> 00:16:05,800
+很好，我们用互斥锁解决了这个数据竞争问题
+cool so we have fixed this data race through careful use of mutexes
+
+276
+00:16:05,800 --> 00:16:12,100
+数据竞争不是无法解决的问题
+data races aren't something that just happens to you and you're hopeless
+
+277
+00:16:12,100 --> 00:16:18,800
+可以通过合理的编程方式阻止数据竞争
+you can utilize proper programming practices to prevent data races
+
+278
+00:16:18,800 --> 00:16:23,600
+防止文件系统竞争也是如此
+actually similarly to preventing file system races
+
+279
+00:16:24,333 --> 00:16:25,133
+好的
+all right
+
+280
+00:16:27,600 --> 00:16:29,500
+我们能检测到数据竞争吗
+can we detect data races
+
+281
+00:16:29,500 --> 00:16:30,600
+假设我们很不小心
+let's say we weren't so careful
+
+282
+00:16:30,600 --> 00:16:32,066
+写了一堆软件
+we wrote a bunch of software
+
+283
+00:16:32,200 --> 00:16:34,966
+到处都有竞争条件
+and there're race conditions everywhere
+
+284
+00:16:36,300 --> 00:16:37,300
+不一定能检测到
+not really 
+
+285
+00:16:37,466 --> 00:16:38,899
+这是一个常见的课题
+this is a common theme
+
+286
+00:16:38,900 --> 00:16:42,466
+检测数据竞争没有特效药
+there isn't a magic bullet for detecting data races
+
+287
+00:16:42,700 --> 00:16:44,600
+是有一些工具，比如Valgrind
+some tools exist so Valgrind 
+
+288
+00:16:44,833 --> 00:16:49,199
+我们在内存错误模块中见过了Valgrind
+we saw Valgrind from memory errors
+
+289
+00:16:49,466 --> 00:16:54,899
+在几种漏洞中都见过valgrind
+ we saw Valgrind through several different types of vulnerabilities
+
+290
+00:16:56,333 --> 00:16:59,466
+比如堆漏洞等
+for heap problems and so forth
+
+291
+00:16:59,733 --> 00:17:02,666
+Valgrind也有检测数据竞争的工具
+Valgrind also has tools to detect data races
+
+292
+00:17:02,799 --> 00:17:08,399
+有两个工具使用不同的方法来做这个事情
+there has two different tools that use different methodologies to do the same thing
+
+293
+00:17:09,400 --> 00:17:11,000
+Helgrind和DRD
+Helgrind and DRD
+
+294
+00:17:12,500 --> 00:17:18,133
+但只有在测试用例中触发相关代码 valgrind 才有用
+but valgrind only works if you trigger the relevant code in your test cases 
+
+295
+00:17:18,200 --> 00:17:19,700
+且要用它能识别的方法
+in a way that it can identify
+
+296
+00:17:19,766 --> 00:17:22,299
+它会提示你，这里可能有数据竞争
+that hey a data race could have happened here
+
+297
+00:17:23,133 --> 00:17:24,599
+它不是特效药
+it's not a magic bullet 
+
+298
+00:17:24,700 --> 00:17:29,100
+学术界在研究通用方法
+academia the research community in general is working on magic bullets
+
+299
+00:17:30,600 --> 00:17:35,600
+Dr Checker是一个静态分析内核代码的系统
+Dr Checker is a system that statically analyzes kernel code
+
+300
+00:17:35,766 --> 00:17:38,433
+可以识别各种漏洞
+to identify various vulnerabilities
+
+301
+00:17:38,466 --> 00:17:39,899
+包括数据竞争
+including data races
+
+302
+00:17:40,300 --> 00:17:42,000
+还有razzer和krace
+and then razzer and krace
+
+303
+00:17:42,600 --> 00:17:47,400
+它们基本上是用随机输入来执行内核代码
+they basically execute kernel code with random input
+
+304
+00:17:47,466 --> 00:17:50,033
+试图触发数据竞争
+ to try to trigger data races
+
+305
+00:17:50,133 --> 00:17:53,399
+但这些都不是完美的
+ but none of these is perfect
+
+306
+00:17:53,500 --> 00:17:58,000
+它还是一个问题，一个很好的例子是
+right a good example that you know this problem is still a problem
+
+307
+00:17:58,233 --> 00:18:04,233
+最近，不确定是不是5月份，但基本是今年
+ is as recently as I think may but this year basically 
+
+308
+00:18:04,500 --> 00:18:10,100
+在Linux内核的ioctl处理程序中发现了double fetch漏洞
+there have been double fetch bugs in the Linux kernel in an ioctl handler
+
+309
+00:18:10,266 --> 00:18:14,899
+正如前面讲的
+exactly in the style that I talked about just now
+
+310
+00:18:16,600 --> 00:18:21,166
+这些在内存中的竞争条件是个大问题
+so these bugs races memory are a big deal
+
+311
+00:18:21,700 --> 00:18:25,600
+你们会在练习题中体会到这点
+and you will experience this of course in the practice problems
+
+312
+00:18:25,800 --> 00:18:26,600
+好运
+good luck
+
