@@ -1,8 +1,11 @@
 01 Intro to ARM - CSE598 - Yan & Robert - 2024.08.29
-    https://www.youtube.com/watch?v=4UucTCiQLXE&list=PL-ymxv0nOtqqWPp-o1OiSoBJIt_bb2v-H
+    https://www.youtube.com/watch?v=V83kUX1HfVY
 
 02 ARM ROP - CSE598 - Adam - 2024.09.04
-    https://www.youtube.com/watch?v=ovefXNzokpM&list=PL-ymxv0nOtqqWPp-o1OiSoBJIt_bb2v-H&index=2
+    https://www.youtube.com/watch?v=WifbCeAkK8Q
+
+03 Target Recon - CSE598 AVR - Adam - 2024.09.11
+    https://www.youtube.com/watch?v=raUxiYqB2e8
     
 practice here
     https://pwn.college/cse598-avr-f2024/
